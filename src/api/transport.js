@@ -1,0 +1,19 @@
+import client from "./client";
+
+export const listRoutes = () => client.get("/routes").then((r) => r.data);
+export const createRoute = (data) => client.post("/routes", data).then((r) => r.data);
+export const updateRoute = (id, data) => client.patch(`/routes/${id}`, data).then((r) => r.data);
+export const deleteRoute = (id) => client.delete(`/routes/${id}`);
+
+export const listStops = (routeId) => client.get(`/routes/${routeId}/stops`).then((r) => r.data);
+export const addStop = (routeId, data) => client.post(`/routes/${routeId}/stops`, data).then((r) => r.data);
+export const removeStop = (stopId) => client.delete(`/routes/stops/${stopId}`);
+
+export const listRouteStudents = (routeId) =>
+  client.get(`/routes/${routeId}/students`).then((r) => r.data);
+export const addStudentToRoute = (routeId, studentId) =>
+  client.post(`/routes/${routeId}/students/${studentId}`).then((r) => r.data);
+export const removeStudentFromRoute = (routeId, studentId) =>
+  client.delete(`/routes/${routeId}/students/${studentId}`);
+export const updatePickupStatus = (routeId, studentId, status) =>
+  client.patch(`/routes/${routeId}/students/${studentId}/status`, { status }).then((r) => r.data);
