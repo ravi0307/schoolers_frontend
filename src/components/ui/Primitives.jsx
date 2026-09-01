@@ -11,9 +11,13 @@ export function Empty({ children = "Nothing here yet." }) {
   return <div className="empty">{children}</div>;
 }
 
-export function Kpi({ n, label }) {
+export function Kpi({ n, label, onClick }) {
   return (
-    <div className="kpi">
+    <div
+      className="kpi"
+      onClick={onClick}
+      style={{ cursor: onClick ? "pointer" : "default" }}
+    >
       <div className="n">{n}</div>
       <div className="l">{label}</div>
     </div>
