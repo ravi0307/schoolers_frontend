@@ -5,6 +5,7 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import { apiErrorMessage } from "../../api/client";
+import { isValidPhone, isValidEmail } from "../../utils/validation";
 
 export default function AdminTeachers() {
   const { data, loading, error, refetch } = useApi(() => peopleApi.listTeachers(), []);
@@ -19,6 +20,10 @@ export default function AdminTeachers() {
     e.preventDefault();
     if (!name.trim()) {
       toast("Enter a name");
+      return;
+    }
+    if (phone && !isValidPhone(phone)) {
+      toast("Enter a valid phone number");
       return;
     }
     setSubmitting(true);
@@ -84,7 +89,7 @@ export default function AdminTeachers() {
           </div>
           <div className="field">
             <label>Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
           </div>
           <div className="cta-row">
             <button className="btn primary" type="submit" disabled={submitting}>

@@ -22,6 +22,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminStaff from "./pages/admin/AdminStaff";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
 import AdminWebsite from "./pages/admin/AdminWebsite";
@@ -103,6 +104,7 @@ export default function App() {
                     <Route path="classes" element={<AdminClasses />} />
                     <Route path="students" element={<AdminStudents />} />
                     <Route path="teachers" element={<AdminTeachers />} />
+                    <Route path="staff" element={<AdminStaff />} />
                     <Route path="routes" element={<AdminRoutes />} />
                     <Route path="leave" element={<AdminLeave />} />
                     <Route path="website" element={<AdminWebsite />} />

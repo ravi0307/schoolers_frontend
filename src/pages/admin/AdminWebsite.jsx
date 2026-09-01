@@ -4,10 +4,15 @@ import { useApi } from "../../hooks/useApi";
 import * as websiteApi from "../../api/website";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty } from "../../components/ui/Primitives";
+import ImageUpload from "../../components/ui/ImageUpload";
 import { apiErrorMessage } from "../../api/client";
 
 export default function AdminWebsite() {
   const { data: settings, loading, refetch } = useApi(() => websiteApi.getSettings().catch(() => null), []);
+  const { data: homePage, refetch: refetchHome } = useApi(
+    () => websiteApi.getPage("home").catch(() => null),
+    []
+  );
   const { data: testimonials, refetch: refetchTestimonials } = useApi(
     () => websiteApi.listTestimonials().catch(() => []),
     []
@@ -15,6 +20,12 @@ export default function AdminWebsite() {
   const toast = useToast();
 
   const [form, setForm] = useState({ school_name: "", tagline: "", icon_url: "", accent_color: "#023859" });
+  const [homeForm, setHomeForm] = useState({
+    banner_url: "",
+    heading: "",
+    subheading: "",
+    body: "",
+  });
   const [tName, setTName] = useState("");
   const [tRole, setTRole] = useState("");
   const [tQuote, setTQuote] = useState("");
@@ -30,12 +41,38 @@ export default function AdminWebsite() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (homePage) {
+      setHomeForm({
+        banner_url: homePage.banner_url || "",
+        heading: homePage.heading || "",
+        subheading: homePage.subheading || "",
+        body: homePage.body || "",
+      });
+    }
+  }, [homePage]);
+
   async function save(e) {
     e.preventDefault();
     try {
       await websiteApi.updateSettings(form);
       toast("Website updated");
       refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function saveHome(e) {
+    e.preventDefault();
+    if (!homeForm.heading.trim()) {
+      toast("Enter a home page heading");
+      return;
+    }
+    try {
+      await websiteApi.upsertPage("home", homeForm);
+      toast("Home page updated");
+      refetchHome();
     } catch (err) {
       toast(apiErrorMessage(err));
     }
@@ -82,15 +119,42 @@ export default function AdminWebsite() {
           <label>Tagline</label>
           <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} />
         </div>
-        <div className="field">
-          <label>Icon (image URL) — shown post-login, defaults to the platform icon</label>
-          <input value={form.icon_url} onChange={(e) => setForm({ ...form, icon_url: e.target.value })} placeholder="https://..." />
-        </div>
+        <ImageUpload
+          label="School icon"
+          hint="Shown after login and on your public site. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
+          value={form.icon_url}
+          onChange={(icon_url) => setForm({ ...form, icon_url })}
+          onError={toast}
+        />
         <div className="field">
           <label>Accent color</label>
           <input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} style={{ height: 40 }} />
         </div>
         <button className="btn primary sm" type="submit">Save Header</button>
+      </form>
+
+      <div className="section-label">Home page</div>
+      <form className="card white" onSubmit={saveHome}>
+        <ImageUpload
+          label="Banner image"
+          hint="Hero image at the top of your home page."
+          value={homeForm.banner_url}
+          onChange={(banner_url) => setHomeForm({ ...homeForm, banner_url })}
+          onError={toast}
+        />
+        <div className="field">
+          <label>Heading</label>
+          <input value={homeForm.heading} onChange={(e) => setHomeForm({ ...homeForm, heading: e.target.value })} required />
+        </div>
+        <div className="field">
+          <label>Subheading</label>
+          <input value={homeForm.subheading} onChange={(e) => setHomeForm({ ...homeForm, subheading: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Body</label>
+          <textarea value={homeForm.body} onChange={(e) => setHomeForm({ ...homeForm, body: e.target.value })} rows={4} />
+        </div>
+        <button className="btn primary sm" type="submit">Save Home Page</button>
       </form>
 
       <div className="section-label">Testimonials</div>

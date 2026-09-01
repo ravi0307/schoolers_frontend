@@ -2,6 +2,14 @@ import axios from "axios";
 
 export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
+/** Turn a stored upload path into a browser-loadable URL. */
+export function resolveMediaUrl(url) {
+  if (!url) return "";
+  if (/^(https?:|data:|blob:)/.test(url)) return url;
+  const origin = BASE_URL.replace(/\/api\/v1\/?$/, "");
+  return `${origin}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 const client = axios.create({ baseURL: BASE_URL });
 
 client.interceptors.request.use((config) => {
