@@ -139,8 +139,7 @@ export default function AdminRoutes() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Route</div>
-      <div className="scr-sub">Vehicles, drivers, and pickup/drop points</div>
+      <div className="scr-title">Commute Management</div>
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
