@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
@@ -73,8 +73,20 @@ function RouteDetail({ route, onBack, onChanged }) {
     }
   }
 
-  const assignedStudentIds = new Set((routeStudents || []).map((student) => student.student_id ?? student.id));
-  const availableStudents = (allStudents || []).filter((student) => !assignedStudentIds.has(student.student_id));
+  const studentById = useMemo(
+    () =>
+      new Map(
+        (allStudents || []).map((student) => [
+          String(student.student_id ?? student.id),
+          student,
+        ])
+      ),
+    [allStudents]
+  );
+  const assignedStudentIds = new Set((routeStudents || []).map((student) => String(student.student_id ?? student.id)));
+  const availableStudents = (allStudents || []).filter(
+    (student) => !assignedStudentIds.has(String(student.student_id ?? student.id))
+  );
 
   return (
     <>
@@ -125,16 +137,22 @@ function RouteDetail({ route, onBack, onChanged }) {
       <div className="section-label">Students on this route</div>
       <div className="card">
         {routeStudents && routeStudents.length ? (
-          routeStudents.map((rs) => (
-            <div key={rs.id || rs.student_id} className="listitem">
-              <div className="meta">
-                <b>{rs.student_name || rs.name || `Student #${rs.student_id}`}</b>
-                {rs.admission_no && <span>Admission no: {rs.admission_no}</span>}
+          routeStudents.map((rs) => {
+            const student = rs.student || studentById.get(String(rs.student_id ?? rs.id));
+            const studentName = rs.student_name || rs.name || student?.name || student?.full_name;
+            const admissionNo = rs.admission_no || student?.admission_no || student?.admission_number;
+
+            return (
+              <div key={rs.id || rs.student_id} className="listitem">
+                <div className="meta">
+                  <b>{studentName || "Student name unavailable"}</b>
+                  {admissionNo && <span>Admission no: {admissionNo}</span>}
+                </div>
+                <Pill tone={rs.status === "dropped" ? "ok" : rs.status === "picked" ? "info" : "mute"}>{rs.status}</Pill>
+                <button className="btn ghost sm" onClick={() => removeRouteStudent(rs.student_id)}>Remove</button>
               </div>
-              <Pill tone={rs.status === "dropped" ? "ok" : rs.status === "picked" ? "info" : "mute"}>{rs.status}</Pill>
-              <button className="btn ghost sm" onClick={() => removeRouteStudent(rs.student_id)}>Remove</button>
-            </div>
-          ))
+            );
+          })
         ) : (
           <Empty>No students assigned.</Empty>
         )}
@@ -146,7 +164,7 @@ function RouteDetail({ route, onBack, onChanged }) {
             <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
               <option value="">Select a student</option>
               {availableStudents.map((student) => (
-                <option key={student.student_id} value={student.student_id}>{student.name}</option>
+                <option key={student.student_id ?? student.id} value={student.student_id ?? student.id}>{student.name}</option>
               ))}
             </select>
           </div>
