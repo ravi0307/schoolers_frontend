@@ -2,6 +2,7 @@ import { useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
+import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
 import { apiErrorMessage } from "../../api/client";
@@ -13,10 +14,13 @@ function RouteDetail({ route, onBack, onChanged }) {
     () => transportApi.listRouteStudents(route.route_id),
     [route.route_id]
   );
+  const { data: allStudents } = useApi(() => peopleApi.listStudents({}), []);
   const [stopForm, setStopForm] = useState(false);
   const [stopName, setStopName] = useState("");
   const [stopTime, setStopTime] = useState("");
   const [stopType, setStopType] = useState("pickup");
+  const [studentForm, setStudentForm] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
 
   async function addStop(e) {
     e.preventDefault();
@@ -33,16 +37,50 @@ function RouteDetail({ route, onBack, onChanged }) {
   }
 
   async function removeStop(id) {
-    await transportApi.removeStop(id);
-    toast("Stop removed");
-    refetchStops();
+    try {
+      await transportApi.removeStop(id);
+      toast("Stop removed");
+      refetchStops();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
   }
+
+  async function addRouteStudent(e) {
+    e.preventDefault();
+    if (!selectedStudentId) {
+      toast("Pick a student to add to the route");
+      return;
+    }
+    try {
+      await transportApi.addStudentToRoute(route.route_id, Number(selectedStudentId));
+      toast("Student added to route");
+      setSelectedStudentId("");
+      setStudentForm(false);
+      refetchStudents();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function removeRouteStudent(studentId) {
+    try {
+      await transportApi.removeStudentFromRoute(route.route_id, studentId);
+      toast("Student removed from route");
+      refetchStudents();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  const assignedStudentIds = new Set((routeStudents || []).map((student) => student.student_id ?? student.id));
+  const availableStudents = (allStudents || []).filter((student) => !assignedStudentIds.has(student.student_id));
 
   return (
     <>
       <button className="btn ghost sm" onClick={onBack} style={{ marginBottom: 14 }}>← Back to Routes</button>
       <div className="scr-title">{route.name}</div>
-      <div className="scr-sub">{route.vehicle} · {route.driver_name}</div>
+      <div className="scr-sub">{route.vehicle || "Van"} · Driver: {route.driver_name || "Not assigned"}</div>
 
       <div className="section-label">Pickup &amp; drop points</div>
       <div className="card">
@@ -88,15 +126,38 @@ function RouteDetail({ route, onBack, onChanged }) {
       <div className="card">
         {routeStudents && routeStudents.length ? (
           routeStudents.map((rs) => (
-            <div key={rs.id} className="listitem">
-              <div className="meta"><b>Student #{rs.student_id}</b></div>
+            <div key={rs.id || rs.student_id} className="listitem">
+              <div className="meta">
+                <b>{rs.student_name || rs.name || `Student #${rs.student_id}`}</b>
+                {rs.admission_no && <span>Admission no: {rs.admission_no}</span>}
+              </div>
               <Pill tone={rs.status === "dropped" ? "ok" : rs.status === "picked" ? "info" : "mute"}>{rs.status}</Pill>
+              <button className="btn ghost sm" onClick={() => removeRouteStudent(rs.student_id)}>Remove</button>
             </div>
           ))
         ) : (
           <Empty>No students assigned.</Empty>
         )}
       </div>
+      {studentForm ? (
+        <form className="card white" onSubmit={addRouteStudent}>
+          <div className="field">
+            <label>Select student</label>
+            <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
+              <option value="">Select a student</option>
+              {availableStudents.map((student) => (
+                <option key={student.student_id} value={student.student_id}>{student.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit">Add Student</button>
+            <button className="btn ghost" type="button" onClick={() => setStudentForm(false)}>Cancel</button>
+          </div>
+        </form>
+      ) : (
+        <button className="btn gold block" onClick={() => setStudentForm(true)}>+ Add Student on Route</button>
+      )}
     </>
   );
 }
