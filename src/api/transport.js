@@ -4,6 +4,7 @@ export const listRoutes = () => client.get("/routes").then((r) => r.data);
 export const createRoute = (data) => client.post("/routes", data).then((r) => r.data);
 export const updateRoute = (id, data) => client.patch(`/routes/${id}`, data).then((r) => r.data);
 export const deleteRoute = (id) => client.delete(`/routes/${id}`);
+export const createVehicle = (data) => client.post("/vehicles", data).then((r) => r.data);
 
 export const listStops = (routeId) => client.get(`/routes/${routeId}/stops`).then((r) => r.data);
 export const addStop = (routeId, data) => client.post(`/routes/${routeId}/stops`, data).then((r) => r.data);

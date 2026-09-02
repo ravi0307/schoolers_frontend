@@ -249,6 +249,29 @@ export default function AdminRoutes() {
     } catch (err) {
       toast(apiErrorMessage(err));
     }
+
+    async function addVehicle() {
+      const number = vehicleDraft.trim();
+      if (!number) {
+        toast("Enter a vehicle number");
+        return;
+      }
+      try {
+        await transportApi.createVehicle({
+          vehicle_number: number,
+          vehicle_type: vehicleTypeDraft.trim(),
+          registration_number: vehicleRegistrationDraft.trim(),
+        });
+        setVehicleFormOpen(false);
+        setVehicleDraft("");
+        setVehicleTypeDraft("");
+        setVehicleRegistrationDraft("");
+        toast("Vehicle added");
+        refetch();
+      } catch (err) {
+        toast(apiErrorMessage(err));
+      }
+    }
   }
 
   async function updatePilot(routeId) {
@@ -359,7 +382,7 @@ export default function AdminRoutes() {
                   </div>
                   <div className="field"><label>Registration number</label><input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} /></div>
                   <div className="cta-row">
-                    <button className="btn primary sm" type="button" onClick={() => updateVehicle((data || [])[0]?.route_id)}>Save</button>
+                    <button className="btn primary sm" type="button" onClick={addVehicle}>Save</button>
                     <button className="btn ghost sm" type="button" onClick={() => { setVehicleFormOpen(false); setVehicleDraft(""); setVehicleTypeDraft(""); setVehicleRegistrationDraft(""); }}>Cancel</button>
                   </div>
                 </div>
