@@ -228,6 +228,29 @@ export default function AdminRoutes() {
     [data]
   );
 
+  async function addVehicle() {
+    const number = vehicleDraft.trim();
+    if (!number) {
+      toast("Enter a vehicle number");
+      return;
+    }
+    try {
+      await transportApi.createVehicle({
+        vehicle_number: number,
+        vehicle_type: vehicleTypeDraft.trim(),
+        registration_number: vehicleRegistrationDraft.trim(),
+      });
+      setVehicleFormOpen(false);
+      setVehicleDraft("");
+      setVehicleTypeDraft("");
+      setVehicleRegistrationDraft("");
+      toast("Vehicle added");
+      refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
   async function updateVehicle(routeId) {
     const route = (data || []).find((item) => item.route_id === routeId);
     if (!route || !vehicleDraft.trim()) return;
@@ -248,29 +271,6 @@ export default function AdminRoutes() {
       refetch();
     } catch (err) {
       toast(apiErrorMessage(err));
-    }
-
-    async function addVehicle() {
-      const number = vehicleDraft.trim();
-      if (!number) {
-        toast("Enter a vehicle number");
-        return;
-      }
-      try {
-        await transportApi.createVehicle({
-          vehicle_number: number,
-          vehicle_type: vehicleTypeDraft.trim(),
-          registration_number: vehicleRegistrationDraft.trim(),
-        });
-        setVehicleFormOpen(false);
-        setVehicleDraft("");
-        setVehicleTypeDraft("");
-        setVehicleRegistrationDraft("");
-        toast("Vehicle added");
-        refetch();
-      } catch (err) {
-        toast(apiErrorMessage(err));
-      }
     }
   }
 
