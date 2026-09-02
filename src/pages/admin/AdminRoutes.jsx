@@ -192,13 +192,21 @@ export default function AdminRoutes() {
   const [editingPilotId, setEditingPilotId] = useState(null);
   const [vehicleDraft, setVehicleDraft] = useState("");
   const [pilotDraft, setPilotDraft] = useState("");
+  const [vehicleTypeDraft, setVehicleTypeDraft] = useState("");
+  const [vehicleRegistrationDraft, setVehicleRegistrationDraft] = useState("");
+  const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
 
   const vehicleRecords = useMemo(
-    () => (data || []).filter((route) => route.vehicle).map((route) => ({
-      id: route.route_id,
-      value: route.vehicle,
-      routeName: route.name,
-    })),
+    () => (data || []).filter((route) => route.vehicle).map((route) => {
+      const rawVehicle = String(route.vehicle || "");
+      const parts = rawVehicle.split(" · ");
+      return {
+        id: route.route_id,
+        number: route.vehicle_number || route.vehicle_no || parts[1] || rawVehicle,
+        type: route.vehicle_type || route.type || parts[0] || "Vehicle",
+        registration: route.registration_number || route.registration_no || route.vehicle_registration_number || parts[1] || "Not provided",
+      };
+    }),
     [data]
   );
   const pilotRecords = useMemo(
@@ -216,11 +224,16 @@ export default function AdminRoutes() {
     try {
       await transportApi.updateRoute(routeId, {
         name: route.name,
-        vehicle: vehicleDraft.trim(),
+        vehicle: `${vehicleTypeDraft.trim() || "Vehicle"} · ${vehicleRegistrationDraft.trim() || vehicleDraft.trim()}`,
+        vehicle_number: vehicleDraft.trim(),
+        vehicle_type: vehicleTypeDraft.trim(),
+        registration_number: vehicleRegistrationDraft.trim(),
         driver_name: route.driver_name || "Not assigned",
       });
       setEditingVehicleId(null);
       setVehicleDraft("");
+      setVehicleTypeDraft("");
+      setVehicleRegistrationDraft("");
       toast("Vehicle updated");
       refetch();
     } catch (err) {
@@ -316,24 +329,63 @@ export default function AdminRoutes() {
             <div key={card.title} className="card white" style={{ minHeight: 220, padding: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>{card.title}</div>
-                <button className="btn ghost sm" type="button" onClick={() => setFormOpen(true)}>+ Add {card.title}</button>
+                <button className="btn ghost sm" type="button" onClick={() => card.title === "Vehicle" ? setVehicleFormOpen((open) => !open) : setFormOpen(true)}>+ Add {card.title}</button>
               </div>
+              {card.title === "Vehicle" && vehicleFormOpen && (
+                <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
+                  <div className="grid2">
+                    <div className="field"><label>Vehicle number</label><input value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} /></div>
+                    <div className="field"><label>Vehicle type</label><input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Bus" /></div>
+                  </div>
+                  <div className="field"><label>Registration number</label><input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} /></div>
+                  <div className="cta-row">
+                    <button className="btn primary sm" type="button" onClick={() => updateVehicle((data || [])[0]?.route_id)}>Save</button>
+                    <button className="btn ghost sm" type="button" onClick={() => { setVehicleFormOpen(false); setVehicleDraft(""); setVehicleTypeDraft(""); setVehicleRegistrationDraft(""); }}>Cancel</button>
+                  </div>
+                </div>
+              )}
               <div style={{ maxHeight: 300, overflowY: card.records.length > 10 ? "auto" : "visible" }}>
                 {card.records.length ? card.records.map((record) => (
                   <div key={record.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #dfeaf1" }}>
                     {card.editingId === record.id ? (
-                      <>
-                        <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
-                        <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
-                        <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
-                      </>
+                      card.title === "Vehicle" ? (
+                        <>
+                          <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} placeholder="Vehicle number" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" style={{ flex: 1, minWidth: 0 }} />
+                          <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
+                          <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+                          <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
+                          <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
+                        </>
+                      )
                     ) : (
                       <>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.value}</div>
-                          <div style={{ fontSize: 12, color: "#64748b" }}>{record.routeName}</div>
+                          {card.title === "Vehicle" ? (
+                            <>
+                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.number}</div>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>Type: {record.type} · Registration: {record.registration}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.value}</div>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>{record.routeName}</div>
+                            </>
+                          )}
                         </div>
-                        <button className="btn ghost sm" type="button" onClick={() => { card.setEditingId(record.id); card.setDraft(record.value); }}>Edit</button>
+                        <button className="btn ghost sm" type="button" onClick={() => {
+                          card.setEditingId(record.id);
+                          card.setDraft(card.title === "Vehicle" ? record.number : record.value);
+                          if (card.title === "Vehicle") {
+                            setVehicleTypeDraft(record.type);
+                            setVehicleRegistrationDraft(record.registration);
+                          }
+                        }}>Edit</button>
                       </>
                     )}
                   </div>
