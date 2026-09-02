@@ -195,6 +195,12 @@ export default function AdminRoutes() {
   const [vehicleTypeDraft, setVehicleTypeDraft] = useState("");
   const [vehicleRegistrationDraft, setVehicleRegistrationDraft] = useState("");
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
+  const [pilotLicenseDraft, setPilotLicenseDraft] = useState("");
+  const [pilotPhoneDraft, setPilotPhoneDraft] = useState("");
+  const [pilotAddressDraft, setPilotAddressDraft] = useState("");
+  const [pilotBloodGroupDraft, setPilotBloodGroupDraft] = useState("");
+  const [pilotEmailDraft, setPilotEmailDraft] = useState("");
+  const [pilotFormOpen, setPilotFormOpen] = useState(false);
 
   const vehicleRecords = useMemo(
     () => (data || []).filter((route) => route.vehicle).map((route) => {
@@ -213,7 +219,11 @@ export default function AdminRoutes() {
     () => (data || []).filter((route) => route.driver_name).map((route) => ({
       id: route.route_id,
       value: route.driver_name,
-      routeName: route.name,
+      licenseNumber: route.pilot_dl_number || route.driver_dl_number || route.driving_license_number || route.license_number || "Not provided",
+      phone: route.pilot_phone || route.driver_phone || route.phone || "Not provided",
+      address: route.pilot_address || route.driver_address || route.address || "Not provided",
+      bloodGroup: route.blood_group || route.pilot_blood_group || route.driver_blood_group || "Not provided",
+      email: route.pilot_email || route.driver_email || route.email || "Not provided",
     })),
     [data]
   );
@@ -249,9 +259,19 @@ export default function AdminRoutes() {
         name: route.name,
         vehicle: route.vehicle || "Van",
         driver_name: pilotDraft.trim(),
+        pilot_dl_number: pilotLicenseDraft.trim(),
+        pilot_phone: pilotPhoneDraft.trim(),
+        pilot_address: pilotAddressDraft.trim(),
+        blood_group: pilotBloodGroupDraft.trim(),
+        pilot_email: pilotEmailDraft.trim(),
       });
       setEditingPilotId(null);
       setPilotDraft("");
+      setPilotLicenseDraft("");
+      setPilotPhoneDraft("");
+      setPilotAddressDraft("");
+      setPilotBloodGroupDraft("");
+      setPilotEmailDraft("");
       toast("Pilot updated");
       refetch();
     } catch (err) {
@@ -329,7 +349,7 @@ export default function AdminRoutes() {
             <div key={card.title} className="card white" style={{ minHeight: 220, padding: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>{card.title}</div>
-                <button className="btn ghost sm" type="button" onClick={() => card.title === "Vehicle" ? setVehicleFormOpen((open) => !open) : setFormOpen(true)}>+ Add {card.title}</button>
+                <button className="btn ghost sm" type="button" onClick={() => card.title === "Vehicle" ? setVehicleFormOpen((open) => !open) : setPilotFormOpen((open) => !open)}>+ Add {card.title}</button>
               </div>
               {card.title === "Vehicle" && vehicleFormOpen && (
                 <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
@@ -341,6 +361,22 @@ export default function AdminRoutes() {
                   <div className="cta-row">
                     <button className="btn primary sm" type="button" onClick={() => updateVehicle((data || [])[0]?.route_id)}>Save</button>
                     <button className="btn ghost sm" type="button" onClick={() => { setVehicleFormOpen(false); setVehicleDraft(""); setVehicleTypeDraft(""); setVehicleRegistrationDraft(""); }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+              {card.title === "Pilot" && pilotFormOpen && (
+                <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
+                  <div className="field"><label>Pilot name</label><input value={pilotDraft} onChange={(e) => setPilotDraft(e.target.value)} /></div>
+                  <div className="grid2">
+                    <div className="field"><label>DL number</label><input value={pilotLicenseDraft} onChange={(e) => setPilotLicenseDraft(e.target.value)} /></div>
+                    <div className="field"><label>Phone number</label><input value={pilotPhoneDraft} onChange={(e) => setPilotPhoneDraft(e.target.value)} /></div>
+                    <div className="field"><label>Blood group</label><input value={pilotBloodGroupDraft} onChange={(e) => setPilotBloodGroupDraft(e.target.value)} placeholder="O+" /></div>
+                    <div className="field"><label>Email</label><input value={pilotEmailDraft} onChange={(e) => setPilotEmailDraft(e.target.value)} type="email" /></div>
+                  </div>
+                  <div className="field"><label>Address</label><input value={pilotAddressDraft} onChange={(e) => setPilotAddressDraft(e.target.value)} /></div>
+                  <div className="cta-row">
+                    <button className="btn primary sm" type="button" onClick={() => updatePilot((data || [])[0]?.route_id)}>Save</button>
+                    <button className="btn ghost sm" type="button" onClick={() => { setPilotFormOpen(false); setPilotDraft(""); setPilotLicenseDraft(""); setPilotPhoneDraft(""); setPilotAddressDraft(""); setPilotBloodGroupDraft(""); setPilotEmailDraft(""); }}>Cancel</button>
                   </div>
                 </div>
               )}
@@ -359,6 +395,11 @@ export default function AdminRoutes() {
                       ) : (
                         <>
                           <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+                          <input value={pilotLicenseDraft} onChange={(e) => setPilotLicenseDraft(e.target.value)} placeholder="DL number" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={pilotPhoneDraft} onChange={(e) => setPilotPhoneDraft(e.target.value)} placeholder="Phone number" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={pilotAddressDraft} onChange={(e) => setPilotAddressDraft(e.target.value)} placeholder="Address" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={pilotBloodGroupDraft} onChange={(e) => setPilotBloodGroupDraft(e.target.value)} placeholder="Blood group" style={{ flex: 1, minWidth: 0 }} />
+                          <input value={pilotEmailDraft} onChange={(e) => setPilotEmailDraft(e.target.value)} placeholder="Email" type="email" style={{ flex: 1, minWidth: 0 }} />
                           <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
                           <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
                         </>
@@ -374,7 +415,9 @@ export default function AdminRoutes() {
                           ) : (
                             <>
                               <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.value}</div>
-                              <div style={{ fontSize: 12, color: "#64748b" }}>{record.routeName}</div>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>
+                                DL: {record.licenseNumber} · Phone: {record.phone} · Address: {record.address} · Blood group: {record.bloodGroup} · Email: {record.email}
+                              </div>
                             </>
                           )}
                         </div>
@@ -384,6 +427,12 @@ export default function AdminRoutes() {
                           if (card.title === "Vehicle") {
                             setVehicleTypeDraft(record.type);
                             setVehicleRegistrationDraft(record.registration);
+                          } else {
+                            setPilotLicenseDraft(record.licenseNumber === "Not provided" ? "" : record.licenseNumber);
+                            setPilotPhoneDraft(record.phone === "Not provided" ? "" : record.phone);
+                            setPilotAddressDraft(record.address === "Not provided" ? "" : record.address);
+                            setPilotBloodGroupDraft(record.bloodGroup === "Not provided" ? "" : record.bloodGroup);
+                            setPilotEmailDraft(record.email === "Not provided" ? "" : record.email);
                           }
                         }}>Edit</button>
                       </>
