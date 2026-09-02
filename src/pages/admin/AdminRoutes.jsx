@@ -143,21 +143,26 @@ export default function AdminRoutes() {
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
-        <div className="card">
-          {data && data.length ? (
-            data.map((r) => (
-              <div key={r.route_id} className="listitem" onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
-                <div className="avatar r">🚌</div>
-                <div className="meta">
-                  <b>{r.name}</b>
-                  <span>{r.driver_name}</span>
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "16px 18px", borderBottom: "1px solid #dfeaf1", fontSize: 14, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#334155" }}>
+            Route
+          </div>
+          <div style={{ padding: "0 18px" }}>
+            {data && data.length ? (
+              data.map((r) => (
+                <div key={r.route_id} className="listitem" onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
+                  <div className="avatar r">🚌</div>
+                  <div className="meta">
+                    <b>{r.name}</b>
+                    <span>{r.driver_name}</span>
+                  </div>
+                  <Pill tone={r.status === "On route" ? "ok" : "mute"}>{r.status}</Pill>
                 </div>
-                <Pill tone={r.status === "On route" ? "ok" : "mute"}>{r.status}</Pill>
-              </div>
-            ))
-          ) : (
-            <Empty>No routes yet.</Empty>
-          )}
+              ))
+            ) : (
+              <Empty>No routes yet.</Empty>
+            )}
+          </div>
         </div>
       )}
 
