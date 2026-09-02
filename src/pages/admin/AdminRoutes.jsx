@@ -188,6 +188,63 @@ export default function AdminRoutes() {
   const [name, setName] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [driver, setDriver] = useState("");
+  const [editingVehicleId, setEditingVehicleId] = useState(null);
+  const [editingPilotId, setEditingPilotId] = useState(null);
+  const [vehicleDraft, setVehicleDraft] = useState("");
+  const [pilotDraft, setPilotDraft] = useState("");
+
+  const vehicleRecords = useMemo(
+    () => (data || []).filter((route) => route.vehicle).map((route) => ({
+      id: route.route_id,
+      value: route.vehicle,
+      routeName: route.name,
+    })),
+    [data]
+  );
+  const pilotRecords = useMemo(
+    () => (data || []).filter((route) => route.driver_name).map((route) => ({
+      id: route.route_id,
+      value: route.driver_name,
+      routeName: route.name,
+    })),
+    [data]
+  );
+
+  async function updateVehicle(routeId) {
+    const route = (data || []).find((item) => item.route_id === routeId);
+    if (!route || !vehicleDraft.trim()) return;
+    try {
+      await transportApi.updateRoute(routeId, {
+        name: route.name,
+        vehicle: vehicleDraft.trim(),
+        driver_name: route.driver_name || "Not assigned",
+      });
+      setEditingVehicleId(null);
+      setVehicleDraft("");
+      toast("Vehicle updated");
+      refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function updatePilot(routeId) {
+    const route = (data || []).find((item) => item.route_id === routeId);
+    if (!route || !pilotDraft.trim()) return;
+    try {
+      await transportApi.updateRoute(routeId, {
+        name: route.name,
+        vehicle: route.vehicle || "Van",
+        driver_name: pilotDraft.trim(),
+      });
+      setEditingPilotId(null);
+      setPilotDraft("");
+      toast("Pilot updated");
+      refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -222,6 +279,7 @@ export default function AdminRoutes() {
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
+        <>
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 18px", borderBottom: "1px solid #dfeaf1" }}>
             <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#334155" }}>
@@ -250,6 +308,41 @@ export default function AdminRoutes() {
             )}
           </div>
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16, marginTop: 18 }}>
+          {[
+            { title: "Vehicle", records: vehicleRecords, editingId: editingVehicleId, setEditingId: setEditingVehicleId, draft: vehicleDraft, setDraft: setVehicleDraft, save: updateVehicle },
+            { title: "Pilot", records: pilotRecords, editingId: editingPilotId, setEditingId: setEditingPilotId, draft: pilotDraft, setDraft: setPilotDraft, save: updatePilot },
+          ].map((card) => (
+            <div key={card.title} className="card white" style={{ minHeight: 220, padding: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>{card.title}</div>
+                <button className="btn ghost sm" type="button" onClick={() => setFormOpen(true)}>+ Add {card.title}</button>
+              </div>
+              <div style={{ maxHeight: 300, overflowY: card.records.length > 10 ? "auto" : "visible" }}>
+                {card.records.length ? card.records.map((record) => (
+                  <div key={record.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #dfeaf1" }}>
+                    {card.editingId === record.id ? (
+                      <>
+                        <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+                        <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
+                        <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.value}</div>
+                          <div style={{ fontSize: 12, color: "#64748b" }}>{record.routeName}</div>
+                        </div>
+                        <button className="btn ghost sm" type="button" onClick={() => { card.setEditingId(record.id); card.setDraft(record.value); }}>Edit</button>
+                      </>
+                    )}
+                  </div>
+                )) : <Empty>No {card.title.toLowerCase()} records yet.</Empty>}
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
 
       {formOpen && (
