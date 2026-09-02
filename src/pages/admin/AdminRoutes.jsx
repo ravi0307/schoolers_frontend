@@ -144,8 +144,15 @@ export default function AdminRoutes() {
       <ErrorBanner message={error} />
       {!loading && !error && (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: "16px 18px", borderBottom: "1px solid #dfeaf1", fontSize: 14, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#334155" }}>
-            Route
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 18px", borderBottom: "1px solid #dfeaf1" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#334155" }}>
+              Route
+            </div>
+            {!formOpen && (
+              <button className="btn ghost sm" type="button" onClick={() => setFormOpen(true)}>
+                + Add Route
+              </button>
+            )}
           </div>
           <div style={{ padding: "0 18px" }}>
             {data && data.length ? (
@@ -166,7 +173,7 @@ export default function AdminRoutes() {
         </div>
       )}
 
-      {formOpen ? (
+      {formOpen && (
         <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
           <div className="field"><label>Route name</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="grid2">
@@ -178,8 +185,6 @@ export default function AdminRoutes() {
             <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
           </div>
         </form>
-      ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Route</button>
       )}
     </AdminShell>
   );
