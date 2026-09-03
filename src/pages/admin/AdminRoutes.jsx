@@ -22,6 +22,7 @@ function RouteDetail({ route, onBack, onChanged }) {
   const [dropTime, setDropTime] = useState(EMPTY_TIME);
   const [savingStop, setSavingStop] = useState(false);
   const savedPoints = useRef(new Set());
+  const attemptedSave = useRef(false);
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
@@ -30,6 +31,7 @@ function RouteDetail({ route, onBack, onChanged }) {
     setPickupTime(EMPTY_TIME);
     setDropTime(EMPTY_TIME);
     savedPoints.current.clear();
+    attemptedSave.current = false;
     setStopForm(false);
   }
 
@@ -63,10 +65,17 @@ function RouteDetail({ route, onBack, onChanged }) {
 
     setSavingStop(true);
     try {
-      // A retry after a partial failure must not re-create the points that got through —
-      // neither the ones this form saved nor the ones a lost response left on the server, so
-      // the existing points are read back here rather than taken from the rendered list.
-      const existing = await transportApi.listStops(route.route_id).catch(() => []);
+      // A retry must not re-create the points that got through — neither the ones this form
+      // saved nor the ones a lost response left on the server — so the existing points are read
+      // back here rather than taken from the rendered list. Nothing can have been duplicated yet
+      // on the first attempt, so only a retry depends on that read succeeding.
+      let existing = [];
+      try {
+        existing = await transportApi.listStops(route.route_id);
+      } catch (err) {
+        if (attemptedSave.current) throw err;
+      }
+      attemptedSave.current = true;
 
       for (const point of points) {
         const key = `${name}|${point.stop_type}|${point.stop_time}`;
