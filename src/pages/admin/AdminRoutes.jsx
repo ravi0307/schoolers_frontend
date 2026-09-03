@@ -63,11 +63,14 @@ function RouteDetail({ route, onBack, onChanged }) {
 
     setSavingStop(true);
     try {
+      // A retry after a partial failure must not re-create the points that got through —
+      // neither the ones this form saved nor the ones a lost response left on the server, so
+      // the existing points are read back here rather than taken from the rendered list.
+      const existing = await transportApi.listStops(route.route_id).catch(() => []);
+
       for (const point of points) {
-        // A retry after a partial failure must not re-create the points that got through —
-        // neither the ones this form saved nor the ones a lost response left on the server.
         const key = `${name}|${point.stop_type}|${point.stop_time}`;
-        const alreadyOnServer = (stops || []).some(
+        const alreadyOnServer = existing.some(
           (s) => s.name === name && s.stop_type === point.stop_type && s.stop_time === point.stop_time
         );
         if (savedPoints.current.has(key) || alreadyOnServer) continue;
