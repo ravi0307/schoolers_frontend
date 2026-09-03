@@ -6,7 +6,7 @@ const NAV = [
   { to: "/admin/students", icon: "🧑‍🎓", label: "Students" },
   { to: "/admin/teachers", icon: "🧑‍🏫", label: "Teachers" },
   { to: "/admin/staff", icon: "👥", label: "Staff" },
-  { to: "/admin/routes", icon: "🚌", label: "Routes" },
+  { to: "/admin/routes", icon: "🚌", label: "Commute" },
   { to: "/admin/leave", icon: "📅", label: "Leave Requests" },
   { to: "/admin/website", icon: "🌐", label: "School Website" },
   { to: "/admin/notifications", icon: "🔔", label: "Notifications" },
