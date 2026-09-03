@@ -5,6 +5,7 @@ import * as transportApi from "../../api/transport";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import TimeSelect, { EMPTY_TIME, formatTime } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 
 function RouteDetail({ route, onBack, onChanged }) {
@@ -17,22 +18,44 @@ function RouteDetail({ route, onBack, onChanged }) {
   const { data: allStudents } = useApi(() => peopleApi.listStudents({}), []);
   const [stopForm, setStopForm] = useState(false);
   const [stopName, setStopName] = useState("");
-  const [stopTime, setStopTime] = useState("");
-  const [stopType, setStopType] = useState("pickup");
+  const [pickupTime, setPickupTime] = useState(EMPTY_TIME);
+  const [dropTime, setDropTime] = useState(EMPTY_TIME);
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
+  function resetStopForm() {
+    setStopName("");
+    setPickupTime(EMPTY_TIME);
+    setDropTime(EMPTY_TIME);
+    setStopForm(false);
+  }
+
   async function addStop(e) {
     e.preventDefault();
+    const points = [
+      { stop_type: "pickup", stop_time: formatTime(pickupTime) },
+      { stop_type: "drop", stop_time: formatTime(dropTime) },
+    ].filter((point) => point.stop_time);
+
+    if (!stopName.trim()) {
+      toast("Enter a stop name");
+      return;
+    }
+    if (!points.length) {
+      toast("Set a pickup or drop time");
+      return;
+    }
+
     try {
-      await transportApi.addStop(route.route_id, { name: stopName, stop_time: stopTime, stop_type: stopType });
-      toast("Stop added");
-      setStopName("");
-      setStopTime("");
-      setStopForm(false);
+      for (const point of points) {
+        await transportApi.addStop(route.route_id, { name: stopName.trim(), ...point });
+      }
+      toast(points.length > 1 ? "Pickup & drop points added" : "Stop added");
+      resetStopForm();
       refetchStops();
     } catch (err) {
       toast(apiErrorMessage(err));
+      refetchStops();
     }
   }
 
@@ -116,18 +139,12 @@ function RouteDetail({ route, onBack, onChanged }) {
         <form className="card white" onSubmit={addStop}>
           <div className="field"><label>Stop name</label><input value={stopName} onChange={(e) => setStopName(e.target.value)} /></div>
           <div className="grid2">
-            <div className="field"><label>Time</label><input value={stopTime} onChange={(e) => setStopTime(e.target.value)} placeholder="7:50 AM" /></div>
-            <div className="field">
-              <label>Type</label>
-              <select value={stopType} onChange={(e) => setStopType(e.target.value)}>
-                <option value="pickup">Pickup</option>
-                <option value="drop">Drop</option>
-              </select>
-            </div>
+            <TimeSelect label="Pickup time" value={pickupTime} onChange={setPickupTime} />
+            <TimeSelect label="Drop time" value={dropTime} onChange={setDropTime} />
           </div>
           <div className="cta-row">
             <button className="btn primary" type="submit">Save Point</button>
-            <button className="btn ghost" type="button" onClick={() => setStopForm(false)}>Cancel</button>
+            <button className="btn ghost" type="button" onClick={resetStopForm}>Cancel</button>
           </div>
         </form>
       ) : (
