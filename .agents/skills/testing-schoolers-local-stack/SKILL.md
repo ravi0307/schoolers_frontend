@@ -69,10 +69,11 @@ npm run dev   # http://localhost:5173
 
 Node 20.18.1 triggers a Vite "wants 20.19+" warning; dev and build still work.
 
-## 4. Test accounts (password `test1234`)
+## 4. Test accounts
 
-`admin1` (School Admin, school_id 1 — the role needed for `/admin/routes`),
-`teacher1`, `parent225`, `pilot1`, `meera.nair` (master admin).
+The seeded usernames and their shared password are listed under "Test accounts" in the
+frontend `README.md`. Use the School Admin one (`admin1`, school_id 1) — that is the role
+`/admin/routes` requires.
 
 ## 5. Route stops feature
 
