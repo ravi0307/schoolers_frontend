@@ -60,7 +60,7 @@ curl -s -X POST localhost:8000/api/v1/auth/login -H 'Content-Type: application/j
 ## 3. Frontend
 
 ```bash
-cd /home/ubuntu/repos/schoolers-frontend
+cd /home/ubuntu/repos/schoolers_frontend
 npm install
 # npm optional-deps bug: native bindings are missing after a plain install
 npm install --no-save @rolldown/binding-linux-x64-gnu@1.2.2 @oxlint/binding-linux-x64-gnu@1.75.0
