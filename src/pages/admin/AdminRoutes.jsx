@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 
 function RouteDetail({ route, onBack, onChanged }) {
@@ -17,22 +18,81 @@ function RouteDetail({ route, onBack, onChanged }) {
   const { data: allStudents } = useApi(() => peopleApi.listStudents({}), []);
   const [stopForm, setStopForm] = useState(false);
   const [stopName, setStopName] = useState("");
-  const [stopTime, setStopTime] = useState("");
-  const [stopType, setStopType] = useState("pickup");
+  const [pickupTime, setPickupTime] = useState(EMPTY_TIME);
+  const [dropTime, setDropTime] = useState(EMPTY_TIME);
+  const [savingStop, setSavingStop] = useState(false);
+  const savedPoints = useRef(new Set());
+  const attemptedSave = useRef(false);
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
+  function resetStopForm() {
+    setStopName("");
+    setPickupTime(EMPTY_TIME);
+    setDropTime(EMPTY_TIME);
+    savedPoints.current.clear();
+    attemptedSave.current = false;
+    setStopForm(false);
+  }
+
   async function addStop(e) {
     e.preventDefault();
+    if (savingStop) return;
+
+    const name = stopName.trim();
+    if (!name) {
+      toast("Enter a stop name");
+      return;
+    }
+    if (isTimeIncomplete(pickupTime)) {
+      toast("Pick both an hour and a minute for the pickup time");
+      return;
+    }
+    if (isTimeIncomplete(dropTime)) {
+      toast("Pick both an hour and a minute for the drop time");
+      return;
+    }
+
+    const points = [
+      { stop_type: "pickup", stop_time: formatTime(pickupTime) },
+      { stop_type: "drop", stop_time: formatTime(dropTime) },
+    ].filter((point) => point.stop_time);
+
+    if (!points.length) {
+      toast("Set a pickup or drop time");
+      return;
+    }
+
+    setSavingStop(true);
     try {
-      await transportApi.addStop(route.route_id, { name: stopName, stop_time: stopTime, stop_type: stopType });
-      toast("Stop added");
-      setStopName("");
-      setStopTime("");
-      setStopForm(false);
-      refetchStops();
+      // A retry must not re-create the points that got through — neither the ones this form
+      // saved nor the ones a lost response left on the server — so the existing points are read
+      // back here rather than taken from the rendered list. Nothing can have been duplicated yet
+      // on the first attempt, so only a retry depends on that read succeeding.
+      let existing = [];
+      try {
+        existing = await transportApi.listStops(route.route_id);
+      } catch (err) {
+        if (attemptedSave.current) throw err;
+      }
+      attemptedSave.current = true;
+
+      for (const point of points) {
+        const key = `${name}|${point.stop_type}|${point.stop_time}`;
+        const alreadyOnServer = existing.some(
+          (s) => s.name === name && s.stop_type === point.stop_type && s.stop_time === point.stop_time
+        );
+        if (savedPoints.current.has(key) || alreadyOnServer) continue;
+        await transportApi.addStop(route.route_id, { name, ...point });
+        savedPoints.current.add(key);
+      }
+      toast(points.length > 1 ? "Pickup & drop points added" : "Stop added");
+      resetStopForm();
     } catch (err) {
       toast(apiErrorMessage(err));
+    } finally {
+      setSavingStop(false);
+      refetchStops();
     }
   }
 
@@ -116,18 +176,14 @@ function RouteDetail({ route, onBack, onChanged }) {
         <form className="card white" onSubmit={addStop}>
           <div className="field"><label>Stop name</label><input value={stopName} onChange={(e) => setStopName(e.target.value)} /></div>
           <div className="grid2">
-            <div className="field"><label>Time</label><input value={stopTime} onChange={(e) => setStopTime(e.target.value)} placeholder="7:50 AM" /></div>
-            <div className="field">
-              <label>Type</label>
-              <select value={stopType} onChange={(e) => setStopType(e.target.value)}>
-                <option value="pickup">Pickup</option>
-                <option value="drop">Drop</option>
-              </select>
-            </div>
+            <TimeSelect label="Pickup time" value={pickupTime} onChange={setPickupTime} />
+            <TimeSelect label="Drop time" value={dropTime} onChange={setDropTime} />
           </div>
           <div className="cta-row">
-            <button className="btn primary" type="submit">Save Point</button>
-            <button className="btn ghost" type="button" onClick={() => setStopForm(false)}>Cancel</button>
+            <button className="btn primary" type="submit" disabled={savingStop}>
+              {savingStop ? "Saving..." : "Save Point"}
+            </button>
+            <button className="btn ghost" type="button" onClick={resetStopForm} disabled={savingStop}>Cancel</button>
           </div>
         </form>
       ) : (
