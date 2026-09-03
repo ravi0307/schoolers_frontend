@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
-import TimeSelect, { EMPTY_TIME, formatTime } from "../../components/ui/TimeSelect";
+import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 
 function RouteDetail({ route, onBack, onChanged }) {
@@ -20,6 +20,8 @@ function RouteDetail({ route, onBack, onChanged }) {
   const [stopName, setStopName] = useState("");
   const [pickupTime, setPickupTime] = useState(EMPTY_TIME);
   const [dropTime, setDropTime] = useState(EMPTY_TIME);
+  const [savingStop, setSavingStop] = useState(false);
+  const savedPoints = useRef(new Set());
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
@@ -27,34 +29,53 @@ function RouteDetail({ route, onBack, onChanged }) {
     setStopName("");
     setPickupTime(EMPTY_TIME);
     setDropTime(EMPTY_TIME);
+    savedPoints.current.clear();
     setStopForm(false);
   }
 
   async function addStop(e) {
     e.preventDefault();
+    if (savingStop) return;
+
+    const name = stopName.trim();
+    if (!name) {
+      toast("Enter a stop name");
+      return;
+    }
+    if (isTimeIncomplete(pickupTime)) {
+      toast("Pick both an hour and a minute for the pickup time");
+      return;
+    }
+    if (isTimeIncomplete(dropTime)) {
+      toast("Pick both an hour and a minute for the drop time");
+      return;
+    }
+
     const points = [
       { stop_type: "pickup", stop_time: formatTime(pickupTime) },
       { stop_type: "drop", stop_time: formatTime(dropTime) },
     ].filter((point) => point.stop_time);
 
-    if (!stopName.trim()) {
-      toast("Enter a stop name");
-      return;
-    }
     if (!points.length) {
       toast("Set a pickup or drop time");
       return;
     }
 
+    setSavingStop(true);
     try {
       for (const point of points) {
-        await transportApi.addStop(route.route_id, { name: stopName.trim(), ...point });
+        // A retry after a partial failure must not re-create the points that got through.
+        const key = `${name}|${point.stop_type}|${point.stop_time}`;
+        if (savedPoints.current.has(key)) continue;
+        await transportApi.addStop(route.route_id, { name, ...point });
+        savedPoints.current.add(key);
       }
       toast(points.length > 1 ? "Pickup & drop points added" : "Stop added");
       resetStopForm();
-      refetchStops();
     } catch (err) {
       toast(apiErrorMessage(err));
+    } finally {
+      setSavingStop(false);
       refetchStops();
     }
   }
@@ -143,8 +164,10 @@ function RouteDetail({ route, onBack, onChanged }) {
             <TimeSelect label="Drop time" value={dropTime} onChange={setDropTime} />
           </div>
           <div className="cta-row">
-            <button className="btn primary" type="submit">Save Point</button>
-            <button className="btn ghost" type="button" onClick={resetStopForm}>Cancel</button>
+            <button className="btn primary" type="submit" disabled={savingStop}>
+              {savingStop ? "Saving..." : "Save Point"}
+            </button>
+            <button className="btn ghost" type="button" onClick={resetStopForm} disabled={savingStop}>Cancel</button>
           </div>
         </form>
       ) : (

@@ -3,7 +3,16 @@ const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
 
 export const EMPTY_TIME = { hour: "", minute: "", meridiem: "AM" };
 
-/** Builds the "7:50 AM" string the API stores, or "" when nothing is selected. */
+export function isTimeEmpty({ hour, minute }) {
+  return !hour && !minute;
+}
+
+/** True when exactly one of hour/minute is picked — not saveable, not "left blank" either. */
+export function isTimeIncomplete(time) {
+  return !isTimeEmpty(time) && !(time.hour && time.minute);
+}
+
+/** Builds the "7:50 AM" string the API stores, or "" when the time isn't fully picked. */
 export function formatTime({ hour, minute, meridiem }) {
   if (!hour || !minute) return "";
   return `${hour}:${minute} ${meridiem}`;
