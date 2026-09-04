@@ -156,10 +156,21 @@ body {
 .card.white { background: var(--paper-light); }
 .scr-title { font-size: 22px; font-weight: 700; margin: 0 0 2px; }
 .scr-sub { color: var(--ink-soft); font-size: 12.5px; margin: 0 0 18px; }
+.route-assignment { display: flex; align-items: flex-start; gap: 12px; }
+.route-assignment .scr-sub { flex: 1; }
+.route-assignment-form { margin-top: 10px; }
 .section-label {
   font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
   color: var(--ink-soft); font-weight: 700; margin: 20px 0 10px;
 }
+.table-card { padding: 0; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; min-width: 620px; }
+.data-table th, .data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; }
+.data-table th { color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; background: var(--paper-light); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table td:first-child { font-weight: 700; }
+.table-actions { display: flex; gap: 7px; }
 .btn {
   font-weight: 600; font-size: 13px; border: none; padding: 10px 16px;
   border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
