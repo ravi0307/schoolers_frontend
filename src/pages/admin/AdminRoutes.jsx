@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
@@ -8,31 +8,111 @@ import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitive
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 
-function RouteDetail({ route, onBack, onChanged }) {
+function parseTime(value) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  return match
+    ? { hour: match[1], minute: match[2], meridiem: match[3].toUpperCase() }
+    : EMPTY_TIME;
+}
+
+function firstValue(...values) {
+  return values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+}
+
+function studentIdOf(student) {
+  return firstValue(student?.student_id, student?.id);
+}
+
+function studentNameOf(student) {
+  if (!student) return "";
+  return firstValue(
+    student.student_name,
+    student.name,
+    student.full_name,
+    [student.first_name, student.last_name].filter(Boolean).join(" ")
+  );
+}
+
+function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords }) {
   const toast = useToast();
+  const [routeSummary, setRouteSummary] = useState(route);
+  const [routeEditOpen, setRouteEditOpen] = useState(false);
+  const [routeVehicle, setRouteVehicle] = useState(route.vehicle || "");
+  const [routeDriver, setRouteDriver] = useState(route.driver_name || "");
+  const [savingRoute, setSavingRoute] = useState(false);
   const { data: stops, refetch: refetchStops } = useApi(() => transportApi.listStops(route.route_id), [route.route_id]);
   const { data: routeStudents, refetch: refetchStudents } = useApi(
     () => transportApi.listRouteStudents(route.route_id),
     [route.route_id]
   );
-  const { data: allStudents } = useApi(() => peopleApi.listStudents({}), []);
+  const { data: allStudents, refetch: refetchAvailableStudents } = useApi(
+    () => peopleApi.listStudents({ unassigned_only: true }),
+    []
+  );
   const [stopForm, setStopForm] = useState(false);
   const [stopName, setStopName] = useState("");
   const [pickupTime, setPickupTime] = useState(EMPTY_TIME);
   const [dropTime, setDropTime] = useState(EMPTY_TIME);
   const [savingStop, setSavingStop] = useState(false);
-  const savedPoints = useRef(new Set());
-  const attemptedSave = useRef(false);
+  const [editingStop, setEditingStop] = useState(null);
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+
+  function openRouteEditor() {
+    setRouteVehicle(routeSummary.vehicle || "");
+    setRouteDriver(routeSummary.driver_name || "");
+    setRouteEditOpen(true);
+  }
+
+  async function updateRouteAssignment(e) {
+    e.preventDefault();
+    if (!routeVehicle || !routeDriver) {
+      toast("Select a vehicle and driver");
+      return;
+    }
+
+    setSavingRoute(true);
+    try {
+      await transportApi.updateRoute(route.route_id, {
+        vehicle: routeVehicle,
+        driver_name: routeDriver,
+      });
+      setRouteSummary((current) => ({ ...current, vehicle: routeVehicle, driver_name: routeDriver }));
+      setRouteEditOpen(false);
+      toast("Route assignment updated");
+      onChanged();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setSavingRoute(false);
+    }
+  }
 
   function resetStopForm() {
     setStopName("");
     setPickupTime(EMPTY_TIME);
     setDropTime(EMPTY_TIME);
-    savedPoints.current.clear();
-    attemptedSave.current = false;
+    setEditingStop(null);
     setStopForm(false);
+  }
+
+  async function removeStopGroup(stop) {
+    try {
+      const stopIds = [stop.pickup_stop_id, stop.drop_stop_id].filter(Boolean);
+      await Promise.all(stopIds.map((stopId) => transportApi.removeStop(stopId)));
+      toast("Stop removed");
+      refetchStops();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  function editStop(stop) {
+    setEditingStop(stop);
+    setStopName(stop.stop_name);
+    setPickupTime(parseTime(stop.pickup_time));
+    setDropTime(parseTime(stop.drop_time));
+    setStopForm(true);
   }
 
   async function addStop(e) {
@@ -53,56 +133,39 @@ function RouteDetail({ route, onBack, onChanged }) {
       return;
     }
 
-    const points = [
-      { stop_type: "pickup", stop_time: formatTime(pickupTime) },
-      { stop_type: "drop", stop_time: formatTime(dropTime) },
-    ].filter((point) => point.stop_time);
-
-    if (!points.length) {
-      toast("Set a pickup or drop time");
-      return;
-    }
+    const pickup = formatTime(pickupTime);
+    const drop = formatTime(dropTime);
 
     setSavingStop(true);
     try {
-      // A retry must not re-create the points that got through — neither the ones this form
-      // saved nor the ones a lost response left on the server — so the existing points are read
-      // back here rather than taken from the rendered list. Nothing can have been duplicated yet
-      // on the first attempt, so only a retry depends on that read succeeding.
-      let existing = [];
-      try {
-        existing = await transportApi.listStops(route.route_id);
-      } catch (err) {
-        if (attemptedSave.current) throw err;
+      if (editingStop) {
+        await transportApi.updateStop(editingStop.stop_id, {
+          stop_name: name,
+          pickup_time: pickup,
+          pickup_order: editingStop.pickup_order,
+          drop_time: drop,
+          drop_order: editingStop.drop_order,
+        });
+      } else {
+        const nextOrder = (stops || []).reduce(
+          (max, stop) => Math.max(max, stop.pickup_order || 0, stop.drop_order || 0),
+          0
+        ) + 1;
+        await transportApi.addStop(route.route_id, {
+          stop_name: name,
+          pickup_time: pickup,
+          pickup_order: nextOrder,
+          drop_time: drop,
+          drop_order: nextOrder,
+        });
       }
-      attemptedSave.current = true;
-
-      for (const point of points) {
-        const key = `${name}|${point.stop_type}|${point.stop_time}`;
-        const alreadyOnServer = existing.some(
-          (s) => s.name === name && s.stop_type === point.stop_type && s.stop_time === point.stop_time
-        );
-        if (savedPoints.current.has(key) || alreadyOnServer) continue;
-        await transportApi.addStop(route.route_id, { name, ...point });
-        savedPoints.current.add(key);
-      }
-      toast(points.length > 1 ? "Pickup & drop points added" : "Stop added");
+      toast(editingStop ? "Stop updated" : "Pickup & drop points added");
       resetStopForm();
     } catch (err) {
       toast(apiErrorMessage(err));
     } finally {
       setSavingStop(false);
       refetchStops();
-    }
-  }
-
-  async function removeStop(id) {
-    try {
-      await transportApi.removeStop(id);
-      toast("Stop removed");
-      refetchStops();
-    } catch (err) {
-      toast(apiErrorMessage(err));
     }
   }
 
@@ -128,6 +191,7 @@ function RouteDetail({ route, onBack, onChanged }) {
       await transportApi.removeStudentFromRoute(route.route_id, studentId);
       toast("Student removed from route");
       refetchStudents();
+      refetchAvailableStudents();
     } catch (err) {
       toast(apiErrorMessage(err));
     }
@@ -137,7 +201,7 @@ function RouteDetail({ route, onBack, onChanged }) {
     () =>
       new Map(
         (allStudents || []).map((student) => [
-          String(student.student_id ?? student.id),
+          String(studentIdOf(student)),
           student,
         ])
       ),
@@ -147,26 +211,77 @@ function RouteDetail({ route, onBack, onChanged }) {
   const availableStudents = (allStudents || []).filter(
     (student) => !assignedStudentIds.has(String(student.student_id ?? student.id))
   );
-
   return (
     <>
       <button className="btn ghost sm" onClick={onBack} style={{ marginBottom: 14 }}>← Back to Routes</button>
-      <div className="scr-title">{route.name}</div>
-      <div className="scr-sub">{route.vehicle || "Van"} · Driver: {route.driver_name || "Not assigned"}</div>
+      <div className="scr-title">{routeSummary.name}</div>
+      <div className="route-assignment">
+        <div className="scr-sub">{routeSummary.vehicle || "Van"} · Driver: {routeSummary.driver_name || "Not assigned"}</div>
+        <button className="btn ghost sm" type="button" onClick={openRouteEditor}>Edit</button>
+      </div>
+      {routeEditOpen && (
+        <form className="card white route-assignment-form" onSubmit={updateRouteAssignment}>
+          <div className="grid2">
+            <div className="field">
+              <label>Vehicle</label>
+              <select value={routeVehicle} onChange={(e) => setRouteVehicle(e.target.value)} disabled={!vehicleRecords.length}>
+                <option value="">Select vehicle</option>
+                {vehicleRecords.map((record) => (
+                  <option key={record.id} value={record.number}>{record.number} · {record.type}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Driver</label>
+              <select value={routeDriver} onChange={(e) => setRouteDriver(e.target.value)} disabled={!pilotRecords.length}>
+                <option value="">Select driver</option>
+                {pilotRecords.map((record) => (
+                  <option key={record.id} value={record.value}>{record.value} · {record.username}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit" disabled={savingRoute}>
+              {savingRoute ? "Saving..." : "Save"}
+            </button>
+            <button className="btn ghost" type="button" onClick={() => setRouteEditOpen(false)} disabled={savingRoute}>Cancel</button>
+          </div>
+        </form>
+      )}
 
       <div className="section-label">Pickup &amp; drop points</div>
-      <div className="card">
+      <div className="card table-card">
         {stops && stops.length ? (
-          stops.map((s) => (
-            <div key={s.stop_id} className="listitem">
-              <div className={`avatar ${s.stop_type === "pickup" ? "g" : "r"}`}>{s.stop_type === "pickup" ? "P" : "D"}</div>
-              <div className="meta">
-                <b>{s.name}</b>
-                <span>{s.stop_time} · {s.stop_type}</span>
-              </div>
-              <button className="btn ghost sm" onClick={() => removeStop(s.stop_id)}>Remove</button>
-            </div>
-          ))
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Stop</th>
+                  <th>Pickup time</th>
+                  <th>Drop time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stops.map((stop) => {
+                  return (
+                    <tr key={stop.stop_id}>
+                      <td>{stop.stop_name}</td>
+                      <td>{stop.pickup_time || "—"}</td>
+                      <td>{stop.drop_time || "—"}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button className="btn ghost sm" onClick={() => editStop(stop)}>Edit</button>
+                          <button className="btn ghost sm" onClick={() => removeStopGroup(stop)}>Remove</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <Empty>No stops yet.</Empty>
         )}
@@ -181,7 +296,7 @@ function RouteDetail({ route, onBack, onChanged }) {
           </div>
           <div className="cta-row">
             <button className="btn primary" type="submit" disabled={savingStop}>
-              {savingStop ? "Saving..." : "Save Point"}
+              {savingStop ? "Saving..." : editingStop ? "Update Point" : "Save Point"}
             </button>
             <button className="btn ghost" type="button" onClick={resetStopForm} disabled={savingStop}>Cancel</button>
           </div>
@@ -194,18 +309,31 @@ function RouteDetail({ route, onBack, onChanged }) {
       <div className="card">
         {routeStudents && routeStudents.length ? (
           routeStudents.map((rs) => {
-            const student = rs.student || studentById.get(String(rs.student_id ?? rs.id));
-            const studentName = rs.student_name || rs.name || student?.name || student?.full_name;
-            const admissionNo = rs.admission_no || student?.admission_no || student?.admission_number;
+            const nestedStudent = typeof rs.student === "object" ? rs.student : null;
+            const studentId = firstValue(rs.student_id, nestedStudent?.student_id, nestedStudent?.id);
+            const student = nestedStudent || studentById.get(String(studentId));
+            const studentName = firstValue(
+              studentNameOf(rs),
+              studentNameOf(nestedStudent),
+              studentNameOf(student)
+            );
+            const admissionNo = firstValue(
+              rs.admission_no,
+              rs.admission_number,
+              nestedStudent?.admission_no,
+              nestedStudent?.admission_number,
+              student?.admission_no,
+              student?.admission_number
+            );
 
             return (
-              <div key={rs.id || rs.student_id} className="listitem">
+              <div key={studentId || rs.id} className="listitem">
                 <div className="meta">
                   <b>{studentName || "Student name unavailable"}</b>
                   {admissionNo && <span>Admission no: {admissionNo}</span>}
                 </div>
                 <Pill tone={rs.status === "dropped" ? "ok" : rs.status === "picked" ? "info" : "mute"}>{rs.status}</Pill>
-                <button className="btn ghost sm" onClick={() => removeRouteStudent(rs.student_id)}>Remove</button>
+                <button className="btn ghost sm" onClick={() => removeRouteStudent(studentId)}>Remove</button>
               </div>
             );
           })
@@ -453,7 +581,13 @@ export default function AdminRoutes() {
   if (selected) {
     return (
       <AdminShell>
-        <RouteDetail route={selected} onBack={() => setSelected(null)} onChanged={refetch} />
+        <RouteDetail
+          route={selected}
+          onBack={() => setSelected(null)}
+          onChanged={refetch}
+          vehicleRecords={vehicleRecords}
+          pilotRecords={pilotRecords}
+        />
       </AdminShell>
     );
   }

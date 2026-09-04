@@ -15,6 +15,7 @@ export const deactivatePilot = (id) => client.patch(`/pilots/${id}`, { is_active
 
 export const listStops = (routeId) => client.get(`/routes/${routeId}/stops`).then((r) => r.data);
 export const addStop = (routeId, data) => client.post(`/routes/${routeId}/stops`, data).then((r) => r.data);
+export const updateStop = (stopId, data) => client.patch(`/routes/stops/${stopId}`, data).then((r) => r.data);
 export const removeStop = (stopId) => client.delete(`/routes/stops/${stopId}`);
 
 export const listRouteStudents = (routeId) =>
