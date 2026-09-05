@@ -185,6 +185,7 @@ body {
 
 .field { margin-bottom: 13px; }
 .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
+.required-mark { color: var(--red-pen); }
 .field input, .field select, .field textarea {
   width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
   border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
@@ -268,3 +269,31 @@ body {
   background: var(--paper-light); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ink);
 }
 .role-picker button.active { background: var(--chalk-green); color: var(--paper-light); border-color: var(--chalk-green); }
+
+.public-site {
+  min-height: 100vh;
+  background: var(--paper-light);
+  color: var(--ink);
+}
+.public-site-header {
+  display: flex; align-items: center; gap: 14px; padding: 22px max(24px, 8vw);
+  background: var(--site-accent, var(--chalk-green)); color: var(--paper-light);
+}
+.public-site-header h1 { margin: 0; font-size: clamp(22px, 4vw, 38px); }
+.public-site-header p { margin: 4px 0 0; opacity: .85; }
+.public-site-icon { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; background: var(--paper-light); }
+.public-site-hero { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+.public-site-banner { display: block; width: 100%; max-height: 440px; object-fit: cover; border-radius: 18px; }
+.public-site-hero-content { padding: 34px 0 0; }
+.public-site-hero h2, .public-site-section h2 { margin: 0 0 10px; color: var(--site-accent, var(--chalk-green)); font-size: clamp(26px, 5vw, 48px); }
+.public-site-subheading { font-size: 20px; margin: 0 0 12px; color: var(--ink-soft); }
+.public-site-body { max-width: 760px; line-height: 1.7; white-space: pre-wrap; }
+.public-site-section { max-width: 1100px; margin: 0 auto; padding: 0 24px 48px; }
+.public-site-testimonials { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.public-site-testimonials blockquote { margin: 0; padding: 20px; border: 1px solid var(--line); border-top: 4px solid var(--site-accent, var(--chalk-green)); border-radius: 12px; background: var(--paper); }
+.public-site-testimonials blockquote p { margin: 0 0 14px; line-height: 1.55; }
+.public-site-testimonials cite { color: var(--ink-soft); font-size: 12px; font-style: normal; font-weight: 600; }
+.public-site-footer { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 22px max(24px, 8vw); background: var(--chalk-green-dark); color: var(--paper-light); font-size: 12px; }
+.public-site-state { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--paper-light); }
+.public-site-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 16px; font-size: 12px; color: #A8C8D4; }
+.public-site-link a { color: var(--pencil-yellow); overflow-wrap: anywhere; }

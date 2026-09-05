@@ -16,10 +16,23 @@ function getStaffValue(person, keys) {
 }
 
 function normalizeStaffPerson(person) {
+  const storedRole = getStaffValue(person, ["role_title", "role"]);
+  const roleCategory = storedRole === "Teacher" || storedRole.toLowerCase().includes("teacher")
+    ? "Teacher"
+    : storedRole === "Pilot" || storedRole.toLowerCase().includes("pilot")
+      ? "Pilot"
+      : "Other staff";
+
   return {
     ...person,
-    role_title: getStaffValue(person, ["role_title", "role"]) || "Support Staff",
+    role_title: storedRole || "Other staff",
+    role_category: roleCategory,
+    custom_role_title: roleCategory === "Other staff" && storedRole !== "Other staff" ? storedRole : "",
     email: getStaffValue(person, ["email", "email_id"]) || "",
+    date_of_birth: getStaffValue(person, ["date_of_birth", "dob"]) || "",
+    marital_status: getStaffValue(person, ["marital_status"]) || "",
+    driving_license: getStaffValue(person, ["driving_license", "dl_number"]) || "",
+    gender: getStaffValue(person, ["gender"]) || "",
     emergency_contact: getStaffValue(person, ["emergency_number", "emergency_contact", "emergency_contact_number"]) || "",
     aadhaar_number: getStaffValue(person, ["aadhaar_card", "aadhaar_number", "aadhaar_card_number"]) || "",
   };
@@ -34,9 +47,14 @@ export default function AdminStaff() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState("");
-  const [roleTitle, setRoleTitle] = useState("");
+  const [roleCategory, setRoleCategory] = useState("");
+  const [customRoleTitle, setCustomRoleTitle] = useState("");
+  const [drivingLicense, setDrivingLicense] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [gender, setGender] = useState("");
   const [presentAddress, setPresentAddress] = useState("");
   const [permanentAddress, setPermanentAddress] = useState("");
   const [aadhaarNumber, setAadhaarNumber] = useState("");
@@ -52,9 +70,14 @@ export default function AdminStaff() {
   function resetForm() {
     setEditingId(null);
     setName("");
-    setRoleTitle("");
+    setRoleCategory("");
+    setCustomRoleTitle("");
+    setDrivingLicense("");
     setPhone("");
     setEmail("");
+    setDateOfBirth("");
+    setMaritalStatus("");
+    setGender("");
     setPresentAddress("");
     setPermanentAddress("");
     setAadhaarNumber("");
@@ -66,9 +89,14 @@ export default function AdminStaff() {
     const normalized = normalizeStaffPerson(person);
     setEditingId(person.staff_id || person.id);
     setName(person.name || "");
-    setRoleTitle(normalized.role_title || "");
+    setRoleCategory(normalized.role_category);
+    setCustomRoleTitle(normalized.custom_role_title);
+    setDrivingLicense(getStaffValue(person, ["driving_license", "dl_number"]));
     setPhone(person.phone || "");
     setEmail(normalized.email || "");
+    setDateOfBirth(getStaffValue(person, ["date_of_birth", "dob"]));
+    setMaritalStatus(getStaffValue(person, ["marital_status"]));
+    setGender(getStaffValue(person, ["gender"]));
     setPresentAddress(getStaffValue(person, ["present_address", "current_address"]) || "");
     setPermanentAddress(getStaffValue(person, ["permanent_address"]) || "");
     setAadhaarNumber(normalized.aadhaar_number || "");
@@ -80,6 +108,22 @@ export default function AdminStaff() {
     e.preventDefault();
     if (!name.trim()) {
       toast("Enter a name");
+      return;
+    }
+    if (!roleCategory) {
+      toast("Select a role");
+      return;
+    }
+    if (roleCategory === "Other staff" && !customRoleTitle.trim()) {
+      toast("Enter the staff title");
+      return;
+    }
+    if (roleCategory === "Pilot" && !drivingLicense.trim()) {
+      toast("Enter the driving license number");
+      return;
+    }
+    if (!dateOfBirth || !maritalStatus || !gender || !phone.trim() || !email.trim() || !presentAddress.trim() || !permanentAddress.trim() || !aadhaarNumber.trim() || !emergencyContact.trim()) {
+      toast("Complete all required staff fields");
       return;
     }
     if (phone && !isValidPhone(phone)) {
@@ -103,13 +147,17 @@ export default function AdminStaff() {
     try {
       const payload = {
         name,
-        role: roleTitle || "Support Staff",
-        phone: phone || "—",
-        email: email || null,
-        present_address: presentAddress || null,
-        permanent_address: permanentAddress || null,
-        aadhaar_card: aadhaarNumber || null,
-        emergency_number: emergencyContact || null,
+        role: roleCategory === "Other staff" ? customRoleTitle.trim() : roleCategory,
+        phone: phone.trim(),
+        email: email.trim(),
+        date_of_birth: dateOfBirth,
+        marital_status: maritalStatus,
+        gender,
+        present_address: presentAddress.trim(),
+        permanent_address: permanentAddress.trim(),
+        aadhaar_card: aadhaarNumber.trim(),
+        emergency_number: emergencyContact.trim(),
+        driving_license: roleCategory === "Pilot" ? drivingLicense.trim() : null,
       };
 
       if (editingId) {
@@ -175,6 +223,10 @@ export default function AdminStaff() {
                 const presentAddressValue = getStaffValue(person, ["present_address", "current_address"]) || "";
                 const permanentAddressValue = getStaffValue(person, ["permanent_address"]) || "";
                 const aadhaarValue = person.aadhaar_number || "";
+                const drivingLicenseValue = person.driving_license || "";
+                const dateOfBirthValue = person.date_of_birth || "";
+                const maritalStatusValue = person.marital_status || "";
+                const genderValue = person.gender || "";
 
                 return (
                   <div key={staffId} className="listitem" style={{ display: "block", cursor: "pointer" }} onClick={() => toggleExpanded(staffId)}>
@@ -186,7 +238,7 @@ export default function AdminStaff() {
                           <b>{person.name}</b>
                         </div>
                         <div style={{ flex: 1, textAlign: "center" }}>
-                          <span>{person.role_title || "Support Staff"}</span>
+                          <span>{person.role_title || "Other staff"}</span>
                         </div>
                       </div>
 
@@ -215,6 +267,18 @@ export default function AdminStaff() {
                           <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Email ID</strong>
                           <span>{emailValue || "Not provided"}</span>
                         </div>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Date of Birth</strong>
+                          <span>{dateOfBirthValue || "Not provided"}</span>
+                        </div>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Marital Status</strong>
+                          <span>{maritalStatusValue || "Not provided"}</span>
+                        </div>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Gender</strong>
+                          <span>{genderValue || "Not provided"}</span>
+                        </div>
                         <div style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
                           <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Present Address</strong>
                           <span>{presentAddressValue || "Not provided"}</span>
@@ -231,6 +295,12 @@ export default function AdminStaff() {
                           <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Contact</strong>
                           <span>{emergencyValue || "Not provided"}</span>
                         </div>
+                        {person.role_category === "Pilot" ? (
+                          <div style={{ display: "grid", gap: 4 }}>
+                            <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Driving License</strong>
+                            <span>{drivingLicenseValue || "Not provided"}</span>
+                          </div>
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -246,36 +316,88 @@ export default function AdminStaff() {
       {formOpen ? (
         <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
           <div className="field">
-            <label>Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Nair" />
+            <label>Full name <span className="required-mark">*</span></label>
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Nair" />
           </div>
           <div className="field">
-            <label>Role / Title</label>
-            <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Admin Assistant" />
+            <label>Role / Title <span className="required-mark">*</span></label>
+            <select required value={roleCategory} onChange={(e) => {
+              setRoleCategory(e.target.value);
+              if (e.target.value !== "Other staff") setCustomRoleTitle("");
+            }}>
+              <option value="">Select role</option>
+              <option value="Teacher">Teacher</option>
+              <option value="Pilot">Pilot</option>
+              <option value="Other staff">Other staff</option>
+            </select>
+          </div>
+          {roleCategory === "Other staff" ? (
+            <div className="field">
+              <label>Staff title <span className="required-mark">*</span></label>
+              <input required
+                value={customRoleTitle}
+                onChange={(e) => setCustomRoleTitle(e.target.value)}
+                placeholder="e.g. Admin Assistant"
+              />
+            </div>
+          ) : null}
+          {roleCategory === "Pilot" ? (
+            <div className="field">
+              <label>Driving License <span className="required-mark">*</span></label>
+              <input
+                required
+                value={drivingLicense}
+                onChange={(e) => setDrivingLicense(e.target.value)}
+                placeholder="Enter driving license number"
+              />
+            </div>
+          ) : null}
+          <div className="field">
+            <label>Phone <span className="required-mark">*</span></label>
+            <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
           </div>
           <div className="field">
-            <label>Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            <label>Email ID <span className="required-mark">*</span></label>
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
           </div>
           <div className="field">
-            <label>Email ID</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+            <label>Date of birth <span className="required-mark">*</span></label>
+            <input required type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
           </div>
           <div className="field">
-            <label>Present address</label>
-            <textarea value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current residential address" />
+            <label>Marital status <span className="required-mark">*</span></label>
+            <select required value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)}>
+              <option value="">Select marital status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+            </select>
           </div>
           <div className="field">
-            <label>Permanent address</label>
-            <textarea value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
+            <label>Gender <span className="required-mark">*</span></label>
+            <select required value={gender} onChange={(e) => setGender(e.target.value)}>
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
           <div className="field">
-            <label>Aadhaar card number</label>
-            <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} placeholder="XXXX XXXX XXXX" inputMode="numeric" maxLength={14} />
+            <label>Present address <span className="required-mark">*</span></label>
+            <textarea required value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current residential address" />
           </div>
           <div className="field">
-            <label>Emergency contact number</label>
-            <input value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            <label>Permanent address <span className="required-mark">*</span></label>
+            <textarea required value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
+          </div>
+          <div className="field">
+            <label>Aadhaar card number <span className="required-mark">*</span></label>
+            <input required value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} placeholder="XXXX XXXX XXXX" inputMode="numeric" maxLength={14} />
+          </div>
+          <div className="field">
+            <label>Emergency contact number <span className="required-mark">*</span></label>
+            <input required value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
           </div>
           <div className="cta-row">
             <button className="btn primary" type="submit" disabled={submitting}>
