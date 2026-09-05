@@ -6,6 +6,7 @@ import { TeacherProvider } from "./context/TeacherContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 import Login from "./pages/Login";
+import PublicWebsite from "./pages/PublicWebsite";
 
 import ParentHome from "./pages/parent/ParentHome";
 import ParentAttendance from "./pages/parent/ParentAttendance";
@@ -20,8 +21,9 @@ import TeacherTimetable from "./pages/teacher/TeacherTimetable";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
+import AdminTimetable from "./pages/admin/AdminTimetable";
+import AdminAlbum from "./pages/admin/AdminAlbum";
 import AdminStudents from "./pages/admin/AdminStudents";
-import AdminTeachers from "./pages/admin/AdminTeachers";
 import AdminStaff from "./pages/admin/AdminStaff";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
@@ -55,6 +57,7 @@ export default function App() {
         <ToastProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/site/:schoolId" element={<PublicWebsite />} />
             <Route path="/" element={<RootRedirect />} />
 
             {/* Parent */}
@@ -102,8 +105,9 @@ export default function App() {
                   <Routes>
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="classes" element={<AdminClasses />} />
+                    <Route path="timetable" element={<AdminTimetable />} />
+                    <Route path="album" element={<AdminAlbum />} />
                     <Route path="students" element={<AdminStudents />} />
-                    <Route path="teachers" element={<AdminTeachers />} />
                     <Route path="staff" element={<AdminStaff />} />
                     <Route path="routes" element={<AdminRoutes />} />
                     <Route path="leave" element={<AdminLeave />} />

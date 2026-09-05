@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as websiteApi from "../../api/website";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty } from "../../components/ui/Primitives";
 import ImageUpload from "../../components/ui/ImageUpload";
 import { apiErrorMessage } from "../../api/client";
 
 export default function AdminWebsite() {
+  const { user } = useAuth();
   const { data: settings, loading, refetch } = useApi(() => websiteApi.getSettings().catch(() => null), []);
   const { data: homePage, refetch: refetchHome } = useApi(
     () => websiteApi.getPage("home").catch(() => null),
@@ -29,6 +31,8 @@ export default function AdminWebsite() {
   const [tName, setTName] = useState("");
   const [tRole, setTRole] = useState("");
   const [tQuote, setTQuote] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [liveUrl, setLiveUrl] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -97,9 +101,37 @@ export default function AdminWebsite() {
   }
 
   async function removeTestimonial(id) {
-    await websiteApi.deleteTestimonial(id);
-    toast("Testimonial removed");
-    refetchTestimonials();
+    try {
+      await websiteApi.deleteTestimonial(id);
+      toast("Testimonial removed");
+      refetchTestimonials();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function goLive() {
+    if (!homeForm.heading.trim()) {
+      toast("Enter a home page heading before going live");
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      await Promise.all([
+        websiteApi.updateSettings(form),
+        websiteApi.upsertPage("home", homeForm),
+      ]);
+      await websiteApi.goLive();
+      setLiveUrl(`${window.location.origin}/site/${user.schoolId}`);
+      toast("Website is live");
+      refetch();
+      refetchHome();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setPublishing(false);
+    }
   }
 
   if (loading) return <AdminShell><Spinner /></AdminShell>;
@@ -125,6 +157,7 @@ export default function AdminWebsite() {
           value={form.icon_url}
           onChange={(icon_url) => setForm({ ...form, icon_url })}
           onError={toast}
+          schoolId={user?.schoolId}
         />
         <div className="field">
           <label>Accent color</label>
@@ -141,6 +174,7 @@ export default function AdminWebsite() {
           value={homeForm.banner_url}
           onChange={(banner_url) => setHomeForm({ ...homeForm, banner_url })}
           onError={toast}
+          schoolId={user?.schoolId}
         />
         <div className="field">
           <label>Heading</label>
@@ -173,6 +207,15 @@ export default function AdminWebsite() {
           <Empty>No testimonials yet.</Empty>
         )}
       </div>
+      <button className="btn primary sm" type="button" onClick={goLive} disabled={publishing}>
+        {publishing ? "Publishing..." : "Go Live"}
+      </button>
+      {liveUrl ? (
+        <div className="public-site-link">
+          <span>Your website is live:</span>
+          <a href={liveUrl} target="_blank" rel="noreferrer">{liveUrl}</a>
+        </div>
+      ) : null}
       <form className="card white" onSubmit={addTestimonial}>
         <div className="field"><label>Name</label><input value={tName} onChange={(e) => setTName(e.target.value)} /></div>
         <div className="field"><label>Role</label><input value={tRole} onChange={(e) => setTRole(e.target.value)} placeholder="e.g. Parent, Grade 3" /></div>

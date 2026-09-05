@@ -11,6 +11,7 @@ export const upsertPage = (slug, data) => client.put(`/website/pages/${slug}`, d
 export const listTestimonials = () => client.get("/website/testimonials").then((r) => r.data);
 export const addTestimonial = (data) => client.post("/website/testimonials", data).then((r) => r.data);
 export const deleteTestimonial = (id) => client.delete(`/website/testimonials/${id}`);
+export const goLive = () => client.post("/website/go-live").then((r) => r.data);
 
 /** Public, unauthenticated — anyone can view a school's published site. */
 export const getPublicSite = (schoolId) =>

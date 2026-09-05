@@ -367,7 +367,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
 export default function AdminRoutes() {
   const { data, loading, error, refetch } = useApi(() => transportApi.listRoutes(), []);
   const { data: vehicles, refetch: refetchVehicles } = useApi(() => transportApi.listVehicles(), []);
-  const { data: pilots, refetch: refetchPilots } = useApi(() => transportApi.listPilots(), []);
+  const { data: staff } = useApi(() => peopleApi.listStaff(), []);
   const toast = useToast();
   const [selected, setSelected] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -375,21 +375,10 @@ export default function AdminRoutes() {
   const [vehicle, setVehicle] = useState("");
   const [driver, setDriver] = useState("");
   const [editingVehicleId, setEditingVehicleId] = useState(null);
-  const [editingPilotId, setEditingPilotId] = useState(null);
   const [vehicleDraft, setVehicleDraft] = useState("");
-  const [pilotDraft, setPilotDraft] = useState("");
-  const [pilotUsernameDraft, setPilotUsernameDraft] = useState("");
-  const [pilotPasswordDraft, setPilotPasswordDraft] = useState("");
   const [vehicleTypeDraft, setVehicleTypeDraft] = useState("");
   const [vehicleRegistrationDraft, setVehicleRegistrationDraft] = useState("");
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
-  const [pilotLicenseDraft, setPilotLicenseDraft] = useState("");
-  const [pilotPhoneDraft, setPilotPhoneDraft] = useState("");
-  const [pilotAddressDraft, setPilotAddressDraft] = useState("");
-  const [pilotPermanentAddressDraft, setPilotPermanentAddressDraft] = useState("");
-  const [pilotAadhaarDraft, setPilotAadhaarDraft] = useState("");
-  const [pilotEmailDraft, setPilotEmailDraft] = useState("");
-  const [pilotFormOpen, setPilotFormOpen] = useState(false);
 
   const vehicleRecords = useMemo(
     () => (vehicles || []).filter((vehicleRecord) => {
@@ -405,18 +394,17 @@ export default function AdminRoutes() {
     [vehicles]
   );
   const pilotRecords = useMemo(
-    () => (pilots || []).filter((pilot) => pilot.is_active !== false).map((pilot) => ({
-      id: pilot.pilot_id,
-      username: pilot.username,
-      value: pilot.full_name,
-      licenseNumber: pilot.dl_number || "Not provided",
-      phone: pilot.phone || "Not provided",
-      address: pilot.present_address || "Not provided",
-      permanentAddress: pilot.permanent_address || "Not provided",
-      aadhaarNumber: pilot.aadhaar_number || "Not provided",
-      email: pilot.email || "Not provided",
-    })),
-    [pilots]
+    () => (staff || [])
+      .filter((member) => {
+        const role = member.role || member.role_title || "";
+        return member.is_active !== false && String(role).toLowerCase() === "pilot";
+      })
+      .map((member) => ({
+        id: member.staff_id || member.id,
+        username: member.name || member.full_name,
+        value: member.name || member.full_name,
+      })),
+    [staff]
   );
 
   async function addVehicle() {
@@ -473,83 +461,6 @@ export default function AdminRoutes() {
       }
       toast("Vehicle removed");
       refetchVehicles();
-    } catch (err) {
-      toast(apiErrorMessage(err));
-    }
-  }
-
-  async function addPilot() {
-    if (!pilotUsernameDraft.trim() || !pilotPasswordDraft.trim() || !pilotDraft.trim()) {
-      toast("Enter a username, password, and pilot name");
-      return;
-    }
-    try {
-      await transportApi.createPilot({
-        username: pilotUsernameDraft.trim(),
-        password: pilotPasswordDraft,
-        full_name: pilotDraft.trim(),
-        email: pilotEmailDraft.trim(),
-        phone: pilotPhoneDraft.trim(),
-        present_address: pilotAddressDraft.trim(),
-        permanent_address: pilotPermanentAddressDraft.trim(),
-        aadhaar_number: pilotAadhaarDraft.trim(),
-        dl_number: pilotLicenseDraft.trim(),
-      });
-      setPilotFormOpen(false);
-      setPilotUsernameDraft("");
-      setPilotPasswordDraft("");
-      setPilotDraft("");
-      setPilotLicenseDraft("");
-      setPilotPhoneDraft("");
-      setPilotAddressDraft("");
-      setPilotPermanentAddressDraft("");
-      setPilotAadhaarDraft("");
-      setPilotEmailDraft("");
-      toast("Pilot added");
-      refetchPilots();
-    } catch (err) {
-      toast(apiErrorMessage(err));
-    }
-  }
-
-  async function updatePilot(pilotId) {
-    if (!pilotId || !pilotDraft.trim()) return;
-    try {
-      await transportApi.updatePilot(pilotId, {
-        username: pilotUsernameDraft.trim(),
-        ...(pilotPasswordDraft.trim() ? { password: pilotPasswordDraft } : {}),
-        full_name: pilotDraft.trim(),
-        email: pilotEmailDraft.trim(),
-        phone: pilotPhoneDraft.trim(),
-        present_address: pilotAddressDraft.trim(),
-        permanent_address: pilotPermanentAddressDraft.trim(),
-        aadhaar_number: pilotAadhaarDraft.trim(),
-        dl_number: pilotLicenseDraft.trim(),
-      });
-      setEditingPilotId(null);
-      setPilotUsernameDraft("");
-      setPilotPasswordDraft("");
-      setPilotDraft("");
-      setPilotLicenseDraft("");
-      setPilotPhoneDraft("");
-      setPilotAddressDraft("");
-      setPilotPermanentAddressDraft("");
-      setPilotAadhaarDraft("");
-      setPilotEmailDraft("");
-      toast("Pilot updated");
-      refetchPilots();
-    } catch (err) {
-      toast(apiErrorMessage(err));
-    }
-  }
-
-  async function deactivatePilot(pilotId) {
-    if (!window.confirm("Remove this pilot?")) return;
-    try {
-      await transportApi.deactivatePilot(pilotId);
-      if (editingPilotId === pilotId) setEditingPilotId(null);
-      toast("Pilot removed");
-      refetchPilots();
     } catch (err) {
       toast(apiErrorMessage(err));
     }
@@ -627,17 +538,13 @@ export default function AdminRoutes() {
             )}
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16, marginTop: 18 }}>
-          {[
-            { title: "Vehicle", records: vehicleRecords, editingId: editingVehicleId, setEditingId: setEditingVehicleId, draft: vehicleDraft, setDraft: setVehicleDraft, save: updateVehicle },
-            { title: "Pilot", records: pilotRecords, editingId: editingPilotId, setEditingId: setEditingPilotId, draft: pilotDraft, setDraft: setPilotDraft, save: updatePilot },
-          ].map((card) => (
-            <div key={card.title} className="card white" style={{ minHeight: 220, padding: 18 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>{card.title}</div>
-                <button className="btn ghost sm" type="button" onClick={() => card.title === "Vehicle" ? setVehicleFormOpen((open) => !open) : setPilotFormOpen((open) => !open)}>+ Add {card.title}</button>
-              </div>
-              {card.title === "Vehicle" && vehicleFormOpen && (
+        <div style={{ marginTop: 18 }}>
+          <div className="card white" style={{ minHeight: 220, padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>Vehicle</div>
+              <button className="btn ghost sm" type="button" onClick={() => setVehicleFormOpen((open) => !open)}>+ Add Vehicle</button>
+            </div>
+            {vehicleFormOpen && (
                 <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
                   <div className="grid2">
                     <div className="field"><label>Vehicle number</label><input value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} /></div>
@@ -650,105 +557,38 @@ export default function AdminRoutes() {
                   </div>
                 </div>
               )}
-              {card.title === "Pilot" && pilotFormOpen && (
-                <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
-                  <div className="grid2">
-                    <div className="field"><label>Username</label><input value={pilotUsernameDraft} onChange={(e) => setPilotUsernameDraft(e.target.value)} /></div>
-                    <div className="field"><label>Password</label><input value={pilotPasswordDraft} onChange={(e) => setPilotPasswordDraft(e.target.value)} type="password" /></div>
-                  </div>
-                  <div className="field"><label>Pilot name</label><input value={pilotDraft} onChange={(e) => setPilotDraft(e.target.value)} /></div>
-                  <div className="grid2">
-                    <div className="field"><label>DL number</label><input value={pilotLicenseDraft} onChange={(e) => setPilotLicenseDraft(e.target.value)} /></div>
-                    <div className="field"><label>Phone number</label><input value={pilotPhoneDraft} onChange={(e) => setPilotPhoneDraft(e.target.value)} /></div>
-                    <div className="field"><label>Email</label><input value={pilotEmailDraft} onChange={(e) => setPilotEmailDraft(e.target.value)} type="email" /></div>
-                    <div className="field"><label>Aadhaar number</label><input value={pilotAadhaarDraft} onChange={(e) => setPilotAadhaarDraft(e.target.value)} /></div>
-                  </div>
-                  <div className="grid2">
-                    <div className="field"><label>Present address</label><input value={pilotAddressDraft} onChange={(e) => setPilotAddressDraft(e.target.value)} /></div>
-                    <div className="field"><label>Permanent address</label><input value={pilotPermanentAddressDraft} onChange={(e) => setPilotPermanentAddressDraft(e.target.value)} /></div>
-                  </div>
-                  <div className="cta-row">
-                    <button className="btn primary sm" type="button" onClick={addPilot}>Save</button>
-                    <button className="btn ghost sm" type="button" onClick={() => { setPilotFormOpen(false); setPilotUsernameDraft(""); setPilotPasswordDraft(""); setPilotDraft(""); setPilotLicenseDraft(""); setPilotPhoneDraft(""); setPilotAddressDraft(""); setPilotPermanentAddressDraft(""); setPilotAadhaarDraft(""); setPilotEmailDraft(""); }}>Cancel</button>
-                  </div>
-                </div>
-              )}
-              <div style={{ maxHeight: 300, overflowY: card.records.length > 10 ? "auto" : "visible" }}>
-                {card.records.length ? card.records.map((record) => (
+            <div style={{ maxHeight: 300, overflowY: vehicleRecords.length > 10 ? "auto" : "visible" }}>
+              {vehicleRecords.length ? vehicleRecords.map((record) => (
                   <div key={record.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #dfeaf1" }}>
-                    {card.editingId === record.id ? (
-                      card.title === "Vehicle" ? (
-                        <>
-                          <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} placeholder="Vehicle number" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" style={{ flex: 1, minWidth: 0 }} />
-                          <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
-                          <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <input value={pilotUsernameDraft} onChange={(e) => setPilotUsernameDraft(e.target.value)} placeholder="Username" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={card.draft} onChange={(e) => card.setDraft(e.target.value)} placeholder="Full name" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotLicenseDraft} onChange={(e) => setPilotLicenseDraft(e.target.value)} placeholder="DL number" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotPhoneDraft} onChange={(e) => setPilotPhoneDraft(e.target.value)} placeholder="Phone number" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotAddressDraft} onChange={(e) => setPilotAddressDraft(e.target.value)} placeholder="Present address" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotPermanentAddressDraft} onChange={(e) => setPilotPermanentAddressDraft(e.target.value)} placeholder="Permanent address" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotAadhaarDraft} onChange={(e) => setPilotAadhaarDraft(e.target.value)} placeholder="Aadhaar number" style={{ flex: 1, minWidth: 0 }} />
-                          <input value={pilotEmailDraft} onChange={(e) => setPilotEmailDraft(e.target.value)} placeholder="Email" type="email" style={{ flex: 1, minWidth: 0 }} />
-                          <button className="btn primary sm" type="button" onClick={() => card.save(record.id)}>Save</button>
-                          <button className="btn ghost sm" type="button" onClick={() => card.setEditingId(null)}>Cancel</button>
-                        </>
-                      )
+                    {editingVehicleId === record.id ? (
+                      <>
+                        <input value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} placeholder="Vehicle number" style={{ flex: 1, minWidth: 0 }} />
+                        <input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" style={{ flex: 1, minWidth: 0 }} />
+                        <input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" style={{ flex: 1, minWidth: 0 }} />
+                        <button className="btn primary sm" type="button" onClick={() => updateVehicle(record.id)}>Save</button>
+                        <button className="btn ghost sm" type="button" onClick={() => setEditingVehicleId(null)}>Cancel</button>
+                      </>
                     ) : (
                       <>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          {card.title === "Vehicle" ? (
-                            <>
-                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.number}</div>
-                              <div style={{ fontSize: 12, color: "#64748b" }}>Type: {record.type} · Registration: {record.registration}</div>
-                            </>
-                          ) : (
-                            <>
-                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.value}</div>
-                              <div style={{ fontSize: 12, color: "#64748b" }}>
-                                Username: {record.username} · DL: {record.licenseNumber} · Phone: {record.phone} · Present address: {record.address} · Permanent address: {record.permanentAddress} · Aadhaar: {record.aadhaarNumber} · Email: {record.email}
-                              </div>
-                            </>
-                          )}
+                          <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.number}</div>
+                          <div style={{ fontSize: 12, color: "#64748b" }}>Type: {record.type} · Registration: {record.registration}</div>
                         </div>
                         <button className="btn ghost sm" type="button" onClick={() => {
-                          card.setEditingId(record.id);
-                          card.setDraft(card.title === "Vehicle" ? record.number : record.value);
-                          if (card.title === "Vehicle") {
-                            setVehicleTypeDraft(record.type);
-                            setVehicleRegistrationDraft(record.registration);
-                          } else {
-                            setPilotUsernameDraft(record.username || "");
-                            setPilotLicenseDraft(record.licenseNumber === "Not provided" ? "" : record.licenseNumber);
-                            setPilotPhoneDraft(record.phone === "Not provided" ? "" : record.phone);
-                            setPilotAddressDraft(record.address === "Not provided" ? "" : record.address);
-                            setPilotPermanentAddressDraft(record.permanentAddress === "Not provided" ? "" : record.permanentAddress);
-                            setPilotAadhaarDraft(record.aadhaarNumber === "Not provided" ? "" : record.aadhaarNumber);
-                            setPilotEmailDraft(record.email === "Not provided" ? "" : record.email);
-                          }
+                          setEditingVehicleId(record.id);
+                          setVehicleDraft(record.number);
+                          setVehicleTypeDraft(record.type);
+                          setVehicleRegistrationDraft(record.registration);
                         }}>Edit</button>
-                        {card.title === "Vehicle" && (
-                          <button className="btn ghost sm" type="button" onClick={() => deactivateVehicle(record.id)}>
-                            Remove
-                          </button>
-                        )}
-                        {card.title === "Pilot" && (
-                          <button className="btn ghost sm" type="button" onClick={() => deactivatePilot(record.id)}>
-                            Remove
-                          </button>
-                        )}
+                        <button className="btn ghost sm" type="button" onClick={() => deactivateVehicle(record.id)}>
+                          Remove
+                        </button>
                       </>
                     )}
                   </div>
-                )) : <Empty>No {card.title.toLowerCase()} records yet.</Empty>}
-              </div>
+                )) : <Empty>No vehicle records yet.</Empty>}
             </div>
-          ))}
+          </div>
         </div>
         </>
       )}
@@ -770,7 +610,7 @@ export default function AdminRoutes() {
             </div>
             <div className="field">
               <label>Driver</label>
-              <select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots}>
+              <select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!staff}>
                 <option value="">Select driver</option>
                 {pilotRecords.map((record) => (
                   <option key={record.id} value={record.value}>
