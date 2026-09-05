@@ -18,6 +18,8 @@ export function AuthProvider({ children }) {
       role: data.role,
       schoolId: data.school_id,
       linkedPersonId: data.linked_person_id,
+      username: data.username || username,
+      name: data.name || data.full_name || data.sender_name,
     };
     localStorage.setItem("schoolers_user", JSON.stringify(userObj));
     setUser(userObj);
