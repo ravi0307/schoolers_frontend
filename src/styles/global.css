@@ -193,6 +193,31 @@ body {
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.timetable-class-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;
+  margin-bottom: 16px;
+}
+.timetable-class-card {
+  display: flex; flex-direction: column; gap: 7px; min-height: 166px;
+  padding: 14px; border: 1.5px solid var(--line); border-radius: 13px;
+  background: var(--paper-light); color: var(--ink); text-align: left;
+  cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.timetable-class-card:hover, .timetable-class-card.selected {
+  border-color: var(--chalk-green); box-shadow: 0 4px 14px rgba(0, 55, 105, .12);
+}
+.timetable-class-card:hover { transform: translateY(-1px); }
+.timetable-class-card-title { font-size: 16px; font-weight: 700; color: var(--chalk-green-dark); }
+.timetable-class-card-meta { font-size: 11px; color: var(--ink-soft); }
+.timetable-class-preview { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.timetable-preview-row {
+  display: flex; gap: 7px; min-width: 0; font-size: 11px; color: var(--ruled-blue);
+}
+.timetable-preview-row strong { width: 28px; color: var(--ink-soft); }
+.timetable-preview-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timetable-preview-empty { font-size: 11px; color: var(--ink-soft); }
+.timetable-class-card-action { margin-top: auto; font-size: 11px; font-weight: 700; color: var(--chalk-green); }
+.selected-timetable-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 4px 0 12px; }
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }
 }
@@ -206,6 +231,13 @@ body {
 .pill.warn { background: var(--red-pen-light); color: var(--red-pen); }
 .pill.info { background: var(--ruled-blue-light); color: var(--ruled-blue); }
 .pill.mute { background: #EFEAD8; color: var(--ink-soft); }
+.timetable-entry-button {
+  display: block; width: 100%; margin-bottom: 8px; border: none;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.timetable-entry-button:hover {
+  background: var(--ruled-blue); color: var(--paper-light);
+}
 
 .listitem {
   display: flex; align-items: center; gap: 12px; padding: 12px 6px;
