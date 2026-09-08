@@ -84,6 +84,3 @@ API: `GET/POST /routes/:id/stops`, `DELETE /routes/stops/:stopId`
 `stop_type` per row, so one submit with both a pickup and a drop time creates two
 rows with the same name.
 
-## Devin Secrets Needed
-
-None — everything runs locally with the seeded dump and the shared `test1234` password.

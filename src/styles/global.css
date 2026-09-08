@@ -190,6 +190,13 @@ body {
   width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
   border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
 }
+.field-error {
+  display: block; margin-top: 5px; font-size: 11.5px; font-weight: 600;
+  color: var(--red-pen);
+}
+.field select option:disabled {
+  color: var(--ink-soft); background: var(--paper);
+}
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -216,8 +223,34 @@ body {
 .timetable-preview-row strong { width: 28px; color: var(--ink-soft); }
 .timetable-preview-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .timetable-preview-empty { font-size: 11px; color: var(--ink-soft); }
+.timetable-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  color: var(--ruled-blue);
+  table-layout: fixed;
+}
+.timetable-preview-table td {
+  padding: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timetable-preview-table .day-cell {
+  width: 28px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.timetable-preview-table .subject-cell {
+  padding-right: 4px;
+}
+.timetable-preview-table .time-cell {
+  width: 65px;
+  text-align: right;
+  color: var(--ink-soft);
+}
 .timetable-class-card-action { margin-top: auto; font-size: 11px; font-weight: 700; color: var(--chalk-green); }
-.selected-timetable-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 4px 0 12px; }
+.selected-timetable-label { font-size: 16px; font-weight: 800; color: var(--chalk-green); margin: 6px 0 14px; }
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }
 }
@@ -232,9 +265,14 @@ body {
 .pill.info { background: var(--ruled-blue-light); color: var(--ruled-blue); }
 .pill.mute { background: #EFEAD8; color: var(--ink-soft); }
 .timetable-entry-button {
-  display: block; width: 100%; margin-bottom: 8px; border: none;
+  display: flex; width: 100%; margin-bottom: 8px; border: none;
   font: inherit; text-align: left; cursor: pointer;
+  justify-content: space-between; gap: 8px;
 }
+.timetable-entry-button .entry-subject { flex: 0 0 auto; }
+.timetable-entry-button .entry-time { flex: 0 0 auto; }
+.add-period-toolbar { margin: 14px 0 12px; display: flex; gap: 10px; align-items: center; }
+.add-period-toolbar .btn { width: auto; }
 .timetable-entry-button:hover {
   background: var(--ruled-blue); color: var(--paper-light);
 }
