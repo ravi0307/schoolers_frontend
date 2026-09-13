@@ -449,6 +449,7 @@ export default function AdminTimetable() {
       <div className="scr-sub">View the weekly schedule for each class</div>
 
       <div className="section-label">Classes</div>
+      <div className="section-sub">Weekly timetable summary — click a class to manage its periods</div>
       {classesLoading || classTimetablesLoading ? (
         <Spinner />
       ) : (
