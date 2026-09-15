@@ -217,6 +217,10 @@ body {
 .timetable-class-card-title { font-size: 16px; font-weight: 700; color: var(--chalk-green-dark); }
 .timetable-class-card-meta { font-size: 11px; color: var(--ink-soft); }
 .timetable-class-preview { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.timetable-weekly-summary-title {
+  color: var(--ink-soft); font-size: 10px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase;
+}
 .timetable-preview-row {
   display: flex; gap: 7px; min-width: 0; font-size: 11px; color: var(--ruled-blue);
 }
@@ -274,6 +278,7 @@ body {
 .timetable-entry-button .entry-time { flex: 0 0 auto; }
 .add-period-toolbar { margin: 14px 0 12px; display: flex; gap: 10px; align-items: center; }
 .add-period-toolbar .btn { width: auto; }
+.add-period-actions { display: flex; align-items: end; gap: 10px; }
 .timetable-entry-button:hover {
   background: var(--ruled-blue); color: var(--paper-light);
 }
@@ -320,6 +325,21 @@ body {
 .login-card {
   background: var(--paper-light); border-radius: 18px; padding: 32px 28px;
   max-width: 340px; width: 100%; box-shadow: var(--shadow);
+}
+.login-link {
+  display: block; width: 100%; margin-top: 14px; border: 0; background: transparent;
+  color: var(--chalk-green); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.forgot-password-flow { text-align: left; }
+.forgot-password-flow h3 { margin: 0 0 5px; color: var(--chalk-green-dark); }
+.forgot-password-flow p { margin: 0 0 18px; color: var(--ink-soft); font-size: 12.5px; line-height: 1.45; }
+.reset-success {
+  margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: var(--ok-green-light);
+  color: var(--ok-green); font-size: 12.5px; font-weight: 600;
+}
+.reset-email {
+  margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: var(--paper);
+  color: var(--ink); font-size: 12.5px; font-weight: 700; overflow-wrap: anywhere;
 }
 
 .image-upload-hint {
