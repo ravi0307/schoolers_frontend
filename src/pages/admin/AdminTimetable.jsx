@@ -458,10 +458,10 @@ export default function AdminTimetable() {
             const timetable = (classTimetables || []).find(
               (record) => String(record.classId) === String(item.class_id)
             );
-            const previewEntries = (timetable?.entries || [])
-              .filter((entry) => entry.subject_id || entry.teacher_id || entry.period_start_time || entry.period_id)
-              .sort((a, b) => String(a.day_of_week).localeCompare(String(b.day_of_week)) || a.period_id - b.period_id)
-              .slice(0, 4);
+            const previewEntries = DAYS.map((day) => (timetable?.entries || [])
+              .filter((entry) => entry.day_of_week === day)
+              .sort((a, b) => Number(a.period_id) - Number(b.period_id))[0])
+              .filter(Boolean);
             const selected = String(selectedClassId) === String(item.class_id);
             return (
               <button
@@ -480,23 +480,26 @@ export default function AdminTimetable() {
                 </span>
                 <span className="timetable-class-preview">
                   {previewEntries.length ? (
-                    <table className="timetable-preview-table">
-                      <tbody>
-                        {previewEntries.map((entry) => (
-                          <tr key={entry.entry_id}>
-                            <td className="day-cell">{entry.day_of_week}</td>
-                            <td className="subject-cell">
-                              {subjectNames.get(String(entry.subject_id)) || "Unassigned"}
-                            </td>
-                            <td className="time-cell">
-                              {entry.period_start_time
-                                ? displayTime(entry.period_start_time)
-                                : periodById.get(String(entry.period_id))?.period_time?.split(" - ")[0] || ""}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <>
+                      <span className="timetable-weekly-summary-title">Weekly summary</span>
+                      <table className="timetable-preview-table">
+                        <tbody>
+                          {previewEntries.map((entry) => (
+                            <tr key={entry.entry_id}>
+                              <td className="day-cell">{entry.day_of_week}</td>
+                              <td className="subject-cell">
+                                {subjectNames.get(String(entry.subject_id)) || "Unassigned"}
+                              </td>
+                              <td className="time-cell">
+                                {entry.period_start_time
+                                  ? displayTime(entry.period_start_time)
+                                  : periodById.get(String(entry.period_id))?.period_time?.split(" - ")[0] || ""}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
                   ) : (
                     <span className="timetable-preview-empty">No entries yet</span>
                   )}
@@ -561,7 +564,7 @@ export default function AdminTimetable() {
           Weekly timetable summary — select a class to manage periods
         </div>
       )}
-      {selectedClassId && !viewingEntry && !editingEntry && (
+      {selectedClassId && !viewingEntry && !editingEntry && !showAddPeriod && (
         <div className="add-period-toolbar">
           <button
             className="btn primary"
@@ -571,23 +574,6 @@ export default function AdminTimetable() {
           >
             + Add period for the week
           </button>
-          {showAddPeriod && (
-            <button
-              className="btn ghost"
-              type="button"
-              onClick={() => {
-                setShowAddPeriod(false);
-                setNewStartTime("");
-                setNewDurationHours("1");
-                setNewDurationMinutes("0");
-                setNewSubjectId("");
-                setNewTeacherId("");
-                setNewDayOfWeek("");
-              }}
-            >
-              Cancel
-            </button>
-          )}
         </div>
       )}
 
@@ -646,9 +632,25 @@ export default function AdminTimetable() {
                 <span className="field-error">This teacher already has a class at this time</span>
               )}
             </div>
-            <div style={{ display: "flex", alignItems: "end" }}>
+            <div className="add-period-actions">
               <button className="btn primary" type="submit" disabled={addingPeriod}>
                 {addingPeriod ? "Adding..." : "Add period"}
+              </button>
+              <button
+                className="btn ghost"
+                type="button"
+                disabled={addingPeriod}
+                onClick={() => {
+                  setShowAddPeriod(false);
+                  setNewStartTime("");
+                  setNewDurationHours("1");
+                  setNewDurationMinutes("0");
+                  setNewSubjectId("");
+                  setNewTeacherId("");
+                  setNewDayOfWeek("");
+                }}
+              >
+                Cancel
               </button>
             </div>
           </div>

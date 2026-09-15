@@ -17,7 +17,13 @@ function assertContains(file, patterns) {
 }
 
 test("every frontend API module is wired to its required backend surface", () => {
-  assertContains("src/api/auth.js", [/\/auth\/login/, /\/auth\/me/]);
+  assertContains("src/api/auth.js", [
+    /\/auth\/login/,
+    /\/auth\/me/,
+    /\/auth\/forgot-password/,
+    /\/auth\/forgot-password\/verify/,
+    /\/auth\/forgot-password\/reset/,
+  ]);
   assertContains("src/api/academics.js", [/\/classes/, /\/subjects/, /\/periods/, /\/holidays/]);
   assertContains("src/api/attendance.js", [/\/attendance\/mark/, /\/attendance/]);
   assertContains("src/api/marks.js", [/\/marks\/student/, /\/marks\/\$\{studentId\}/]);
