@@ -564,7 +564,7 @@ export default function AdminTimetable() {
           Weekly timetable summary — select a class to manage periods
         </div>
       )}
-      {selectedClassId && !viewingEntry && !editingEntry && !showAddPeriod && (
+      {selectedClassId && !viewingEntry && !editingEntry && (
         <div className="add-period-toolbar">
           <button
             className="btn primary"
@@ -574,6 +574,23 @@ export default function AdminTimetable() {
           >
             + Add period for the week
           </button>
+          {showAddPeriod && (
+            <button
+              className="btn ghost"
+              type="button"
+              onClick={() => {
+                setShowAddPeriod(false);
+                setNewStartTime("");
+                setNewDurationHours("1");
+                setNewDurationMinutes("0");
+                setNewSubjectId("");
+                setNewTeacherId("");
+                setNewDayOfWeek("");
+              }}
+            >
+              Cancel
+            </button>
+          )}
         </div>
       )}
 
@@ -635,22 +652,6 @@ export default function AdminTimetable() {
             <div className="add-period-actions">
               <button className="btn primary" type="submit" disabled={addingPeriod}>
                 {addingPeriod ? "Adding..." : "Add period"}
-              </button>
-              <button
-                className="btn ghost"
-                type="button"
-                disabled={addingPeriod}
-                onClick={() => {
-                  setShowAddPeriod(false);
-                  setNewStartTime("");
-                  setNewDurationHours("1");
-                  setNewDurationMinutes("0");
-                  setNewSubjectId("");
-                  setNewTeacherId("");
-                  setNewDayOfWeek("");
-                }}
-              >
-                Cancel
               </button>
             </div>
           </div>
