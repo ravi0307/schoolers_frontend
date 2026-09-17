@@ -32,13 +32,12 @@ export default function PilotBroadcast() {
     setSendingBroadcast(true);
     try {
       await communicationApi.createBroadcast({
-        scope: "route",
-        route_id: route.route_id,
+        scope: "school",
         role_name: "Pilot",
         sender_name: user?.name || user?.username || "Pilot",
         message: broadcastMessage.trim(),
       });
-      toast("Broadcast sent to this route's community");
+      toast("Broadcast sent to the school community");
       setBroadcastMessage("");
       refetchBroadcasts();
     } catch (err) {
@@ -65,7 +64,7 @@ export default function PilotBroadcast() {
     <PilotShell>
       <div className="scr-title">Broadcast</div>
       <div className="scr-sub">
-        Sent to the school admin, teachers, and the parents of students on {route.name}.
+        Sent to the school admin, teachers, and parents across the school.
       </div>
 
       <form className="card white" onSubmit={sendBroadcast} style={{ marginTop: 14 }}>

@@ -313,6 +313,22 @@ export default function AdminTimetable() {
     return getEntryTime(entry, periodById);
   }
 
+  // Resolve a timetable entry's start/end times to "HH:MM" keys for the weekly
+  // summary. Newer entries carry period_start_time/period_end_time; legacy
+  // entries leave those null and reference a period whose period_time holds the
+  // schedule, so fall back to that record so old entries stay in the summary.
+  function summaryEntryTimes(entry) {
+    if (entry.period_start_time && entry.period_end_time) {
+      return [entry.period_start_time, entry.period_end_time];
+    }
+    const period = periodById.get(String(entry.period_id));
+    if (period?.period_time) {
+      const [start, end] = period.period_time.split(" - ");
+      return [toTimeInput(start), toTimeInput(end)];
+    }
+    return [null, null];
+  }
+
   async function addPeriod(event) {
     event.preventDefault();
     if (!selectedClassId || !newStartTime || !newEndTime) {
@@ -461,13 +477,13 @@ export default function AdminTimetable() {
             const timetableEntries = (timetable?.entries || []).filter(Boolean);
             // Build unique time slots from entries
             const timeSlots = [...new Set(
-              timetableEntries.map((e) => e.period_start_time || "")
+              timetableEntries.map((e) => summaryEntryTimes(e)[0])
             )].filter(Boolean).sort();
             // Build a lookup map: `${day}|${startTime}` -> entry
             const entryMap = new Map();
             timetableEntries.forEach((entry) => {
-              const start = entry.period_start_time || "";
-              entryMap.set(`${entry.day_of_week}|${start}`, entry);
+              const [start] = summaryEntryTimes(entry);
+              if (start) entryMap.set(`${entry.day_of_week}|${start}`, entry);
             });
             const selected = String(selectedClassId) === String(item.class_id);
             return (

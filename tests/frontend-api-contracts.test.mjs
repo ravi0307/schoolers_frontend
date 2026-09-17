@@ -93,11 +93,10 @@ test("authentication persists and clears the complete session lifecycle", () => 
   assert.match(auth, /setUser\(null\)/);
 });
 
-test("pilot broadcast is a routed tab that sends route-scoped broadcasts", () => {
+test("pilot broadcast is a routed tab that sends school-scoped broadcasts", () => {
   assertContains("src/App.jsx", [/import PilotBroadcast from/, /path="broadcast" element=\{<PilotBroadcast \/>\}/]);
   assertContains("src/pages/pilot/PilotBroadcast.jsx", [
-    /scope: "route"/,
-    /route_id: route\.route_id/,
+    /scope: "school"/,
     /communicationApi\.createBroadcast/,
   ]);
 });
