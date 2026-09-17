@@ -653,6 +653,7 @@ export default function AdminTimetable() {
               <button
                 className="btn ghost"
                 type="button"
+                disabled={addingPeriod}
                 onClick={() => {
                   setShowAddPeriod(false);
                   setNewStartTime("");
