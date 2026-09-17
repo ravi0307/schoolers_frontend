@@ -5,6 +5,7 @@ import { useApi } from "../../hooks/useApi";
 import * as schoolsApi from "../../api/schools";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import { LOCATION_DATA, countries } from "../../data/locations";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -13,6 +14,7 @@ export default function MasterSchools() {
   const { data, loading, error, refetch } = useApi(() => schoolsApi.listSchools(), []);
   const toast = useToast();
   const navigate = useNavigate();
+  const pager = usePagination(data);
   const [formOpen, setFormOpen] = useState(false);
   const [locationData, setLocationData] = useState(null);
   const [form, setForm] = useState({
@@ -76,7 +78,7 @@ export default function MasterSchools() {
       {!loading && !error && (
         <div className="card">
           {data && data.length ? (
-            data.map((s) => (
+            pager.pageItems.map((s) => (
               <div key={s.school_id} className="listitem" onClick={() => navigate(`/master/schools/${s.school_id}`)} style={{ cursor: "pointer" }}>
                 <div className={`avatar ${s.status === "Active" ? "g" : "r"}`}>{s.name[0]}</div>
                 <div className="meta">
@@ -89,6 +91,7 @@ export default function MasterSchools() {
           ) : (
             <Empty>No schools yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
 

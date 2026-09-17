@@ -76,6 +76,7 @@ body {
 .web-content .section-label { color: #A8C8D4; }
 .web-content .spinner { color: #A8C8D4; }
 .web-content .empty { color: var(--ink-soft); }
+.web-content .selected-timetable-label { color: #A8C8D4; }
 .web-content .card,
 .web-content .kpi { background: var(--paper-light); }
 .web-content .btn.ghost {
@@ -254,6 +255,50 @@ body {
   color: var(--ink-soft);
 }
 .timetable-class-card-action { margin-top: auto; font-size: 11px; font-weight: 700; color: var(--chalk-green); }
+.timetable-weekly-summary-card {
+  padding: 10px 14px;
+  background: var(--paper-light);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  margin-top: 8px;
+  overflow-x: auto;
+}
+.timetable-weekly-summary-card .timetable-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  table-layout: auto;
+}
+.timetable-weekly-summary-card .timetable-preview-table th,
+.timetable-weekly-summary-card .timetable-preview-table td {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.timetable-weekly-summary-card .timetable-preview-table th {
+  background: var(--paper);
+  font-weight: 700;
+  color: var(--chalk-green-dark);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.timetable-weekly-summary-card .timetable-preview-table .time-col-header {
+  width: 60px;
+  color: var(--pencil-yellow-dark);
+  background: var(--ruled-blue-light);
+}
+.timetable-weekly-summary-card .timetable-preview-table td.time-cell {
+  background: var(--ruled-blue-light);
+  color: var(--ink-soft);
+  font-weight: 600;
+  width: 60px;
+}
+.timetable-weekly-summary-card .timetable-preview-table .active-cell {
+  background: var(--paper-light);
+  font-weight: 600;
+  color: var(--ruled-blue);
+}
 .selected-timetable-label { font-size: 16px; font-weight: 800; color: var(--chalk-green); margin: 6px 0 14px; }
 .section-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
 @media (max-width: 960px) {
@@ -388,3 +433,11 @@ body {
 .public-site-state { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--paper-light); }
 .public-site-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 16px; font-size: 12px; color: #A8C8D4; }
 .public-site-link a { color: var(--pencil-yellow); overflow-wrap: anywhere; }
+
+.pager {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 12px 4px 2px; border-top: 1px solid var(--line); margin-top: 4px;
+}
+.pager-info { font-size: 12px; color: #6b7280; }
+.pager-controls { display: flex; align-items: center; gap: 8px; }
+.pager-page { font-size: 12px; color: #374151; font-weight: 600; }

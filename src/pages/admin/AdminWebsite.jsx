@@ -5,6 +5,7 @@ import * as websiteApi from "../../api/website";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
 import { apiErrorMessage } from "../../api/client";
 
@@ -20,6 +21,7 @@ export default function AdminWebsite() {
     []
   );
   const toast = useToast();
+  const testimonialPager = usePagination(testimonials);
 
   const [form, setForm] = useState({ school_name: "", tagline: "", icon_url: "", accent_color: "#023859" });
   const [homeForm, setHomeForm] = useState({
@@ -194,7 +196,7 @@ export default function AdminWebsite() {
       <div className="section-label">Testimonials</div>
       <div className="card">
         {testimonials && testimonials.length ? (
-          testimonials.map((t) => (
+          testimonialPager.pageItems.map((t) => (
             <div key={t.testimonial_id} className="listitem">
               <div className="meta">
                 <b>{t.name} · {t.role}</b>
@@ -206,6 +208,7 @@ export default function AdminWebsite() {
         ) : (
           <Empty>No testimonials yet.</Empty>
         )}
+        <Pagination {...testimonialPager} />
       </div>
       <button className="btn primary sm" type="button" onClick={goLive} disabled={publishing}>
         {publishing ? "Publishing..." : "Go Live"}

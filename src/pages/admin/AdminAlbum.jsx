@@ -2,9 +2,11 @@ import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as mediaApi from "../../api/media";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 export default function AdminAlbum() {
   const { data, loading, error } = useApi(() => mediaApi.listMedia(), []);
+  const pager = usePagination(data);
 
   return (
     <AdminShell>
@@ -15,7 +17,7 @@ export default function AdminAlbum() {
       {!loading && !error && (
         <div className="card">
           {data?.length ? (
-            data.map((item) => (
+            pager.pageItems.map((item) => (
               <div key={item.media_id} className="listitem">
                 <div className="avatar">{item.icon || "🖼️"}</div>
                 <div className="meta">
@@ -27,6 +29,7 @@ export default function AdminAlbum() {
           ) : (
             <Empty>No album items yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
     </AdminShell>

@@ -5,6 +5,7 @@ import * as transportApi from "../../api/transport";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 
@@ -45,6 +46,8 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
     () => transportApi.listRouteStudents(route.route_id),
     [route.route_id]
   );
+  const stopsPager = usePagination(stops);
+  const routeStudentsPager = usePagination(routeStudents);
   const { data: allStudents, refetch: refetchAvailableStudents } = useApi(
     () => peopleApi.listStudents({ unassigned_only: true }),
     []
@@ -264,7 +267,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
                 </tr>
               </thead>
               <tbody>
-                {stops.map((stop) => {
+                {stopsPager.pageItems.map((stop) => {
                   return (
                     <tr key={stop.stop_id}>
                       <td>{stop.stop_name}</td>
@@ -285,6 +288,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
         ) : (
           <Empty>No stops yet.</Empty>
         )}
+        <Pagination {...stopsPager} />
       </div>
 
       {stopForm ? (
@@ -308,7 +312,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
       <div className="section-label">Students on this route</div>
       <div className="card">
         {routeStudents && routeStudents.length ? (
-          routeStudents.map((rs) => {
+          routeStudentsPager.pageItems.map((rs) => {
             const nestedStudent = typeof rs.student === "object" ? rs.student : null;
             const studentId = firstValue(rs.student_id, nestedStudent?.student_id, nestedStudent?.id);
             const student = nestedStudent || studentById.get(String(studentId));
@@ -340,6 +344,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
         ) : (
           <Empty>No students assigned.</Empty>
         )}
+        <Pagination {...routeStudentsPager} />
       </div>
       {studentForm ? (
         <form className="card white" onSubmit={addRouteStudent}>
@@ -406,6 +411,8 @@ export default function AdminRoutes() {
       })),
     [staff]
   );
+  const routePager = usePagination(data);
+  const vehiclePager = usePagination(vehicleRecords);
 
   async function addVehicle() {
     const number = vehicleDraft.trim();
@@ -523,7 +530,7 @@ export default function AdminRoutes() {
           </div>
           <div style={{ padding: "0 18px" }}>
             {data && data.length ? (
-              data.map((r) => (
+              routePager.pageItems.map((r) => (
                 <div key={r.route_id} className="listitem" onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
                   <div className="avatar r">🚌</div>
                   <div className="meta">
@@ -536,6 +543,7 @@ export default function AdminRoutes() {
             ) : (
               <Empty>No routes yet.</Empty>
             )}
+            <Pagination {...routePager} />
           </div>
         </div>
         <div style={{ marginTop: 18 }}>
@@ -558,7 +566,7 @@ export default function AdminRoutes() {
                 </div>
               )}
             <div style={{ maxHeight: 300, overflowY: vehicleRecords.length > 10 ? "auto" : "visible" }}>
-              {vehicleRecords.length ? vehicleRecords.map((record) => (
+              {vehicleRecords.length ? vehiclePager.pageItems.map((record) => (
                   <div key={record.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #dfeaf1" }}>
                     {editingVehicleId === record.id ? (
                       <>
@@ -587,6 +595,7 @@ export default function AdminRoutes() {
                     )}
                   </div>
                 )) : <Empty>No vehicle records yet.</Empty>}
+              <Pagination {...vehiclePager} />
             </div>
           </div>
         </div>

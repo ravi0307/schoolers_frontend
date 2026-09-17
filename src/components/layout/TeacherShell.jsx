@@ -5,6 +5,7 @@ const NAV = [
   { to: "/teacher/attendance", icon: "✅", label: "Attendance" },
   { to: "/teacher/marks", icon: "🏆", label: "Marks" },
   { to: "/teacher/timetable", icon: "🗓️", label: "Timetable" },
+  { to: "/teacher/broadcast", icon: "📣", label: "Broadcast" },
 ];
 
 export default function TeacherShell({ children }) {

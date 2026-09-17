@@ -18,6 +18,7 @@ import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
 import TeacherMarks from "./pages/teacher/TeacherMarks";
 import TeacherTimetable from "./pages/teacher/TeacherTimetable";
+import TeacherBroadcast from "./pages/teacher/TeacherBroadcast";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
@@ -32,6 +33,7 @@ import AdminWebsite from "./pages/admin/AdminWebsite";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
+import PilotBroadcast from "./pages/pilot/PilotBroadcast";
 import PilotLeave from "./pages/pilot/PilotLeave";
 
 import MasterSchools from "./pages/master/MasterSchools";
@@ -91,6 +93,7 @@ export default function App() {
                       <Route path="attendance" element={<TeacherAttendance />} />
                       <Route path="marks" element={<TeacherMarks />} />
                       <Route path="timetable" element={<TeacherTimetable />} />
+                      <Route path="broadcast" element={<TeacherBroadcast />} />
                       <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
                     </Routes>
                   </TeacherProvider>
@@ -128,6 +131,7 @@ export default function App() {
                 <ProtectedRoute roles={["pilot"]}>
                   <Routes>
                     <Route path="pickdrop" element={<PilotPickDrop />} />
+                    <Route path="broadcast" element={<PilotBroadcast />} />
                     <Route path="leave" element={<PilotLeave />} />
                     <Route path="*" element={<Navigate to="/pilot/pickdrop" replace />} />
                   </Routes>

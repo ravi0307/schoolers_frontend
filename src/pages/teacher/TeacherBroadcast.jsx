@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import AdminShell from "../../components/layout/AdminShell";
+import TeacherShell from "../../components/layout/TeacherShell";
 import { useAuth } from "../../context/AuthContext";
+import { useTeacherContext } from "../../context/TeacherContext";
 import { useApi } from "../../hooks/useApi";
 import * as communicationApi from "../../api/communication";
 import * as academicsApi from "../../api/academics";
@@ -240,6 +241,7 @@ function RichTextEditor({ value, onChange }) {
 
 export default function AdminBroadcast() {
   const { user } = useAuth();
+  const { classIds } = useTeacherContext();
   const { data, loading, error, refetch } = useApi(() => communicationApi.listBroadcasts(), []);
   const { data: classes } = useApi(() => academicsApi.listClasses(), []);
   const toast = useToast();
@@ -253,6 +255,11 @@ export default function AdminBroadcast() {
   const [audienceFilter, setAudienceFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
   const [expandedBroadcastId, setExpandedBroadcastId] = useState(null);
+
+  const myClasses = useMemo(
+    () => (classes || []).filter((item) => classIds.includes(item.class_id ?? item.id)),
+    [classes, classIds]
+  );
 
   const classNames = useMemo(
     () => new Map((classes || []).map((item) => [String(item.class_id ?? item.id), item.name])),
@@ -405,8 +412,8 @@ export default function AdminBroadcast() {
       toast("Enter a message");
       return;
     }
-    if (scope === "class" && !classId) {
-      toast("Select a class");
+    if (scope === "class" && !myClasses.some((c) => String(c.class_id ?? c.id) === String(classId))) {
+      toast("Select one of your teaching classes");
       return;
     }
 
@@ -436,7 +443,7 @@ export default function AdminBroadcast() {
   }
 
   return (
-    <AdminShell>
+    <TeacherShell>
       <div className="scr-title">Broadcast</div>
       <div className="scr-sub">Send announcements to the school community</div>
       {loading && <Spinner />}
@@ -467,7 +474,7 @@ export default function AdminBroadcast() {
                 <label>Class</label>
                 <select required value={classId} onChange={(event) => setClassId(event.target.value)}>
                   <option value="">Select class</option>
-                  {(classes || []).map((item) => (
+                  {(myClasses || []).map((item) => (
                     <option key={item.class_id} value={item.class_id}>{item.name}</option>
                   ))}
                 </select>
@@ -545,6 +552,6 @@ export default function AdminBroadcast() {
         </div>
         </>
       )}
-    </AdminShell>
+    </TeacherShell>
   );
 }
