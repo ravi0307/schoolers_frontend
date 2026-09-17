@@ -3,16 +3,12 @@ import PilotShell from "../../components/layout/PilotShell";
 import BroadcastFeed from "../../components/ui/BroadcastFeed";
 import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
-import * as transportApi from "../../api/transport";
 import * as communicationApi from "../../api/communication";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, Empty } from "../../components/ui/Primitives";
 import { apiErrorMessage } from "../../api/client";
 
 export default function PilotBroadcast() {
   const { user } = useAuth();
-  const { data: routes, loading: routesLoading } = useApi(() => transportApi.listRoutes(), []);
-  const route = routes && routes[0];
   const toast = useToast();
 
   const { data: broadcasts, loading: broadcastsLoading, error: broadcastsError, refetch: refetchBroadcasts } = useApi(
@@ -24,7 +20,6 @@ export default function PilotBroadcast() {
 
   async function sendBroadcast(event) {
     event.preventDefault();
-    if (!route) return;
     if (!broadcastMessage.trim()) {
       toast("Enter a message");
       return;
@@ -47,19 +42,6 @@ export default function PilotBroadcast() {
     }
   }
 
-  if (routesLoading)
-    return (
-      <PilotShell>
-        <Spinner />
-      </PilotShell>
-    );
-  if (!route)
-    return (
-      <PilotShell>
-        <Empty>No route assigned yet.</Empty>
-      </PilotShell>
-    );
-
   return (
     <PilotShell>
       <div className="scr-title">Broadcast</div>
@@ -73,7 +55,7 @@ export default function PilotBroadcast() {
           <textarea
             value={broadcastMessage}
             onChange={(event) => setBroadcastMessage(event.target.value)}
-            placeholder="Type a broadcast for this route..."
+            placeholder="Type a broadcast for the school..."
             rows={3}
           />
         </div>

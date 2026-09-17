@@ -313,13 +313,14 @@ export default function AdminTimetable() {
     return getEntryTime(entry, periodById);
   }
 
-  // Resolve a timetable entry's start/end times to "HH:MM" keys for the weekly
-  // summary. Newer entries carry period_start_time/period_end_time; legacy
-  // entries leave those null and reference a period whose period_time holds the
-  // schedule, so fall back to that record so old entries stay in the summary.
+  // Resolve a timetable entry's start/end times to normalized "HH:MM" keys for
+  // the weekly summary. Newer entries carry period_start_time/period_end_time
+  // (SQL time values that can include seconds); legacy entries leave those null
+  // and reference a period whose period_time holds the schedule. Every time is
+  // passed through toTimeInput so both representations dedupe to the same key.
   function summaryEntryTimes(entry) {
     if (entry.period_start_time && entry.period_end_time) {
-      return [entry.period_start_time, entry.period_end_time];
+      return [toTimeInput(entry.period_start_time), toTimeInput(entry.period_end_time)];
     }
     const period = periodById.get(String(entry.period_id));
     if (period?.period_time) {
