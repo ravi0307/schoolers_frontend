@@ -4,6 +4,7 @@ import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
 
@@ -66,6 +67,7 @@ export default function AdminStaff() {
     if (!q) return true;
     return `${person.name || ""} ${person.role_title || ""} ${person.email || ""}`.toLowerCase().includes(q);
   });
+  const pager = usePagination(filteredData);
 
   function resetForm() {
     setEditingId(null);
@@ -215,7 +217,7 @@ export default function AdminStaff() {
 
           <div className="card">
             {filteredData.length ? (
-              filteredData.map((person) => {
+              pager.pageItems.map((person) => {
                 const staffId = person.staff_id || person.id;
                 const isExpanded = expandedId === staffId;
                 const emailValue = person.email || "";
@@ -309,6 +311,7 @@ export default function AdminStaff() {
             ) : (
               <Empty>No staff found.</Empty>
             )}
+            <Pagination {...pager} />
           </div>
         </>
       )}

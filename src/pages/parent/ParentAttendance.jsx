@@ -3,6 +3,7 @@ import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as attendanceApi from "../../api/attendance";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 export default function ParentAttendance() {
   const { selectedChild } = useParentContext();
@@ -10,6 +11,7 @@ export default function ParentAttendance() {
     () => (selectedChild ? attendanceApi.getAttendance(selectedChild.student_id) : Promise.resolve([])),
     [selectedChild?.student_id]
   );
+  const pager = usePagination(data);
 
   return (
     <ParentShell>
@@ -20,7 +22,7 @@ export default function ParentAttendance() {
       {!loading && !error && (
         <div className="card">
           {data && data.length ? (
-            data.map((a) => (
+            pager.pageItems.map((a) => (
               <div key={a.attendance_id} className="listitem">
                 <div className="meta">
                   <b>{a.date}</b>
@@ -31,6 +33,7 @@ export default function ParentAttendance() {
           ) : (
             <Empty>No attendance records yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
     </ParentShell>

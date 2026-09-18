@@ -5,6 +5,7 @@ import { useApi } from "../../hooks/useApi";
 import * as leaveApi from "../../api/leave";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 export default function ParentLeave() {
@@ -17,6 +18,7 @@ export default function ParentLeave() {
 
   const { data, loading, refetch } = useApi(() => leaveApi.listLeave(), []);
   const mine = (data || []).filter((l) => l.requester_name === selectedChild?.name);
+  const pager = usePagination(mine);
 
   async function submit(e) {
     e.preventDefault();
@@ -76,7 +78,7 @@ export default function ParentLeave() {
       ) : (
         <div className="card">
           {mine.length ? (
-            mine.map((l) => (
+            pager.pageItems.map((l) => (
               <div key={l.leave_id} className="listitem">
                 <div className="meta">
                   <b>{l.from_date} → {l.to_date}</b>
@@ -90,6 +92,7 @@ export default function ParentLeave() {
           ) : (
             <Empty>No leave requests yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
     </ParentShell>

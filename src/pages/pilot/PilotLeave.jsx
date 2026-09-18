@@ -1,15 +1,11 @@
 import { useState } from "react";
-import MobileLayout from "../../components/layout/MobileLayout";
+import PilotShell from "../../components/layout/PilotShell";
 import { useApi } from "../../hooks/useApi";
 import * as leaveApi from "../../api/leave";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
-
-const TABS = [
-  { to: "/pilot/pickdrop", icon: "🚌", label: "Pick & Drop" },
-  { to: "/pilot/leave", icon: "📅", label: "Leave" },
-];
 
 export default function PilotLeave() {
   const toast = useToast();
@@ -19,6 +15,7 @@ export default function PilotLeave() {
   const [submitting, setSubmitting] = useState(false);
   const { data, loading, refetch } = useApi(() => leaveApi.listLeave(), []);
   const mine = (data || []).filter((l) => l.requester_type === "Pilot");
+  const pager = usePagination(mine);
 
   async function submit(e) {
     e.preventDefault();
@@ -48,7 +45,7 @@ export default function PilotLeave() {
   }
 
   return (
-    <MobileLayout tabs={TABS}>
+    <PilotShell>
       <div className="scr-title">Leave Request</div>
       <div className="scr-sub">Sent to School Admin for approval</div>
       <form className="card" onSubmit={submit}>
@@ -65,14 +62,15 @@ export default function PilotLeave() {
       <div className="section-label">Your requests</div>
       {loading ? <Spinner /> : (
         <div className="card">
-          {mine.length ? mine.map((l) => (
+          {mine.length ? pager.pageItems.map((l) => (
             <div key={l.leave_id} className="listitem">
               <div className="meta"><b>{l.from_date} → {l.to_date}</b><span>{l.reason}</span></div>
               <Pill tone={l.status === "Approved" ? "ok" : l.status === "Rejected" ? "warn" : "mute"}>{l.status}</Pill>
             </div>
           )) : <Empty>No leave requests yet.</Empty>}
+          <Pagination {...pager} />
         </div>
       )}
-    </MobileLayout>
+    </PilotShell>
   );
 }

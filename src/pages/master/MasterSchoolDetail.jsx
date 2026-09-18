@@ -6,6 +6,7 @@ import * as schoolsApi from "../../api/schools";
 import * as notificationsApi from "../../api/notifications";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Kpi, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -76,6 +77,7 @@ export default function MasterSchoolDetail() {
     () => notificationsApi.listNotifications(schoolId),
     [schoolId]
   );
+  const notifPager = usePagination(notifications);
 
   const [notifType, setNotifType] = useState("Dues");
   const [notifMessage, setNotifMessage] = useState("");
@@ -334,7 +336,7 @@ export default function MasterSchoolDetail() {
       <div className="section-label">Notification History</div>
       <div className="card" style={{ marginBottom: 16 }}>
         {notifications && notifications.length ? (
-          notifications.map((n) => (
+          notifPager.pageItems.map((n) => (
             <div key={n.notification_id} className="listitem">
               <div className="meta"><b>{n.type}</b><span>{n.message}</span></div>
             </div>
@@ -342,6 +344,7 @@ export default function MasterSchoolDetail() {
         ) : (
           <Empty>No notifications sent yet.</Empty>
         )}
+        <Pagination {...notifPager} />
       </div>
 
       <button className="btn danger block" onClick={removeSchool}>Delete School</button>

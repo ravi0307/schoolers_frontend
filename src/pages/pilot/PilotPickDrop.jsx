@@ -1,14 +1,10 @@
-import MobileLayout from "../../components/layout/MobileLayout";
+import PilotShell from "../../components/layout/PilotShell";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
-
-const TABS = [
-  { to: "/pilot/pickdrop", icon: "🚌", label: "Pick & Drop" },
-  { to: "/pilot/leave", icon: "📅", label: "Leave" },
-];
 
 const STATUS_CYCLE = ["pending", "picked", "dropped"];
 const STATUS_TONE = { pending: "mute", picked: "info", dropped: "ok" };
@@ -23,6 +19,7 @@ export default function PilotPickDrop() {
     () => (route ? transportApi.listRouteStudents(route.route_id) : Promise.resolve([])),
     [route?.route_id]
   );
+  const pager = usePagination(students);
 
   async function cycleStatus(studentId, current) {
     const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
@@ -34,11 +31,11 @@ export default function PilotPickDrop() {
     }
   }
 
-  if (routesLoading) return <MobileLayout tabs={TABS}><Spinner /></MobileLayout>;
-  if (!route) return <MobileLayout tabs={TABS}><Empty>No route assigned yet.</Empty></MobileLayout>;
+  if (routesLoading) return <PilotShell><Spinner /></PilotShell>;
+  if (!route) return <PilotShell><Empty>No route assigned yet.</Empty></PilotShell>;
 
   return (
-    <MobileLayout tabs={TABS}>
+    <PilotShell>
       <div className="scr-title">Pick &amp; Drop</div>
       <div className="scr-sub">{route.name} · {route.vehicle}</div>
 
@@ -47,10 +44,10 @@ export default function PilotPickDrop() {
         {stops && stops.length ? (
           stops.map((s) => (
             <div key={s.stop_id} className="listitem">
-              <div className={`avatar ${s.stop_type === "pickup" ? "g" : "r"}`}>{s.stop_type === "pickup" ? "P" : "D"}</div>
+              <div className="avatar g">{s.stop_name.charAt(0)}</div>
               <div className="meta">
-                <b>{s.name}</b>
-                <span>{s.stop_time}</span>
+                <b>{s.stop_name}</b>
+                <span>Pickup {s.pickup_time} · Drop {s.drop_time}</span>
               </div>
             </div>
           ))
@@ -65,7 +62,7 @@ export default function PilotPickDrop() {
       {!loading && !error && (
         <div className="card">
           {students && students.length ? (
-            students.map((s) => (
+            pager.pageItems.map((s) => (
               <div key={s.id} className="listitem">
                 <div className="meta"><b>Student #{s.student_id}</b></div>
                 <span
@@ -80,8 +77,9 @@ export default function PilotPickDrop() {
           ) : (
             <Empty>No students on this route.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
-    </MobileLayout>
+    </PilotShell>
   );
 }

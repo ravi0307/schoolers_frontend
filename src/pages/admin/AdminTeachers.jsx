@@ -4,6 +4,7 @@ import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
 
@@ -51,6 +52,7 @@ export default function AdminTeachers() {
     if (!q) return true;
     return `${teacher.name || ""} ${teacher.role_title || ""} ${teacher.email || ""}`.toLowerCase().includes(q);
   });
+  const pager = usePagination(filteredData);
 
   function resetForm() {
     setEditingId(null);
@@ -169,7 +171,7 @@ export default function AdminTeachers() {
 
           <div className="card">
             {filteredData.length ? (
-              filteredData.map((teacher) => {
+              pager.pageItems.map((teacher) => {
                 const teacherId = teacher.teacher_id || teacher.id;
                 const isExpanded = expandedId === teacherId;
                 const phoneValue = teacher.phone || "Not provided";
@@ -243,6 +245,7 @@ export default function AdminTeachers() {
             ) : (
               <Empty>No teachers yet.</Empty>
             )}
+            <Pagination {...pager} />
           </div>
         </>
       )}

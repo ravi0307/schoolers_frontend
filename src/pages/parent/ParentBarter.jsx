@@ -4,6 +4,7 @@ import { useApi } from "../../hooks/useApi";
 import * as barterApi from "../../api/barter";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 export default function ParentBarter() {
@@ -13,6 +14,7 @@ export default function ParentBarter() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const pager = usePagination(data);
 
   async function submit(e) {
     e.preventDefault();
@@ -43,20 +45,23 @@ export default function ParentBarter() {
       <ErrorBanner message={error} />
 
       {!loading && (
-        <div className="grid2">
-          {data && data.length ? (
-            data.map((b) => (
-              <div key={b.listing_id} className="card white">
-                <b style={{ fontSize: 12.5 }}>{b.title}</b>
-                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
-                  {b.price} · {b.listed_by}
+        <>
+          <div className="grid2">
+            {data && data.length ? (
+              pager.pageItems.map((b) => (
+                <div key={b.listing_id} className="card white">
+                  <b style={{ fontSize: 12.5 }}>{b.title}</b>
+                  <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+                    {b.price} · {b.listed_by}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <Empty>No listings yet.</Empty>
-          )}
-        </div>
+              ))
+            ) : (
+              <Empty>No listings yet.</Empty>
+            )}
+          </div>
+          <Pagination {...pager} />
+        </>
       )}
 
       {formOpen ? (

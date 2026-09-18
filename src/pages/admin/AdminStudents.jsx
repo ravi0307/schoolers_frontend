@@ -5,6 +5,7 @@ import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 function getValue(obj, keys) {
@@ -20,6 +21,7 @@ export default function AdminStudents() {
   const { data, loading, error, refetch } = useApi(() => peopleApi.listStudents({ search: search || undefined }), [search]);
   const { data: classes } = useApi(() => academicsApi.listClasses(), []);
   const toast = useToast();
+  const pager = usePagination(data);
 
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
@@ -151,7 +153,7 @@ export default function AdminStudents() {
       {!loading && !error && (
         <div className="card">
           {data && data.length ? (
-            data.map((s) => {
+            pager.pageItems.map((s) => {
               const isExpanded = expandedStudentId === s.student_id;
               const className = (classes || []).find((c) => c.class_id === s.class_id)?.name || "Unassigned";
               const studentDOB = getValue(s, ["date_of_birth", "dob"]) || "Not provided";
@@ -308,6 +310,7 @@ export default function AdminStudents() {
           ) : (
             <Empty>No students match.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
 
