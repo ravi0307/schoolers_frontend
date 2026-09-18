@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../api/client";
 import * as authApi from "../api/auth";
+import { sanitizeOtp, validatePasswordReset } from "../utils/passwordReset";
 
 const ROLE_HOME = {
   parent: "/parent/home",
@@ -18,8 +19,9 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetStep, setResetStep] = useState("email");
+  const [resetStep, setResetStep] = useState("identifier");
   const [identifier, setIdentifier] = useState("");
+  const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetMessage, setResetMessage] = useState("");
@@ -31,8 +33,9 @@ export default function Login() {
     setError(null);
     setResetMessage("");
     setShowForgotPassword(true);
-    setResetStep("email");
+    setResetStep("identifier");
     setIdentifier("");
+    setOtp("");
     setNewPassword("");
     setConfirmPassword("");
   }
@@ -65,24 +68,8 @@ export default function Login() {
     try {
       const result = await authApi.checkForgotPasswordIdentifier(identifier.trim());
       setIdentifier(result.identifier || identifier.trim());
-      setResetMessage("Account found. Verify it to continue.");
-      setResetStep("verify");
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    } finally {
-      setResetSubmitting(false);
-    }
-  }
-
-  async function verifyIdentifier() {
-    setError(null);
-    setResetMessage("");
-    setResetSubmitting(true);
-    try {
-      const result = await authApi.verifyForgotPasswordIdentifier(identifier);
-      setIdentifier(result.identifier || identifier);
-      setResetMessage("Account verified. Choose a new password.");
-      setResetStep("password");
+      setResetMessage("An OTP has been sent to the email on file. Enter it below to set a new password.");
+      setResetStep("reset");
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -93,19 +80,17 @@ export default function Login() {
   async function resetPassword(e) {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 8 || newPassword.length > 72) {
-      setError("Password must be 8–72 characters.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+    const validationError = validatePasswordReset(otp, newPassword, confirmPassword);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setResetSubmitting(true);
     try {
-      const result = await authApi.resetForgotPassword(identifier, newPassword);
+      const result = await authApi.resetForgotPassword(identifier, otp, newPassword);
       setResetMessage(result.message || "Password updated. You can now sign in.");
       setResetStep("complete");
+      setOtp("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
@@ -150,29 +135,36 @@ export default function Login() {
             <h3>Reset password</h3>
             <p>Use the username or email address linked to your active Schoolers account.</p>
             {resetMessage && <div className="reset-success">{resetMessage}</div>}
-            {resetStep === "email" && (
+            {resetStep === "identifier" && (
               <form onSubmit={checkIdentifier}>
                 <div className="field">
                   <label>Username or email address</label>
                   <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="e.g. teacher1 or you@example.com" required />
                 </div>
                 <button className="btn primary block" type="submit" disabled={resetSubmitting}>
-                  {resetSubmitting ? "Checking..." : "Continue"}
+                  {resetSubmitting ? "Sending OTP..." : "Continue"}
                 </button>
+                <p style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 10 }}>
+                  We'll email a 6-digit OTP to the address on file for this account.
+                </p>
               </form>
             )}
-            {resetStep === "verify" && (
-              <>
-                <div className="reset-email">{identifier}</div>
-                <button className="btn primary block" type="button" onClick={verifyIdentifier} disabled={resetSubmitting}>
-                  {resetSubmitting ? "Verifying..." : "Verify account"}
-                </button>
-                <button className="login-link" type="button" onClick={() => setResetStep("email")}>Use another username or email</button>
-              </>
-            )}
-            {resetStep === "password" && (
+            {resetStep === "reset" && (
               <form onSubmit={resetPassword}>
                 <div className="reset-email">{identifier}</div>
+                <div className="field">
+                  <label>OTP</label>
+                  <input
+                    value={otp}
+                    onChange={(e) => setOtp(sanitizeOtp(e.target.value))}
+                    placeholder="6-digit code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength="6"
+                    minLength="6"
+                    required
+                  />
+                </div>
                 <div className="field">
                   <label>New password</label>
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength="8" maxLength="72" required />
@@ -183,6 +175,9 @@ export default function Login() {
                 </div>
                 <button className="btn primary block" type="submit" disabled={resetSubmitting}>
                   {resetSubmitting ? "Updating..." : "Update password"}
+                </button>
+                <button className="login-link" type="button" onClick={() => setResetStep("identifier")}>
+                  Didn't get the OTP? Try again
                 </button>
               </form>
             )}
