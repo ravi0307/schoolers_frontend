@@ -3,6 +3,7 @@ import { useApi } from "../../hooks/useApi";
 import * as leaveApi from "../../api/leave";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 export default function AdminLeave() {
@@ -11,6 +12,8 @@ export default function AdminLeave() {
 
   const pending = (data || []).filter((l) => l.status === "Pending");
   const resolved = (data || []).filter((l) => l.status !== "Pending");
+  const pendingPager = usePagination(pending);
+  const resolvedPager = usePagination(resolved);
 
   async function approve(id) {
     try {
@@ -44,7 +47,7 @@ export default function AdminLeave() {
           <div className="section-label">Pending ({pending.length})</div>
           <div className="card">
             {pending.length ? (
-              pending.map((l) => (
+              pendingPager.pageItems.map((l) => (
                 <div key={l.leave_id} className="listitem">
                   <div className="meta">
                     <b>{l.requester_name} · {l.requester_type}</b>
@@ -59,12 +62,13 @@ export default function AdminLeave() {
             ) : (
               <Empty>No pending requests.</Empty>
             )}
+            <Pagination {...pendingPager} />
           </div>
 
           <div className="section-label">History</div>
           <div className="card">
             {resolved.length ? (
-              resolved.map((l) => (
+              resolvedPager.pageItems.map((l) => (
                 <div key={l.leave_id} className="listitem">
                   <div className="meta">
                     <b>{l.requester_name} · {l.requester_type}</b>
@@ -76,6 +80,7 @@ export default function AdminLeave() {
             ) : (
               <Empty>No resolved requests yet.</Empty>
             )}
+            <Pagination {...resolvedPager} />
           </div>
         </>
       )}

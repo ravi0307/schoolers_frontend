@@ -5,6 +5,7 @@ import * as academicsApi from "../../api/academics";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 function getStudentField(student, keys) {
@@ -50,6 +51,8 @@ export default function AdminClasses() {
     });
     return map;
   }, [data]);
+
+  const pager = usePagination(data);
 
   function teacherLabel(teacher) {
     const assignedClass = teacherAssignments[teacher.teacher_id];
@@ -138,7 +141,7 @@ export default function AdminClasses() {
       {!loading && !error && (
         <div className="card">
           {data && data.length ? (
-            data.map((c) => {
+            pager.pageItems.map((c) => {
               const classStudents = studentsByClass[c.class_id] || [];
               const studentCount = classStudents.length;
               const isExpanded = expandedClassId === c.class_id;
@@ -248,6 +251,7 @@ export default function AdminClasses() {
           ) : (
             <Empty>No classes yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
 

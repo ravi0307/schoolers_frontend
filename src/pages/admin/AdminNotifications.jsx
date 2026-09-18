@@ -3,10 +3,12 @@ import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
 import * as notificationsApi from "../../api/notifications";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 export default function AdminNotifications() {
   const { user } = useAuth();
   const { data, loading, error } = useApi(() => notificationsApi.listNotifications(user.schoolId), [user.schoolId]);
+  const pager = usePagination(data);
 
   return (
     <AdminShell>
@@ -17,7 +19,7 @@ export default function AdminNotifications() {
       {!loading && !error && (
         <div className="card">
           {data && data.length ? (
-            data.map((n) => (
+            pager.pageItems.map((n) => (
               <div key={n.notification_id} className="listitem">
                 <div className={`avatar ${n.type === "Dues" ? "r" : n.type === "Activation" ? "y" : "g"}`}>
                   {n.type[0]}
@@ -32,6 +34,7 @@ export default function AdminNotifications() {
           ) : (
             <Empty>No notifications yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
     </AdminShell>

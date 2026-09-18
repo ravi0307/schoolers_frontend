@@ -1,11 +1,16 @@
 import ParentShell from "../../components/layout/ParentShell";
+import BroadcastFeed from "../../components/ui/BroadcastFeed";
 import { useParentContext } from "../../context/ParentContext";
+import { useApi } from "../../hooks/useApi";
+import * as communicationApi from "../../api/communication";
 import { Pill, initials } from "../../components/ui/Primitives";
 import { useNavigate } from "react-router-dom";
 
 export default function ParentHome() {
   const { selectedChild } = useParentContext();
   const navigate = useNavigate();
+
+  const { data: broadcasts, loading, error } = useApi(() => communicationApi.listBroadcasts(), []);
 
   if (!selectedChild) return <ParentShell>{null}</ParentShell>;
 
@@ -43,6 +48,15 @@ export default function ParentHome() {
           <b style={{ fontSize: 12.5 }}>🎒 Barter</b>
         </button>
       </div>
+
+      <div className="section-label">Announcements</div>
+      <BroadcastFeed
+        data={broadcasts}
+        loading={loading}
+        error={error}
+        limit={8}
+        empty="No announcements for your children yet."
+      />
     </ParentShell>
   );
 }

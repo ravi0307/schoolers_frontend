@@ -7,6 +7,7 @@ import * as peopleApi from "../../api/people";
 import * as attendanceApi from "../../api/attendance";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
 const today = new Date().toISOString().slice(0, 10);
@@ -55,6 +56,7 @@ export default function TeacherAttendance() {
 
   const presentCount = Object.values(statuses).filter((s) => s === "Present").length;
   const total = Object.keys(statuses).length;
+  const pager = usePagination(students);
 
   return (
     <TeacherShell>
@@ -76,7 +78,7 @@ export default function TeacherAttendance() {
       {!loading && !error && (
         <div className="card">
           {students && students.length ? (
-            students.map((s) => (
+            pager.pageItems.map((s) => (
               <div key={s.student_id} className="listitem" onClick={() => toggle(s.student_id)} style={{ cursor: "pointer" }}>
                 <div className="meta">
                   <b>{s.name}</b>
@@ -89,6 +91,7 @@ export default function TeacherAttendance() {
           ) : (
             <Empty>No students in this class yet.</Empty>
           )}
+          <Pagination {...pager} />
         </div>
       )}
 
