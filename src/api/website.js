@@ -1,6 +1,7 @@
 import client from "./client";
 import axios from "axios";
 import { BASE_URL } from "./client";
+import { schoolSiteSlug } from "../utils/siteFlow";
 
 export const getSettings = () => client.get("/website/settings").then((r) => r.data);
 export const updateSettings = (data) => client.put("/website/settings", data).then((r) => r.data);
@@ -11,8 +12,13 @@ export const upsertPage = (slug, data) => client.put(`/website/pages/${slug}`, d
 export const listTestimonials = () => client.get("/website/testimonials").then((r) => r.data);
 export const addTestimonial = (data) => client.post("/website/testimonials", data).then((r) => r.data);
 export const deleteTestimonial = (id) => client.delete(`/website/testimonials/${id}`);
+
 export const goLive = () => client.post("/website/go-live").then((r) => r.data);
 
 /** Public, unauthenticated — anyone can view a school's published site. */
 export const getPublicSite = (schoolId) =>
   axios.get(`${BASE_URL}/public/sites/${schoolId}`).then((r) => r.data);
+
+/** Public, unauthenticated — look up a school's published site by its website slug. */
+export const getPublicSiteByName = (schoolName) =>
+  axios.get(`${BASE_URL}/public/sites/by-name/${encodeURIComponent(schoolSiteSlug(schoolName))}`).then((r) => r.data);

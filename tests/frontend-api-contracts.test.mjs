@@ -21,8 +21,8 @@ test("every frontend API module is wired to its required backend surface", () =>
     /\/auth\/login/,
     /\/auth\/me/,
     /\/auth\/forgot-password/,
-    /\/auth\/forgot-password\/verify/,
     /\/auth\/forgot-password\/reset/,
+    /otp/,
   ]);
   assertContains("src/api/academics.js", [/\/classes/, /\/subjects/, /\/periods/, /\/holidays/]);
   assertContains("src/api/attendance.js", [/\/attendance\/mark/, /\/attendance/]);
@@ -36,7 +36,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/barter.js", [/\/barter/]);
   assertContains("src/api/activities.js", [/\/activities/]);
   assertContains("src/api/communication.js", [/\/broadcasts/, /\/media/]);
-  assertContains("src/api/website.js", [/\/website\/settings/, /\/website\/pages/, /\/website\/go-live/, /\/public\/sites/]);
+  assertContains("src/api/website.js", [/\/website\/settings/, /\/website\/pages/, /\/website\/go-live/, /\/public\/sites\/by-name/, /\/public\/sites/]);
   assertContains("src/api/media.js", [/\/media/]);
   assertContains("src/api/uploads.js", [/\/schools\/\$\{schoolId\}\/upload/, /School ID is required/]);
   assertContains("src/api/systemHealth.js", [/\/health/, /\/health\/services/]);
@@ -55,7 +55,7 @@ test("timetable API uses entry updates for subject, teacher, and time changes", 
 
 test("key frontend workflows remain represented by application routes", () => {
   const app = source("src/App.jsx");
-  for (const route of ["/login", "/site/:schoolId"]) {
+  for (const route of ["/login", "/site/:schoolId", "/website/:schoolName"]) {
     assert.ok(app.includes(`path="${route}"`), `route ${route} is not registered`);
   }
   const routeGroups = {
@@ -71,6 +71,29 @@ test("key frontend workflows remain represented by application routes", () => {
       assert.ok(app.includes(`path="${route}"`), `route /${role}/${route} is not registered`);
     }
   }
+});
+
+test("public website is reachable by school slug and supports go-live", () => {
+  const app = source("src/App.jsx");
+  assert.ok(app.includes('path="/website/:schoolName"'), "public website slug route is not registered");
+  const website = source("src/api/website.js");
+  assert.match(website, /\/website\/go-live/);
+  assert.match(website, /\/public\/sites\/by-name/);
+  const publicPage = source("src/pages/PublicWebsite.jsx");
+  assert.match(publicPage, /getPublicSiteByName/);
+  assert.match(publicPage, /getPublicSite\(/);
+});
+
+test("admin website publishes from the preview and edits every content section", () => {
+  const admin = source("src/pages/admin/AdminWebsite.jsx");
+  assert.match(admin, /website-preview-overlay/);
+  assert.match(admin, /Go Live/);
+  assert.match(admin, /RichTextEditor/);
+  assert.match(admin, /Footer/);
+  assert.match(admin, /Testimonials/);
+  const editor = source("src/components/ui/RichTextEditor.jsx");
+  assert.match(editor, /contentEditable/);
+  assert.match(source("src/components/site/PublicSiteView.jsx"), /dangerouslySetInnerHTML/);
 });
 
 test("role shells and feature pages are imported by the application", () => {

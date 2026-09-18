@@ -59,6 +59,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/site/:schoolId" element={<PublicWebsite />} />
+            <Route path="/website/:schoolName" element={<PublicWebsite />} />
             <Route path="/" element={<RootRedirect />} />
 
             {/* Parent */}
