@@ -15,3 +15,19 @@ export function uploadImage(file, schoolId) {
     })
     .then((r) => r.data);
 }
+
+/** Upload a student/personal document (PDF, DOC/DOCX, JPEG, or PNG) to file storage. */
+export function uploadDocument(file, schoolId) {
+  if (!schoolId) {
+    return Promise.reject(new Error("School ID is required for document uploads."));
+  }
+
+  const form = new FormData();
+  form.append("file", file);
+
+  return client
+    .post(`/schools/${schoolId}/documents/upload`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    .then((r) => r.data);
+}

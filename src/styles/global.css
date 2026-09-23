@@ -399,6 +399,9 @@ body {
 }
 .image-upload-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .image-upload-btn { cursor: pointer; margin: 0; }
+.document-upload-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.document-upload-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.document-upload-name { color: #1d4ed8; font-size: 13px; overflow-wrap: anywhere; }
 .role-picker { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
 .role-picker button {
   padding: 8px 14px; border-radius: 20px; border: 1.5px solid var(--line);
