@@ -4,9 +4,12 @@ import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
-import { apiErrorMessage } from "../../api/client";
+import ImageUpload from "../../components/ui/ImageUpload";
+import DocumentUpload from "../../components/ui/DocumentUpload";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 
 function getValue(obj, keys) {
   for (const key of keys) {
@@ -17,6 +20,7 @@ function getValue(obj, keys) {
 }
 
 export default function AdminStudents() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const { data, loading, error, refetch } = useApi(() => peopleApi.listStudents({ search: search || undefined }), [search]);
   const { data: classes } = useApi(() => academicsApi.listClasses(), []);
@@ -28,6 +32,10 @@ export default function AdminStudents() {
   const [classId, setClassId] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [birthCertificateNumber, setBirthCertificateNumber] = useState("");
+  const [documents, setDocuments] = useState([]);
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -41,6 +49,10 @@ export default function AdminStudents() {
   const [editClassId, setEditClassId] = useState("");
   const [editDateOfBirth, setEditDateOfBirth] = useState("");
   const [editGender, setEditGender] = useState("");
+  const [editPhotoUrl, setEditPhotoUrl] = useState("");
+  const [editAadhaarNumber, setEditAadhaarNumber] = useState("");
+  const [editBirthCertificateNumber, setEditBirthCertificateNumber] = useState("");
+  const [editDocuments, setEditDocuments] = useState([]);
   const [editParentName, setEditParentName] = useState("");
   const [editParentPhone, setEditParentPhone] = useState("");
   const [editParentEmail, setEditParentEmail] = useState("");
@@ -53,6 +65,10 @@ export default function AdminStudents() {
     setClassId("");
     setDateOfBirth("");
     setGender("");
+    setPhotoUrl("");
+    setAadhaarNumber("");
+    setBirthCertificateNumber("");
+    setDocuments([]);
     setParentName("");
     setParentPhone("");
     setParentEmail("");
@@ -75,6 +91,10 @@ export default function AdminStudents() {
         class_id: Number(classId),
         date_of_birth: dateOfBirth || null,
         gender: gender || null,
+        photo_url: photoUrl || null,
+        aadhaar_number: aadhaarNumber || null,
+        birth_certificate_number: birthCertificateNumber || null,
+        documents: documents.length ? documents : null,
         parent_name: parentName || null,
         parent_phone: parentPhone || null,
         parent_email: parentEmail || null,
@@ -98,6 +118,10 @@ export default function AdminStudents() {
       class_id: Number(editClassId),
       date_of_birth: editDateOfBirth || null,
       gender: editGender || null,
+      photo_url: editPhotoUrl || "",
+      aadhaar_number: editAadhaarNumber || "",
+      birth_certificate_number: editBirthCertificateNumber || "",
+      documents: editDocuments.length ? editDocuments : [],
       parent_name: editParentName || null,
       parent_phone: editParentPhone || null,
       parent_email: editParentEmail || null,
@@ -200,6 +224,10 @@ export default function AdminStudents() {
                           setEditClassId(String(s.class_id || ""));
                           setEditDateOfBirth(getValue(s, ["date_of_birth", "dob"]) || "");
                           setEditGender(getValue(s, ["gender"]) || "");
+                          setEditPhotoUrl(getValue(s, ["photo_url"]) || "");
+                          setEditAadhaarNumber(getValue(s, ["aadhaar_number"]) || "");
+                          setEditBirthCertificateNumber(getValue(s, ["birth_certificate_number"]) || "");
+                          setEditDocuments(Array.isArray(s.documents) ? s.documents : []);
                           setEditParentName(getValue(s, ["parent_name", "guardian_name"]) || "");
                           setEditParentPhone(getValue(s, ["parent_phone", "guardian_phone"]) || "");
                           setEditParentEmail(getValue(s, ["parent_email", "guardian_email"]) || "");
@@ -245,6 +273,28 @@ export default function AdminStudents() {
                           <option value="Other">Other</option>
                         </select>
                       </div>
+                      <ImageUpload
+                        label="Photo (passport size)"
+                        value={editPhotoUrl}
+                        onChange={setEditPhotoUrl}
+                        onError={toast}
+                        schoolId={user?.schoolId}
+                      />
+                      <div className="field">
+                        <label>Aadhaar card number</label>
+                        <input value={editAadhaarNumber} onChange={(e) => setEditAadhaarNumber(e.target.value)} />
+                      </div>
+                      <div className="field">
+                        <label>Birth certificate number</label>
+                        <input value={editBirthCertificateNumber} onChange={(e) => setEditBirthCertificateNumber(e.target.value)} />
+                      </div>
+                      <DocumentUpload
+                        label="Documents"
+                        value={editDocuments}
+                        onChange={setEditDocuments}
+                        onError={toast}
+                        schoolId={user?.schoolId}
+                      />
                       <div className="field">
                         <label>Parent name</label>
                         <input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} />
@@ -276,6 +326,16 @@ export default function AdminStudents() {
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
                       <div style={{ fontWeight: 700, marginBottom: 12 }}>Student Details</div>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                        {s.photo_url ? (
+                          <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                              Photo
+                            </div>
+                            <a href={resolveMediaUrl(s.photo_url)} target="_blank" rel="noreferrer" style={{ width: "fit-content" }}>
+                              <img src={resolveMediaUrl(s.photo_url)} alt={s.name} style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                            </a>
+                          </div>
+                        ) : null}
                         {[
                           ["Name", s.name],
                           ["Admission No", s.admission_no || "Not provided"],
@@ -283,6 +343,8 @@ export default function AdminStudents() {
                           ["Status", s.present_today ? "Present" : "Absent"],
                           ["Date of Birth", studentDOB],
                           ["Gender", studentGender],
+                          ["Aadhaar Card Number", getValue(s, ["aadhaar_number"]) || "Not provided"],
+                          ["Birth Certificate Number", getValue(s, ["birth_certificate_number"]) || "Not provided"],
                           ["Parent Name", parentNameValue],
                           ["Parent Phone", parentPhoneValue],
                           ["Parent Email", parentEmailValue],
@@ -295,6 +357,25 @@ export default function AdminStudents() {
                             <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
                           </div>
                         ))}
+                        <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
+                          <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                            Documents
+                          </div>
+                          <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>
+                            {Array.isArray(s.documents) && s.documents.length ? (
+                              s.documents.map((doc) => {
+                                const name = doc.split("/").pop() || doc;
+                                return (
+                                  <div key={doc}>
+                                    <a href={resolveMediaUrl(doc)} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8" }}>{name}</a>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              "Not provided"
+                            )}
+                          </div>
+                        </div>
                         <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
                           <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
                             Parent Address
@@ -342,6 +423,29 @@ export default function AdminStudents() {
               <option value="Other">Other</option>
             </select>
           </div>
+          <ImageUpload
+            label="Image (passport size)"
+            hint="Recent passport-size photo. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
+            value={photoUrl}
+            onChange={setPhotoUrl}
+            onError={toast}
+            schoolId={user?.schoolId}
+          />
+          <div className="field">
+            <label>Aadhaar card number</label>
+            <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} maxLength="20" placeholder="12-digit Aadhaar number" />
+          </div>
+          <div className="field">
+            <label>Birth certificate number</label>
+            <input value={birthCertificateNumber} onChange={(e) => setBirthCertificateNumber(e.target.value)} maxLength="40" placeholder="Birth certificate number" />
+          </div>
+          <DocumentUpload
+            label="Documents"
+            value={documents}
+            onChange={setDocuments}
+            onError={toast}
+            schoolId={user?.schoolId}
+          />
           <div className="field">
             <label>Parent name</label>
             <input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="e.g. Anvi Swaminathan" />

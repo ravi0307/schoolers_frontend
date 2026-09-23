@@ -38,7 +38,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/communication.js", [/\/broadcasts/, /\/media/]);
   assertContains("src/api/website.js", [/\/website\/settings/, /\/website\/pages/, /\/website\/go-live/, /\/public\/sites\/by-name/, /\/public\/sites/]);
   assertContains("src/api/media.js", [/\/media/]);
-  assertContains("src/api/uploads.js", [/\/schools\/\$\{schoolId\}\/upload/, /School ID is required/]);
+  assertContains("src/api/uploads.js", [/\/schools\/\$\{schoolId\}\/upload/, /\/documents\/upload/, /School ID is required/]);
   assertContains("src/api/systemHealth.js", [/\/health/, /\/health\/services/]);
   assertContains("src/api/timetable.js", [
     /\/timetable\/class\/\$\{classId\}/,
@@ -94,6 +94,22 @@ test("admin website publishes from the preview and edits every content section",
   const editor = source("src/components/ui/RichTextEditor.jsx");
   assert.match(editor, /contentEditable/);
   assert.match(source("src/components/site/PublicSiteView.jsx"), /dangerouslySetInnerHTML/);
+});
+
+test("student records capture photo, identity numbers, and documents in the roster workflow", () => {
+  const students = source("src/pages/admin/AdminStudents.jsx");
+  assert.match(students, /ImageUpload/);
+  assert.match(students, /DocumentUpload/);
+  assert.match(students, /aadhaar_number/);
+  assert.match(students, /birth_certificate_number/);
+  assert.match(students, /photo_url/);
+  assert.match(students, /documents/);
+  // Uploads need the school id from the authenticated admin — the page must
+  // pull the current user from AuthContext (regression: missing useAuth
+  // caused a blank screen at /admin/students).
+  assert.match(students, /useAuth\(\)/);
+  assert.match(students, /user\?\.schoolId/);
+  assert.match(source("src/components/ui/DocumentUpload.jsx"), /uploadDocument/);
 });
 
 test("role shells and feature pages are imported by the application", () => {
