@@ -279,6 +279,20 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
   ]);
 });
 
+test("parent home groups announcements with the quick grid and resizes the timetable", () => {
+  assertContains("src/components/ui/BroadcastFeed.jsx", [/bare = false/]);
+  const home = source("src/pages/parent/ParentHome.jsx");
+  // Announcements become the 6th quick-access cell, right next to Barter.
+  assert.match(home, /📢 Announcements/);
+  assert.match(home, /limit=\{2\}/);
+  assert.match(home, /\bbare\b/);
+  assert.ok(home.indexOf('title: "Barter"') < home.indexOf("📢 Announcements"), "announcements must sit next to Barter");
+  assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
+  // Timetable is resized to one grid column (barter width) and sits on the left.
+  assert.match(home, /<div className="grid2">/);
+  assert.match(home, /<div \/>\s+<\/div>\s+<\/ParentShell>/, "timetable row leaves the right half empty");
+});
+
 test("parent home quick access cards show live summary + history for each portal", () => {
   const home = source("src/pages/parent/ParentHome.jsx");
   // Every card converges on real API data for the selected child.

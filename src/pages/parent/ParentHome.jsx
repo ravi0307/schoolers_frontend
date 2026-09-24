@@ -281,59 +281,66 @@ export default function ParentHome() {
             onNavigate={() => navigate(q.to)}
           />
         ))}
+        <div className="card">
+          <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
+          <div style={{ marginTop: 4 }}>
+            <BroadcastFeed
+              data={broadcasts}
+              loading={loading}
+              error={error}
+              limit={2}
+              bare
+              empty="No announcements for your children yet."
+            />
+          </div>
+        </div>
       </div>
 
       <div className="section-label">This week's timetable</div>
-      {ttLoading && <Spinner />}
-      {!ttLoading &&
-        (timetable && timetable.length ? (
-          <div className="card white timetable-weekly-summary-card">
-            <span className="timetable-weekly-summary-title">Weekly summary</span>
-            <table className="timetable-preview-table">
-              <thead>
-                <tr>
-                  <th className="time-col-header">Time</th>
-                  {DAYS.map((day) => (
-                    <th key={day} style={day === today ? { color: "var(--chalk-green-dark)" } : undefined}>
-                      {day}
-                      {day === today ? " · today" : ""}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {timeSlots.map((start) => (
-                  <tr key={start}>
-                    <td className="time-cell">{displayTime(start)}</td>
-                    {DAYS.map((day) => {
-                      const entry = ttEntryMap.get(`${day}|${start}`);
-                      return (
-                        <td key={day} className={entry ? "active-cell" : ""}>
-                          {entry
-                            ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
-                            : ""}
-                        </td>
-                      );
-                    })}
+      <div className="grid2">
+        {ttLoading && <Spinner />}
+        {!ttLoading &&
+          (timetable && timetable.length ? (
+            <div className="card white timetable-weekly-summary-card">
+              <span className="timetable-weekly-summary-title">Weekly summary</span>
+              <table className="timetable-preview-table">
+                <thead>
+                  <tr>
+                    <th className="time-col-header">Time</th>
+                    {DAYS.map((day) => (
+                      <th key={day} style={day === today ? { color: "var(--chalk-green-dark)" } : undefined}>
+                        {day}
+                        {day === today ? " · today" : ""}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="card">
-            <Empty>No timetable has been published for this class yet.</Empty>
-          </div>
-        ))}
-
-      <div className="section-label">Announcements</div>
-      <BroadcastFeed
-        data={broadcasts}
-        loading={loading}
-        error={error}
-        limit={8}
-        empty="No announcements for your children yet."
-      />
+                </thead>
+                <tbody>
+                  {timeSlots.map((start) => (
+                    <tr key={start}>
+                      <td className="time-cell">{displayTime(start)}</td>
+                      {DAYS.map((day) => {
+                        const entry = ttEntryMap.get(`${day}|${start}`);
+                        return (
+                          <td key={day} className={entry ? "active-cell" : ""}>
+                            {entry
+                              ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
+                              : ""}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="card">
+              <Empty>No timetable has been published for this class yet.</Empty>
+            </div>
+          ))}
+        <div />
+      </div>
     </ParentShell>
   );
 }
