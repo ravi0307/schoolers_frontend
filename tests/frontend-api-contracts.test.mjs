@@ -402,3 +402,84 @@ test("admin, teacher, and parent portals each expose the gallery route", () => {
   assertContains("src/pages/parent/ParentGallery.jsx", [/<GalleryView empty=/]);
 });
 
+test("gallery role matrix keeps write controls off the read-only and teacher pages", () => {
+  const teacher = source("src/pages/teacher/TeacherGallery.jsx");
+  const parent = source("src/pages/parent/ParentGallery.jsx");
+  assert.doesNotMatch(teacher, /canDelete/, "teachers must not get the remove button");
+  assert.doesNotMatch(parent, /canUpload/, "parents must not get the upload button");
+  assert.doesNotMatch(parent, /deleteGalleryMedia/, "parents must not call the delete API");
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /canUpload = false,\s*canDelete = false/,
+    /empty = "No gallery media yet\."/,
+  ]);
+});
+
+test("useIsWide consults matchMedia once and subscribes for change events", () => {
+  assertContains("src/hooks/useIsWide.js", [
+    /breakpoint = 900/,
+    /typeof window !== "undefined"/,
+    /window\.matchMedia\(\`\(min-width: \$\{breakpoint\}px\)\`\)\.matches/,
+    /mq\.addEventListener\("change", handler\)/,
+    /setIsWide\(event\.matches\)/,
+    /mq\.removeEventListener\("change", handler\)/,
+    /\[breakpoint\]/,
+  ]);
+});
+
+test("gallery upload form gates file type, size, and required title before sending", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const ACCEPT = "image\/png,image\/jpeg,image\/gif,image\/webp,video\/mp4,video\/webm,video\/quicktime"/,
+    /const MAX_BYTES = 5 \* 1024 \* 1024/,
+    /"Choose a JPEG\/PNG\/GIF\/WebP image or an MP4\/WebM\/MOV video\."/,
+    /"Files must be 5 MB or smaller\."/,
+    /"Give the media a title\."/,
+    /"Choose a photo or video to upload\."/,
+    /accept=\{ACCEPT\}/,
+    /type="file"/,
+    /disabled=\{saving\}/,
+    /Uploading…/,
+  ]);
+});
+
+test("gallery tiles render videos with controls and images lazily, then paginate", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const items = \(data \|\| \[\]\)\.filter\(\(item\) => item\.file_url\)/,
+    /media_kind === "video"/,
+    /<video/,
+    /controls/,
+    /preload="metadata"/,
+    /<img/,
+    /loading="lazy"/,
+    /alt=\{item\.title\}/,
+    /resolveMediaUrl\(item\.file_url\)/,
+    /key=\{item\.media_id\}/,
+    /gallery-tile-meta/,
+    /item\.posted_by/,
+    /formatDate\(item\.created_at\)/,
+    /toLocaleDateString\(\)/,
+  ]);
+});
+
+test("gallery removal asks for confirmation scoped to the item title", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /window\.confirm\(`Remove "\$\{item\.title\}" from the gallery\?`\)/,
+    /canDelete && \(/,
+    /gallery-tile-remove/,
+    /refetch\(\)/,
+  ]);
+  assertContains("src/api/gallery.js", [
+    /\.delete\(`\/media\/\$\{mediaId\}`\)/,
+  ]);
+});
+
+test("gallery API sends a multipart form with file, title, and optional class", () => {
+  assertContains("src/api/gallery.js", [
+    /classId = null/,
+    /form\.append\("file", file\)/,
+    /form\.append\("title", title\)/,
+    /if \(classId\) form\.append\("class_id", classId\)/,
+    /"Content-Type": "multipart\/form-data"/,
+    /\.then\(\(r\) => r\.data\)/,
+  ]);
+});
+
