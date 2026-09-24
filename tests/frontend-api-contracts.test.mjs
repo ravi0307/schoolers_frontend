@@ -580,18 +580,22 @@ test("useIsWide consults matchMedia once and subscribes for change events", () =
   ]);
 });
 
-test("gallery upload form gates file type, size, and required title before sending", () => {
+test("gallery upload form accepts several files and gates type, size, and required title", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
     /const ACCEPT = "image\/png,image\/jpeg,image\/gif,image\/webp,video\/mp4,video\/webm,video\/quicktime"/,
     /const MAX_BYTES = 5 \* 1024 \* 1024/,
-    /"Choose a JPEG\/PNG\/GIF\/WebP image or an MP4\/WebM\/MOV video\."/,
-    /"Files must be 5 MB or smaller\."/,
     /"Give the media a title\."/,
-    /"Choose a photo or video to upload\."/,
+    /"Choose photos or videos to upload\."/,
     /accept=\{ACCEPT\}/,
     /type="file"/,
+    /multiple/,
+    /onChange=\{pickFiles\}/,
+    /Array\.from\(event\.target\.files \|\| \[\]\)/,
+    /\.filter\(\s*\(f\) => ACCEPT\.split\(","\)\.includes\(f\.type\) && f\.size <= MAX_BYTES/,
+    /uploadGalleryMedia\(files\[i\], title\.trim\(\)\)/,
+    /for \(let i = 0; i < files\.length; i\+\+\)/,
     /disabled=\{saving\}/,
-    /Uploading…/,
+    /Uploading/,
   ]);
 });
 
