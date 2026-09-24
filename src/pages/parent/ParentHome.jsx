@@ -6,9 +6,22 @@ import { useApi } from "../../hooks/useApi";
 import * as communicationApi from "../../api/communication";
 import * as academicsApi from "../../api/academics";
 import * as timetableApi from "../../api/timetable";
+import * as attendanceApi from "../../api/attendance";
+import * as marksApi from "../../api/marks";
+import * as barterApi from "../../api/barter";
+import * as leaveApi from "../../api/leave";
+import * as transportApi from "../../api/transport";
 import { Pill, initials, Spinner, Empty } from "../../components/ui/Primitives";
 import { useNavigate } from "react-router-dom";
 import { TIMETABLE_DAYS as DAYS, getEntryTime } from "../../utils/timetableFlow";
+
+const LOADING = "Loading…";
+const PICKDROP_LABEL = {
+  pending: "Pickup pending",
+  picked: "Picked up",
+  dropped: "Dropped",
+  not_assigned: "No route assigned yet",
+};
 
 export default function ParentHome() {
   const { selectedChild } = useParentContext();
@@ -33,6 +46,71 @@ export default function ParentHome() {
   );
   const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
+  const { data: attendance, loading: attLoading } = useApi(
+    () => (selectedChild ? attendanceApi.getAttendance(selectedChild.student_id) : Promise.resolve([])),
+    [selectedChild?.student_id]
+  );
+  const { data: marks, loading: marksLoading } = useApi(
+    () => (selectedChild ? marksApi.studentMarks(selectedChild.student_id) : Promise.resolve([])),
+    [selectedChild?.student_id]
+  );
+  const { data: barter, loading: barterLoading } = useApi(() => barterApi.listBarter(), []);
+  const { data: leaves, loading: leaveLoading } = useApi(() => leaveApi.listMine(), []);
+  const { data: pickdrop, loading: pdLoading } = useApi(() => transportApi.getMyPickdropStatus(), []);
+
+  const attendanceStats = useMemo(() => {
+    const rows = attendance || [];
+    return {
+      present: rows.filter((a) => a.status === "Present").length,
+      absent: rows.filter((a) => a.status === "Absent").length,
+      total: rows.length,
+    };
+  }, [attendance]);
+
+  const marksSummary = useMemo(() => {
+    const rows = marks || [];
+    if (!rows.length) return "No marks yet";
+    const terms = [...new Set(rows.map((m) => m.term))].sort();
+    const latestRows = rows.filter((m) => m.term === terms[terms.length - 1]);
+    const avg = Math.round(latestRows.reduce((sum, m) => sum + m.score, 0) / latestRows.length);
+    return `Latest ${avg}/100 avg · ${latestRows.length} subjects`;
+  }, [marks]);
+
+  const leaveStats = useMemo(() => {
+    const rows = (leaves || []).filter((l) => l.requester_name === selectedChild?.name);
+    return { pending: rows.filter((l) => l.status === "Pending").length, total: rows.length };
+  }, [leaves, selectedChild?.name]);
+
+  const pickdropRow = pickdrop && selectedChild ? pickdrop.find((r) => r.student_id === selectedChild.student_id) : null;
+
+  const attendanceText = attLoading
+    ? LOADING
+    : attendanceStats.total === 0
+      ? "No attendance history"
+      : `${attendanceStats.present}/${attendanceStats.total} present`;
+  const marksText = marksLoading ? LOADING : marksSummary;
+  const barterText = barterLoading ? LOADING : `${(barter || []).length} live listing${(barter || []).length === 1 ? "" : "s"}`;
+  const leaveText = leaveLoading
+    ? LOADING
+    : leaveStats.pending > 0
+      ? `${leaveStats.pending} pending request${leaveStats.pending === 1 ? "" : "s"}`
+      : leaveStats.total > 0
+        ? `${leaveStats.total} request${leaveStats.total === 1 ? "" : "s"}`
+        : "No requests yet";
+  const pickdropText = pdLoading
+    ? LOADING
+    : !pickdropRow
+      ? "Not linked to a route"
+      : PICKDROP_LABEL[pickdropRow.status] || pickdropRow.status;
+
+  const quickLinks = [
+    { to: "/parent/pickdrop", icon: "🚌", title: "Pick & Drop", summary: pickdropText },
+    { to: "/parent/attendance", icon: "✅", title: "Attendance", summary: attendanceText },
+    { to: "/parent/marks", icon: "🏆", title: "Report Card", summary: marksText },
+    { to: "/parent/leave", icon: "📅", title: "Leave Request", summary: leaveText },
+    { to: "/parent/barter", icon: "🎒", title: "Barter", summary: barterText },
+  ];
+
   if (!selectedChild) return <ParentShell>{null}</ParentShell>;
 
   return (
@@ -56,21 +134,14 @@ export default function ParentHome() {
 
       <div className="section-label">Quick access</div>
       <div className="grid2">
-        <button className="card" onClick={() => navigate("/parent/pickdrop")} style={{ textAlign: "left", cursor: "pointer" }}>
-          <b style={{ fontSize: 12.5 }}>🚌 Pick &amp; Drop</b>
-        </button>
-        <button className="card" onClick={() => navigate("/parent/attendance")} style={{ textAlign: "left", cursor: "pointer" }}>
-          <b style={{ fontSize: 12.5 }}>✅ Attendance</b>
-        </button>
-        <button className="card" onClick={() => navigate("/parent/marks")} style={{ textAlign: "left", cursor: "pointer" }}>
-          <b style={{ fontSize: 12.5 }}>🏆 Report Card</b>
-        </button>
-        <button className="card" onClick={() => navigate("/parent/leave")} style={{ textAlign: "left", cursor: "pointer" }}>
-          <b style={{ fontSize: 12.5 }}>📅 Leave Request</b>
-        </button>
-        <button className="card" onClick={() => navigate("/parent/barter")} style={{ textAlign: "left", cursor: "pointer" }}>
-          <b style={{ fontSize: 12.5 }}>🎒 Barter</b>
-        </button>
+        {quickLinks.map((q) => (
+          <button key={q.to} className="card" onClick={() => navigate(q.to)} style={{ textAlign: "left", cursor: "pointer" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700 }}>
+              {q.icon} {q.title}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 6 }}>{q.summary}</div>
+          </button>
+        ))}
       </div>
 
       <div className="section-label">This week's timetable</div>

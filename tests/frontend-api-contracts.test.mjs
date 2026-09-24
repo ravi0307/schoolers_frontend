@@ -27,7 +27,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/academics.js", [/\/classes/, /\/subjects/, /\/periods/, /\/holidays/]);
   assertContains("src/api/attendance.js", [/\/attendance\/mark/, /\/attendance/]);
   assertContains("src/api/marks.js", [/\/marks\/student/, /\/marks\/class/, /\/marks\/\$\{studentId\}/]);
-  assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/]);
+  assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/, /\/leave\/mine/]);
   assertContains("src/api/people.js", [/\/teachers/, /\/staff/, /\/parents/, /\/students/]);
   assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/, /\/routes\/mine/]);
   assertContains("src/api/schools.js", [/\/schools/, /features/, /status/, /stats/]);
@@ -181,7 +181,10 @@ test("parent pick & drop shows each child's live route status, bus, and stops", 
   const shell = source("src/components/layout/ParentShell.jsx");
   assert.match(shell, /to: "\/parent\/pickdrop"/, "ParentShell lacks the Pick & Drop tab");
   const home = source("src/pages/parent/ParentHome.jsx");
-  assert.match(home, /navigate\("\/parent\/pickdrop"\)/, "ParentHome lacks the Pick & Drop shortcut");
+  assert.ok(
+    home.includes('to: "/parent/pickdrop"') || /navigate\("\/parent\/pickdrop"\)/.test(home),
+    "ParentHome lacks the Pick & Drop shortcut"
+  );
 });
 
 test("parent pick & drop maps every status to a friendly label", () => {
@@ -269,6 +272,37 @@ test("parent home shows the selected child's weekly timetable with today highlig
     /toLocaleDateString\("en-US", \{ weekday: "short" \}\)/,
     /No timetable has been published for this class yet\./,
   ]);
+});
+
+test("parent home quick access cards show live summary data for each portal", () => {
+  const home = source("src/pages/parent/ParentHome.jsx");
+  // Every card converges on real API data for the selected child.
+  assert.match(home, /attendanceApi\.getAttendance\(selectedChild\.student_id\)/);
+  assert.match(home, /marksApi\.studentMarks\(selectedChild\.student_id\)/);
+  assert.match(home, /barterApi\.listBarter\(\)/);
+  assert.match(home, /leaveApi\.listMine\(\)/);
+  assert.match(home, /transportApi\.getMyPickdropStatus\(\)/);
+  // Summaries derive from fetched records, not static copy.
+  assert.match(home, /\.filter\(\(a\) => a\.status === "Present"\)\.length/);
+  assert.match(home, /\.filter\(\(m\) => m\.term === terms\[terms\.length - 1\]\)/);
+  assert.match(home, /\.filter\(\(l\) => l\.status === "Pending"\)\.length/);
+  assert.match(home, /pickdrop\.find\(\(r\) => r\.student_id === selectedChild\.student_id\)/);
+  // Each card keeps navigating to its portal section.
+  for (const route of [
+    "/parent/pickdrop",
+    "/parent/attendance",
+    "/parent/marks",
+    "/parent/leave",
+    "/parent/barter",
+  ]) {
+    assert.ok(home.includes(`navigate("${route}")`) || home.includes(`to: "${route}"`), `missing quick links to ${route}`);
+  }
+});
+
+test("parent leave history reads the parent-scoped /leave/mine endpoint", () => {
+  assertContains("src/api/leave.js", [/listMine = \(\) => client\.get\("\/leave\/mine"\)/]);
+  assertContains("src/pages/parent/ParentLeave.jsx", [/leaveApi\.listMine\(\)/]);
+  assertContains("src/pages/parent/ParentHome.jsx", [/leaveApi\.listMine\(\)/]);
 });
 
 test("marks API loads class marks and upserts scores", () => {

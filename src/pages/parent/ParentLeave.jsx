@@ -16,7 +16,7 @@ export default function ParentLeave() {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { data, loading, refetch } = useApi(() => leaveApi.listLeave(), []);
+  const { data, loading, refetch } = useApi(() => leaveApi.listMine(), []);
   const mine = (data || []).filter((l) => l.requester_name === selectedChild?.name);
   const pager = usePagination(mine);
 
