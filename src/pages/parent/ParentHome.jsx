@@ -17,9 +17,13 @@ import { resolveMediaUrl } from "../../api/client";
 import { TIMETABLE_DAYS as DAYS, toTimeInput, displayTime } from "../../utils/timetableFlow";
 
 const LOADING = "Loading…";
-function GalleryCard({ title, summary, items, onNavigate }) {
+function GalleryCard({ title, summary, items, onNavigate, style }) {
   return (
-    <button className="card" onClick={onNavigate} style={{ textAlign: "left", cursor: "pointer" }}>
+    <button
+      className="card"
+      onClick={onNavigate}
+      style={{ ...style, textAlign: "left", cursor: "pointer" }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <b style={{ fontSize: 12.5 }}>{title}</b>
         <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
@@ -330,7 +334,11 @@ export default function ParentHome() {
             onNavigate={() => navigate(q.to)}
           />
         ))}
-        <div className="card" style={{ gridColumn: "1 / -1" }}>
+      </div>
+
+      <div className="section-label">Announcements & timetable</div>
+      <div className="grid2" style={{ gridTemplateRows: "auto auto" }}>
+        <div className="card">
           <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
           <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>
             <BroadcastFeed
@@ -343,14 +351,13 @@ export default function ParentHome() {
             />
           </div>
         </div>
-      </div>
-
-      <div className="section-label">This week's timetable</div>
-      <div className="grid2">
         {ttLoading && <Spinner />}
         {!ttLoading &&
           (timetable && timetable.length ? (
-            <div className="card white timetable-weekly-summary-card">
+            <div
+              className="card white timetable-weekly-summary-card"
+              style={{ gridColumn: 1 }}
+            >
               <span className="timetable-weekly-summary-title">Weekly summary</span>
               <table className="timetable-preview-table">
                 <thead>
@@ -384,7 +391,7 @@ export default function ParentHome() {
               </table>
             </div>
           ) : (
-            <div className="card">
+            <div className="card" style={{ gridColumn: 1 }}>
               <Empty>No timetable has been published for this class yet.</Empty>
             </div>
           ))}
@@ -393,6 +400,7 @@ export default function ParentHome() {
           summary={galleryText}
           items={galleryLoading ? [] : galleryThumbs}
           onNavigate={() => navigate("/parent/gallery")}
+          style={{ gridColumn: 2, gridRow: "1 / 3" }}
         />
       </div>
     </ParentShell>

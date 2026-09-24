@@ -262,7 +262,7 @@ test("teacher and parent homes render the broadcast feed", () => {
 test("parent home shows the selected child's timetable as an admin-style weekly summary", () => {
   assertContains("src/pages/parent/ParentHome.jsx", [
     /timetableApi\.classTimetable\(selectedChild\.class_id\)/,
-    /This week's timetable/,
+    /Announcements & timetable/,
     /TIMETABLE_DAYS as DAYS/,
     /summaryEntryTimes\(entry, periodById\)/,
     /timetable-weekly-summary-card/,
@@ -279,28 +279,27 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
   ]);
 });
 
-test("parent home groups announcements with the quick grid and resizes the timetable", () => {
+test("parent home groups announcements with the timetable and stretches the gallery beside both", () => {
   assertContains("src/components/ui/BroadcastFeed.jsx", [/bare = false/]);
   const home = source("src/pages/parent/ParentHome.jsx");
-  // Announcements become the 6th quick-access cell, right next to Barter.
   assert.match(home, /📢 Announcements/);
   assert.match(home, /limit=\{12\}/);
   assert.match(home, /\bbare\b/);
-  // Announcements flow under Leave, then Gallery closes the row.
+  // Announcements flow under the quick links, then the timetable joins the same grid.
   assert.ok(
     home.indexOf('title: "Leave Request"') < home.indexOf("📢 Announcements"),
     "announcements must follow the Leave Request card"
   );
-  assert.ok(home.indexOf("📢 Announcements") < home.indexOf('title="🖼️ Gallery"'), "gallery must sit after Announcements");
-  assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
-  // Timetable sits on the left, same-height Gallery on the right (gallery runs to the timetable's end).
-  assert.match(home, /<div className="grid2">/);
   assert.ok(
-    home.indexOf("This week's timetable") < home.indexOf("<GalleryCard"),
-    "gallery must live in the timetable row"
+    home.indexOf("Announcements & timetable") < home.indexOf("📢 Announcements"),
+    "announcements sit inside the combined section"
   );
+  // Timetable is pinned to the left column; gallery spans both rows on the right,
+  // so its height equals Announcements + Timetable.
+  assert.match(home, /gridTemplateRows: "auto auto"/);
+  assert.match(home, /gridColumn: 1/, "timetable must sit on the left column");
+  assert.match(home, /gridColumn: 2, gridRow: "1 \/ 3"/, "gallery must span announcements + timetable rows");
   assert.match(home, /<GalleryCard[\s\S]*<\/div>\s+<\/ParentShell>/, "gallery card closes the timetable row");
-  assert.match(home, /gridColumn: "1 \/ -1"/, "announcements span the full quick-access row");
 });
 
 test("parent home quick access cards show live summary + history for each portal", () => {
