@@ -13,7 +13,7 @@ import * as leaveApi from "../../api/leave";
 import * as transportApi from "../../api/transport";
 import { Pill, initials, Spinner, Empty } from "../../components/ui/Primitives";
 import { useNavigate } from "react-router-dom";
-import { TIMETABLE_DAYS as DAYS, getEntryTime } from "../../utils/timetableFlow";
+import { TIMETABLE_DAYS as DAYS, toTimeInput, displayTime } from "../../utils/timetableFlow";
 
 const LOADING = "Loading…";
 const PICKDROP_LABEL = {
@@ -22,6 +22,22 @@ const PICKDROP_LABEL = {
   dropped: "Dropped",
   not_assigned: "No route assigned yet",
 };
+
+// Resolve a timetable entry's start/end time to normalized "HH:MM" keys for the
+// weekly summary (admin-portal convention): new entries carry SQL times that
+// may include seconds, legacy entries reference a period whose period_time
+// holds the schedule. Both are normalized with toTimeInput so they dedupe.
+function summaryEntryTimes(entry, periodById) {
+  if (entry.period_start_time && entry.period_end_time) {
+    return [toTimeInput(entry.period_start_time), toTimeInput(entry.period_end_time)];
+  }
+  const period = periodById.get(String(entry.period_id));
+  if (period?.period_time) {
+    const [start, end] = period.period_time.split(" - ");
+    return [toTimeInput(start), toTimeInput(end)];
+  }
+  return [null, null];
+}
 
 export default function ParentHome() {
   const { selectedChild } = useParentContext();
@@ -44,6 +60,18 @@ export default function ParentHome() {
     () => new Map((periods || []).map((item) => [String(item.period_id), item])),
     [periods]
   );
+  const timeSlots = useMemo(
+    () => [...new Set((timetable || []).map((e) => summaryEntryTimes(e, periodById)[0]).filter(Boolean))].sort(),
+    [timetable, periodById]
+  );
+  const ttEntryMap = useMemo(() => {
+    const map = new Map();
+    (timetable || []).forEach((entry) => {
+      const [start] = summaryEntryTimes(entry, periodById);
+      if (start) map.set(`${entry.day_of_week}|${start}`, entry);
+    });
+    return map;
+  }, [timetable, periodById]);
   const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
   const { data: attendance, loading: attLoading } = useApi(
@@ -148,10 +176,12 @@ export default function ParentHome() {
       {ttLoading && <Spinner />}
       {!ttLoading &&
         (timetable && timetable.length ? (
-          <div className="card white" style={{ overflowX: "auto" }}>
-            <table className="data-table">
+          <div className="card white timetable-weekly-summary-card">
+            <span className="timetable-weekly-summary-title">Weekly summary</span>
+            <table className="timetable-preview-table">
               <thead>
                 <tr>
+                  <th className="time-col-header">Time</th>
                   {DAYS.map((day) => (
                     <th key={day} style={day === today ? { color: "var(--chalk-green-dark)" } : undefined}>
                       {day}
@@ -161,31 +191,21 @@ export default function ParentHome() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  {DAYS.map((day) => (
-                    <td key={day} style={{ verticalAlign: "top" }}>
-                      {timetable
-                        .filter((entry) => entry.day_of_week === day)
-                        .map((entry) => {
-                          const timeLabel = getEntryTime(entry, periodById);
-                          return (
-                            <div
-                              key={entry.entry_id}
-                              className="pill"
-                              style={{ display: "block", marginBottom: 4, background: "var(--paper)" }}
-                            >
-                              <div style={{ fontWeight: 700 }}>
-                                {entry.subject_id
-                                  ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
-                                  : "Unassigned"}
-                              </div>
-                              {timeLabel ? <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>{timeLabel}</div> : null}
-                            </div>
-                          );
-                        })}
-                    </td>
-                  ))}
-                </tr>
+                {timeSlots.map((start) => (
+                  <tr key={start}>
+                    <td className="time-cell">{displayTime(start)}</td>
+                    {DAYS.map((day) => {
+                      const entry = ttEntryMap.get(`${day}|${start}`);
+                      return (
+                        <td key={day} className={entry ? "active-cell" : ""}>
+                          {entry
+                            ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
+                            : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

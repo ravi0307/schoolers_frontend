@@ -259,12 +259,17 @@ test("teacher and parent homes render the broadcast feed", () => {
   assertContains("src/pages/parent/ParentHome.jsx", [/BroadcastFeed/, /communicationApi\.listBroadcasts\(\)/]);
 });
 
-test("parent home shows the selected child's weekly timetable with today highlighted", () => {
+test("parent home shows the selected child's timetable as an admin-style weekly summary", () => {
   assertContains("src/pages/parent/ParentHome.jsx", [
     /timetableApi\.classTimetable\(selectedChild\.class_id\)/,
     /This week's timetable/,
     /TIMETABLE_DAYS as DAYS/,
-    /getEntryTime\(entry, periodById\)/,
+    /summaryEntryTimes\(entry, periodById\)/,
+    /timetable-weekly-summary-card/,
+    /timetable-preview-table/,
+    /active-cell/,
+    /displayTime\(start\)/,
+    /toTimeInput/,
     /subjectNames\.get\(String\(entry\.subject_id\)\)/,
     /academicsApi\.listSubjects\(\)/,
     /academicsApi\.listPeriods\(\)/,
