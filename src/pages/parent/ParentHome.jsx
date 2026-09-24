@@ -330,12 +330,6 @@ export default function ParentHome() {
             onNavigate={() => navigate(q.to)}
           />
         ))}
-        <GalleryCard
-          title="🖼️ Gallery"
-          summary={galleryText}
-          items={galleryLoading ? [] : galleryThumbs}
-          onNavigate={() => navigate("/parent/gallery")}
-        />
         <div className="card">
           <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
           <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>
@@ -349,6 +343,12 @@ export default function ParentHome() {
             />
           </div>
         </div>
+        <GalleryCard
+          title="🖼️ Gallery"
+          summary={galleryText}
+          items={galleryLoading ? [] : galleryThumbs}
+          onNavigate={() => navigate("/parent/gallery")}
+        />
       </div>
 
       <div className="section-label">This week's timetable</div>

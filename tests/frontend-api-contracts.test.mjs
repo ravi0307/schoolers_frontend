@@ -286,12 +286,12 @@ test("parent home groups announcements with the quick grid and resizes the timet
   assert.match(home, /📢 Announcements/);
   assert.match(home, /limit=\{12\}/);
   assert.match(home, /\bbare\b/);
-  // Each quick-access cell flows under Leave, then Gallery, then Announcements.
+  // Announcements flow under Leave, then Gallery closes the row.
   assert.ok(
-    home.indexOf('title: "Leave Request"') < home.indexOf('title="🖼️ Gallery"'),
-    "gallery must follow the Leave Request card"
+    home.indexOf('title: "Leave Request"') < home.indexOf("📢 Announcements"),
+    "announcements must follow the Leave Request card"
   );
-  assert.ok(home.indexOf('title="🖼️ Gallery"') < home.indexOf("📢 Announcements"), "announcements must sit next to Gallery");
+  assert.ok(home.indexOf("📢 Announcements") < home.indexOf('title="🖼️ Gallery"'), "gallery must sit after Announcements");
   assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
   // Timetable is resized to one grid column (barter width) and sits on the left.
   assert.match(home, /<div className="grid2">/);
