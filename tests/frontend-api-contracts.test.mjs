@@ -29,7 +29,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/marks.js", [/\/marks\/student/, /\/marks\/class/, /\/marks\/\$\{studentId\}/]);
   assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/]);
   assertContains("src/api/people.js", [/\/teachers/, /\/staff/, /\/parents/, /\/students/]);
-  assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/]);
+  assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/, /\/routes\/mine/]);
   assertContains("src/api/schools.js", [/\/schools/, /features/, /status/, /stats/]);
   assertContains("src/api/reports.js", [/\/reports\/school/, /\/reports\/class/]);
   assertContains("src/api/notifications.js", [/\/notifications\/school/, /\/notifications\/\$\{id\}\/read/]);
@@ -59,7 +59,7 @@ test("key frontend workflows remain represented by application routes", () => {
     assert.ok(app.includes(`path="${route}"`), `route ${route} is not registered`);
   }
   const routeGroups = {
-    parent: ["home", "attendance", "marks", "gallery", "leave", "barter"],
+    parent: ["home", "pickdrop", "attendance", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
     pilot: ["pickdrop", "broadcast", "leave"],
@@ -118,6 +118,7 @@ test("role shells and feature pages are imported by the application", () => {
     "Login", "PublicWebsite", "ParentHome", "TeacherDashboard", "AdminDashboard",
     "AdminTimetable", "AdminBroadcast", "AdminWebsite", "AdminRoutes",
     "PilotPickDrop", "MasterSchools", "MasterSystemHealth",
+    "ParentPickDrop",
   ]) {
     assert.match(app, new RegExp(`import ${component} from`), `${component} is not imported`);
   }
@@ -162,6 +163,25 @@ test("pilot pick & drop maps stop API fields (stop_name, pickup_time, drop_time)
     /s\.pickup_time/,
     /s\.drop_time/,
   ]);
+});
+
+test("parent pick & drop shows each child's live route status, bus, and stops", () => {
+  assertContains("src/pages/parent/ParentPickDrop.jsx", [
+    /getMyPickdropStatus\(\)/,
+    /getMyPickdropStatus/,
+    /STATUS_META\[snapshot\.status\]/,
+    /pending|picked|dropped/,
+    /not_assigned/,
+    /transportApi\.listStops\(snapshot\.route_id\)/,
+    /setInterval\(refetch, /,
+    /Pill tone=/,
+    /driver_name/,
+    /Pickup .*· Drop/,
+  ]);
+  const shell = source("src/components/layout/ParentShell.jsx");
+  assert.match(shell, /to: "\/parent\/pickdrop"/, "ParentShell lacks the Pick & Drop tab");
+  const home = source("src/pages/parent/ParentHome.jsx");
+  assert.match(home, /navigate\("\/parent\/pickdrop"\)/, "ParentHome lacks the Pick & Drop shortcut");
 });
 
 test("pilot pages render web layout on wide screens and mobile on phones", () => {

@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import PublicWebsite from "./pages/PublicWebsite";
 
 import ParentHome from "./pages/parent/ParentHome";
+import ParentPickDrop from "./pages/parent/ParentPickDrop";
 import ParentAttendance from "./pages/parent/ParentAttendance";
 import ParentMarks from "./pages/parent/ParentMarks";
 import ParentLeave from "./pages/parent/ParentLeave";
@@ -74,6 +75,7 @@ export default function App() {
                   <ParentProvider>
                     <Routes>
                       <Route path="home" element={<ParentHome />} />
+                      <Route path="pickdrop" element={<ParentPickDrop />} />
                       <Route path="attendance" element={<ParentAttendance />} />
                       <Route path="marks" element={<ParentMarks />} />
                       <Route path="leave" element={<ParentLeave />} />

@@ -6,6 +6,7 @@ import { Spinner } from "../ui/Primitives";
 
 const TABS = [
   { to: "/parent/home", icon: "🏠", label: "Home" },
+  { to: "/parent/pickdrop", icon: "🚌", label: "Pick & Drop" },
   { to: "/parent/attendance", icon: "✅", label: "Attendance" },
   { to: "/parent/marks", icon: "🏆", label: "Marks" },
   { to: "/parent/gallery", icon: "🖼️", label: "Gallery" },
