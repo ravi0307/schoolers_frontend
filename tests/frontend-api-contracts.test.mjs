@@ -599,6 +599,26 @@ test("gallery upload form accepts several files and gates type, size, and requir
   ]);
 });
 
+test("gallery multi-upload saves each selected file in sequence with progress and partial-failure reporting", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const \[done, setDone\] = useState\(0\)/,
+    /setFiles\(valid\)/,
+    /fileInputRef\.current\.value = ""/,
+    /setFiles\(\[\]\)/,
+    /for \(let i = 0; i < files\.length; i\+\+\) \{/,
+    /uploadGalleryMedia\(files\[i\], title\.trim\(\)\)/,
+    /setDone\(i \+ 1\)/,
+    /`Uploading \$\{done\}\/\$\{files\.length\}(\.\.\.|…)`/,
+    /`Upload \$\{files\.length\} to Gallery`/,
+    /refetch\(\)/,
+    /ok === files\.length/,
+    /`Uploaded \$\{ok\} photos\/videos to the gallery`/,
+    /`\$\{ok\} uploaded, \$\{files\.length - ok\} failed/,
+    /`\$\{skipped\} file\$\{skipped === 1 \? "" : "s"\} skipped/,
+    /fileListLabel/,
+  ]);
+});
+
 test("gallery tiles render videos with controls and images lazily, then paginate", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
     /const items = \(data \|\| \[\]\)\.filter\(\(item\) => item\.file_url\)/,
