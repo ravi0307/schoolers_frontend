@@ -29,7 +29,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/marks.js", [/\/marks\/student/, /\/marks\/class/, /\/marks\/\$\{studentId\}/]);
   assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/]);
   assertContains("src/api/people.js", [/\/teachers/, /\/staff/, /\/parents/, /\/students/]);
-  assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/]);
+  assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/, /\/routes\/mine/]);
   assertContains("src/api/schools.js", [/\/schools/, /features/, /status/, /stats/]);
   assertContains("src/api/reports.js", [/\/reports\/school/, /\/reports\/class/]);
   assertContains("src/api/notifications.js", [/\/notifications\/school/, /\/notifications\/\$\{id\}\/read/]);
@@ -59,9 +59,9 @@ test("key frontend workflows remain represented by application routes", () => {
     assert.ok(app.includes(`path="${route}"`), `route ${route} is not registered`);
   }
   const routeGroups = {
-    parent: ["home", "attendance", "marks", "leave", "barter"],
-    teacher: ["dashboard", "attendance", "marks", "timetable"],
-    admin: ["dashboard", "classes", "timetable", "album", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
+    parent: ["home", "pickdrop", "attendance", "marks", "gallery", "leave", "barter"],
+    teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
+    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
     pilot: ["pickdrop", "broadcast", "leave"],
     master: ["schools", "schools/:schoolId", "system-health"],
   };
@@ -118,6 +118,7 @@ test("role shells and feature pages are imported by the application", () => {
     "Login", "PublicWebsite", "ParentHome", "TeacherDashboard", "AdminDashboard",
     "AdminTimetable", "AdminBroadcast", "AdminWebsite", "AdminRoutes",
     "PilotPickDrop", "MasterSchools", "MasterSystemHealth",
+    "ParentPickDrop",
   ]) {
     assert.match(app, new RegExp(`import ${component} from`), `${component} is not imported`);
   }
@@ -164,13 +165,76 @@ test("pilot pick & drop maps stop API fields (stop_name, pickup_time, drop_time)
   ]);
 });
 
+test("parent pick & drop shows each child's live route status, bus, and stops", () => {
+  assertContains("src/pages/parent/ParentPickDrop.jsx", [
+    /getMyPickdropStatus\(\)/,
+    /getMyPickdropStatus/,
+    /STATUS_META\[snapshot\.status\]/,
+    /pending|picked|dropped/,
+    /not_assigned/,
+    /transportApi\.listStops\(snapshot\.route_id\)/,
+    /setInterval\(refetch, /,
+    /Pill tone=/,
+    /driver_name/,
+    /Pickup .*· Drop/,
+  ]);
+  const shell = source("src/components/layout/ParentShell.jsx");
+  assert.match(shell, /to: "\/parent\/pickdrop"/, "ParentShell lacks the Pick & Drop tab");
+  const home = source("src/pages/parent/ParentHome.jsx");
+  assert.match(home, /navigate\("\/parent\/pickdrop"\)/, "ParentHome lacks the Pick & Drop shortcut");
+});
+
+test("parent pick & drop maps every status to a friendly label", () => {
+  const page = source("src/pages/parent/ParentPickDrop.jsx");
+  for (const [key, label] of [
+    ["pending", "Pickup pending"],
+    ["picked", "Picked up"],
+    ["dropped", "Dropped at school"],
+    ["not_assigned", "No transport route"],
+  ]) {
+    assert.match(page, new RegExp(`${key}: \\{ label`), `missing ${key} entry`);
+    assert.match(page, new RegExp(label), `missing label for ${key}: ${label}`);
+  }
+  assertContains("src/api/transport.js", [/getMyPickdropStatus = \(\) => client\.get\("\/routes\/mine"\)/]);
+});
+
+test("parent pick & drop is strictly read-only", () => {
+  const page = source("src/pages/parent/ParentPickDrop.jsx");
+  assert.doesNotMatch(page, /updatePickupStatus/, "parents must not flip pilots' status");
+  assert.doesNotMatch(page, /\.post\(|\.patch\(|\.delete\(/, "parent page must not mutate route data");
+  assertContains("src/pages/parent/ParentPickDrop.jsx", [
+    /ParentShell/,
+    /useParentContext\(\)/,
+    /selectedChild/,
+    /No stops set for this route\./,
+    /has not been assigned a transport route yet\./,
+  ]);
+});
+
 test("pilot pages render web layout on wide screens and mobile on phones", () => {
+  assertContains("src/hooks/useIsWide.js", [/min-width: \$\{breakpoint\}px/]);
   assertContains("src/components/layout/PilotShell.jsx", [
     /WebLayout/,
     /MobileLayout/,
     /portalLabel="PILOT PORTAL"/,
-    /min-width: \$\{breakpoint\}px/,
+    /useIsWide\(\)/,
   ]);
+});
+
+test("parent pages render web layout on wide screens and mobile on phones", () => {
+  assertContains("src/components/layout/ParentShell.jsx", [
+    /WebLayout/,
+    /MobileLayout/,
+    /portalLabel="PARENT PORTAL"/,
+    /useIsWide\(\)/,
+    /TABS/,
+  ]);
+});
+
+test("parent pages keep per-child selection in every layout", () => {
+  const shell = source("src/components/layout/ParentShell.jsx");
+  assert.match(shell, /setSelectedChildId\(Number\(e\.target\.value\)\)/);
+  assert.match(shell, /selectedChildId/);
 });
 
 test("broadcast history is split vertically 50-50 into Posted and Received columns", () => {
@@ -315,7 +379,7 @@ test("pagination caps every list at 25 records per page", () => {
     "src/pages/admin/AdminBroadcast.jsx",
     "src/pages/admin/AdminLeave.jsx",
     "src/pages/admin/AdminNotifications.jsx",
-    "src/pages/admin/AdminAlbum.jsx",
+    "src/components/gallery/GalleryView.jsx",
     "src/pages/admin/AdminWebsite.jsx",
     "src/pages/master/MasterSchools.jsx",
     "src/pages/master/MasterSchoolDetail.jsx",
@@ -346,6 +410,123 @@ test("teacher marks rounds scores and guards unsaved edits on class switch", () 
     /Number\.isNaN\(raw\)/,
     /window\.confirm\("You have an unsaved mark\. Discard it and switch class\?"\)/,
     /onSelect=\{changeClass\}/,
+  ]);
+});
+
+test("gallery uploads media to the school and renders photos and videos", () => {
+  assertContains("src/api/gallery.js", [
+    /client\.get\("\/media"\)/,
+    /\.post\("\/media"/,
+    /\.delete\(`\/media\/\$\{mediaId\}`\)/,
+    /form\.append\("file", file\)/,
+    /form\.append\("title", title\)/,
+  ]);
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /resolveMediaUrl/,
+    /item\.media_kind === "video"/,
+    /<video/,
+    /<img/,
+    /uploadGalleryMedia/,
+    /deleteGalleryMedia/,
+    /\.filter\(\(item\) => item\.file_url\)/,
+  ]);
+});
+
+test("admin, teacher, and parent portals each expose the gallery route", () => {
+  const app = source("src/App.jsx");
+  for (const page of ["AdminGallery", "TeacherGallery", "ParentGallery"]) {
+    assert.match(app, new RegExp(`import ${page} from`), `${page} is not imported`);
+  }
+  assertContains("src/components/layout/AdminShell.jsx", [
+    /to: "\/admin\/gallery"/,
+    /label: "Gallery"/,
+  ]);
+  assertContains("src/components/layout/TeacherShell.jsx", [/to: "\/teacher\/gallery"/]);
+  assertContains("src/components/layout/ParentShell.jsx", [/to: "\/parent\/gallery"/]);
+  // Teachers upload, admins can also remove, parents only view.
+  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canDelete \/>/]);
+  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload \/>/]);
+  assertContains("src/pages/parent/ParentGallery.jsx", [/<GalleryView empty=/]);
+});
+
+test("gallery role matrix keeps write controls off the read-only and teacher pages", () => {
+  const teacher = source("src/pages/teacher/TeacherGallery.jsx");
+  const parent = source("src/pages/parent/ParentGallery.jsx");
+  assert.doesNotMatch(teacher, /canDelete/, "teachers must not get the remove button");
+  assert.doesNotMatch(parent, /canUpload/, "parents must not get the upload button");
+  assert.doesNotMatch(parent, /deleteGalleryMedia/, "parents must not call the delete API");
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /canUpload = false,\s*canDelete = false/,
+    /empty = "No gallery media yet\."/,
+  ]);
+});
+
+test("useIsWide consults matchMedia once and subscribes for change events", () => {
+  assertContains("src/hooks/useIsWide.js", [
+    /breakpoint = 900/,
+    /typeof window !== "undefined"/,
+    /window\.matchMedia\(\`\(min-width: \$\{breakpoint\}px\)\`\)\.matches/,
+    /mq\.addEventListener\("change", handler\)/,
+    /setIsWide\(event\.matches\)/,
+    /mq\.removeEventListener\("change", handler\)/,
+    /\[breakpoint\]/,
+  ]);
+});
+
+test("gallery upload form gates file type, size, and required title before sending", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const ACCEPT = "image\/png,image\/jpeg,image\/gif,image\/webp,video\/mp4,video\/webm,video\/quicktime"/,
+    /const MAX_BYTES = 5 \* 1024 \* 1024/,
+    /"Choose a JPEG\/PNG\/GIF\/WebP image or an MP4\/WebM\/MOV video\."/,
+    /"Files must be 5 MB or smaller\."/,
+    /"Give the media a title\."/,
+    /"Choose a photo or video to upload\."/,
+    /accept=\{ACCEPT\}/,
+    /type="file"/,
+    /disabled=\{saving\}/,
+    /Uploading…/,
+  ]);
+});
+
+test("gallery tiles render videos with controls and images lazily, then paginate", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const items = \(data \|\| \[\]\)\.filter\(\(item\) => item\.file_url\)/,
+    /media_kind === "video"/,
+    /<video/,
+    /controls/,
+    /preload="metadata"/,
+    /<img/,
+    /loading="lazy"/,
+    /alt=\{item\.title\}/,
+    /resolveMediaUrl\(item\.file_url\)/,
+    /key=\{item\.media_id\}/,
+    /gallery-tile-meta/,
+    /item\.posted_by/,
+    /formatDate\(item\.created_at\)/,
+    /toLocaleDateString\(\)/,
+  ]);
+});
+
+test("gallery removal asks for confirmation scoped to the item title", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /window\.confirm\(`Remove "\$\{item\.title\}" from the gallery\?`\)/,
+    /canDelete && \(/,
+    /gallery-tile-remove/,
+    /refetch\(\)/,
+  ]);
+  assertContains("src/api/gallery.js", [
+    /\.delete\(`\/media\/\$\{mediaId\}`\)/,
+  ]);
+});
+
+test("gallery API sends a multipart form with file, title, and optional class", () => {
+  assertContains("src/api/gallery.js", [
+    /classId = null/,
+    /form\.append\("file", file\)/,
+    /form\.append\("title", title\)/,
+    /if \(classId\) form\.append\("class_id", classId\)/,
+    /"Content-Type": "multipart\/form-data"/,
+    /\.then\(\(r\) => r\.data\)/,
   ]);
 });
 

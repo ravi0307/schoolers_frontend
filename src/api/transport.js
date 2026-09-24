@@ -26,3 +26,5 @@ export const removeStudentFromRoute = (routeId, studentId) =>
   client.delete(`/routes/${routeId}/students/${studentId}`);
 export const updatePickupStatus = (routeId, studentId, status) =>
   client.patch(`/routes/${routeId}/students/${studentId}/status`, { status }).then((r) => r.data);
+
+export const getMyPickdropStatus = () => client.get("/routes/mine").then((r) => r.data);

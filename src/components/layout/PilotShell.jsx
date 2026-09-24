@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useIsWide } from "../../hooks/useIsWide";
 import MobileLayout from "./MobileLayout";
 import WebLayout from "./WebLayout";
 
@@ -7,19 +7,6 @@ const TABS = [
   { to: "/pilot/broadcast", icon: "📣", label: "Broadcast" },
   { to: "/pilot/leave", icon: "📅", label: "Leave" },
 ];
-
-function useIsWide(breakpoint = 900) {
-  const [isWide, setIsWide] = useState(
-    () => typeof window !== "undefined" && window.matchMedia(`(min-width: ${breakpoint}px)`).matches
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${breakpoint}px)`);
-    const handler = (event) => setIsWide(event.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, [breakpoint]);
-  return isWide;
-}
 
 export default function PilotShell({ children }) {
   const isWide = useIsWide();

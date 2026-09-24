@@ -35,6 +35,9 @@ export default function ParentHome() {
 
       <div className="section-label">Quick access</div>
       <div className="grid2">
+        <button className="card" onClick={() => navigate("/parent/pickdrop")} style={{ textAlign: "left", cursor: "pointer" }}>
+          <b style={{ fontSize: 12.5 }}>🚌 Pick &amp; Drop</b>
+        </button>
         <button className="card" onClick={() => navigate("/parent/attendance")} style={{ textAlign: "left", cursor: "pointer" }}>
           <b style={{ fontSize: 12.5 }}>✅ Attendance</b>
         </button>
