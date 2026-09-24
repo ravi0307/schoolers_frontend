@@ -8,14 +8,59 @@ import * as academicsApi from "../../api/academics";
 import * as timetableApi from "../../api/timetable";
 import * as attendanceApi from "../../api/attendance";
 import * as marksApi from "../../api/marks";
-import * as barterApi from "../../api/barter";
+import * as galleryApi from "../../api/gallery";
 import * as leaveApi from "../../api/leave";
 import * as transportApi from "../../api/transport";
 import { Pill, initials, Spinner, Empty } from "../../components/ui/Primitives";
 import { useNavigate } from "react-router-dom";
+import { resolveMediaUrl } from "../../api/client";
 import { TIMETABLE_DAYS as DAYS, toTimeInput, displayTime } from "../../utils/timetableFlow";
 
 const LOADING = "Loading…";
+function GalleryCard({ title, summary, items, onNavigate }) {
+  return (
+    <button className="card" onClick={onNavigate} style={{ textAlign: "left", cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b style={{ fontSize: 12.5 }}>{title}</b>
+        <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
+      {items.length > 0 && (
+        <div style={{ display: "flex", gap: 6, marginTop: 8, overflowX: "auto" }}>
+          {items.map((item) =>
+            item.media_kind === "video" ? (
+              <div
+                key={item.media_id}
+                style={{
+                  width: 56,
+                  height: 48,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "var(--ruled-blue-light)",
+                  borderRadius: 8,
+                  fontSize: 18,
+                }}
+              >
+                🎬
+              </div>
+            ) : (
+              <img
+                key={item.media_id}
+                src={resolveMediaUrl(item.file_url)}
+                alt={item.title}
+                loading="lazy"
+                style={{ width: 56, height: 48, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+              />
+            )
+          )}
+        </div>
+      )}
+    </button>
+  );
+}
+
 const PICKDROP_LABEL = {
   pending: "Pickup pending",
   picked: "Picked up",
@@ -135,7 +180,7 @@ export default function ParentHome() {
     () => (selectedChild ? marksApi.studentMarks(selectedChild.student_id) : Promise.resolve([])),
     [selectedChild?.student_id]
   );
-  const { data: barter, loading: barterLoading } = useApi(() => barterApi.listBarter(), []);
+  const { data: gallery, loading: galleryLoading } = useApi(() => galleryApi.listGallery(), []);
   const { data: leaves, loading: leaveLoading } = useApi(() => leaveApi.listMine(), []);
   const { data: pickdrop, loading: pdLoading } = useApi(() => transportApi.getMyPickdropStatus(), []);
 
@@ -185,9 +230,13 @@ export default function ParentHome() {
     tone: l.status === "Approved" ? "ok" : l.status === "Rejected" ? "warn" : "mute",
   }));
 
-  const barterHistory = (barter || [])
-    .slice(0, 100)
-    .map((b) => ({ label: b.title, value: b.price || "Free", tone: "mute" }));
+  const galleryItems = (gallery || []).filter((i) => i.file_url);
+  const galleryThumbs = galleryItems.slice(0, 4);
+  const galleryText = galleryLoading
+    ? LOADING
+    : galleryItems.length === 0
+      ? "No photos yet"
+      : `${galleryItems.length} photo${galleryItems.length === 1 ? "" : "s"} & video${galleryItems.length === 1 ? "" : "s"}`;
 
   const pickdropHistory = (pickdrop || [])
     .filter((r) => r.student_id !== selectedChild?.student_id)
@@ -204,7 +253,6 @@ export default function ParentHome() {
       ? "No attendance history"
       : `${attendanceStats.present}/${attendanceStats.total} present`;
   const marksText = marksLoading ? LOADING : marksSummary;
-  const barterText = barterLoading ? LOADING : `${(barter || []).length} live listing${(barter || []).length === 1 ? "" : "s"}`;
   const leaveText = leaveLoading
     ? LOADING
     : leavePending > 0
@@ -247,13 +295,6 @@ export default function ParentHome() {
       summary: leaveText,
       rows: leaveLoading ? [] : leaveHistory,
     },
-    {
-      to: "/parent/barter",
-      icon: "🎒",
-      title: "Barter",
-      summary: barterText,
-      rows: barterLoading ? [] : barterHistory,
-    },
   ];
 
   if (!selectedChild) return <ParentShell>{null}</ParentShell>;
@@ -289,6 +330,12 @@ export default function ParentHome() {
             onNavigate={() => navigate(q.to)}
           />
         ))}
+        <GalleryCard
+          title="🖼️ Gallery"
+          summary={galleryText}
+          items={galleryLoading ? [] : galleryThumbs}
+          onNavigate={() => navigate("/parent/gallery")}
+        />
         <div className="card">
           <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
           <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>

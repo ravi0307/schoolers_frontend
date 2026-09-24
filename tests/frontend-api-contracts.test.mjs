@@ -286,7 +286,12 @@ test("parent home groups announcements with the quick grid and resizes the timet
   assert.match(home, /📢 Announcements/);
   assert.match(home, /limit=\{12\}/);
   assert.match(home, /\bbare\b/);
-  assert.ok(home.indexOf('title: "Barter"') < home.indexOf("📢 Announcements"), "announcements must sit next to Barter");
+  // Each quick-access cell flows under Leave, then Gallery, then Announcements.
+  assert.ok(
+    home.indexOf('title: "Leave Request"') < home.indexOf('title="🖼️ Gallery"'),
+    "gallery must follow the Leave Request card"
+  );
+  assert.ok(home.indexOf('title="🖼️ Gallery"') < home.indexOf("📢 Announcements"), "announcements must sit next to Gallery");
   assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
   // Timetable is resized to one grid column (barter width) and sits on the left.
   assert.match(home, /<div className="grid2">/);
@@ -298,9 +303,11 @@ test("parent home quick access cards show live summary + history for each portal
   // Every card converges on real API data for the selected child.
   assert.match(home, /attendanceApi\.getAttendance\(selectedChild\.student_id\)/);
   assert.match(home, /marksApi\.studentMarks\(selectedChild\.student_id\)/);
-  assert.match(home, /barterApi\.listBarter\(\)/);
+  assert.match(home, /galleryApi\.listGallery\(\)/);
   assert.match(home, /leaveApi\.listMine\(\)/);
   assert.match(home, /transportApi\.getMyPickdropStatus\(\)/);
+  // Barter is no longer on the home page.
+  assert.doesNotMatch(home, /barter|Barter/);
   // Summaries derive from fetched records, not static copy.
   assert.match(home, /\.filter\(\(a\) => a\.status === "Present"\)\.length/);
   assert.match(home, /\.filter\(\(m\) => m\.term === terms\[terms\.length - 1\]\)/);
@@ -322,18 +329,22 @@ test("parent home quick access cards show live summary + history for each portal
   );
   assert.match(home, /\.filter\(\(r\) => r\.student_id !== selectedChild\?\.student_id\)/);
   assert.match(home, /PICKDROP_LABEL\[r\.status\]/);
-  // Summary + Recent list render together in each card.
+  // Summary + Recent list render together in each card, and the gallery shows media.
   assert.match(home, /function QuickCard/);
+  assert.match(home, /function GalleryCard/);
   assert.match(home, /<QuickCard\n            key=\{q\.to\}/);
+  assert.match(home, /<GalleryCard/);
   assert.match(home, /Recent/);
   assert.match(home, /onNavigate=\{\(\) => navigate\(q\.to\)\}/);
+  assert.match(home, /resolveMediaUrl\(item\.file_url\)/);
+  assert.match(home, /media_kind === "video"/);
   // Each card keeps navigating to its portal section.
   for (const route of [
     "/parent/pickdrop",
     "/parent/attendance",
     "/parent/marks",
     "/parent/leave",
-    "/parent/barter",
+    "/parent/gallery",
   ]) {
     assert.ok(home.includes(`navigate("${route}")`) || home.includes(`to: "${route}"`), `missing quick links to ${route}`);
   }
