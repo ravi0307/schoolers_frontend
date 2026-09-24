@@ -284,7 +284,7 @@ test("parent home groups announcements with the quick grid and resizes the timet
   const home = source("src/pages/parent/ParentHome.jsx");
   // Announcements become the 6th quick-access cell, right next to Barter.
   assert.match(home, /📢 Announcements/);
-  assert.match(home, /limit=\{2\}/);
+  assert.match(home, /limit=\{12\}/);
   assert.match(home, /\bbare\b/);
   assert.ok(home.indexOf('title: "Barter"') < home.indexOf("📢 Announcements"), "announcements must sit next to Barter");
   assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
@@ -306,11 +306,15 @@ test("parent home quick access cards show live summary + history for each portal
   assert.match(home, /\.filter\(\(m\) => m\.term === terms\[terms\.length - 1\]\)/);
   assert.match(home, /childLeaves\.filter\(\(l\) => l\.status === "Pending"\)\.length/);
   assert.match(home, /pickdrop\.find\(\(r\) => r\.student_id === selectedChild\.student_id\)/);
-  // History lists derive from the same records (sorted, truncated to 3).
+  // History lists derive from the same records (sorted, capped, scrollable).
   assert.match(home, /\.sort\(\(a, b\) => String\(b\.date\)\.localeCompare\(String\(a\.date\)\)\)/);
   assert.match(home, /\.sort\(\(a, b\) => b\.term\.localeCompare\(a\.term\)\)/);
-  assert.match(home, /\.slice\(0, 3\)/);
-  assert.match(home, /childLeaves\.slice\(0, 3\)/);
+  assert.match(home, /\.slice\(0, 100\)/);
+  assert.match(home, /maxHeight/, "cards need a max-height scroll area");
+  assert.match(home, /overflowY: "auto"/, "cards need a vertical scrollbar");
+  // Announcements scroll too.
+  assert.match(home, /limit=\{12\}/);
+  assert.match(home, /childLeaves\.slice\(0, 100\)/);
   assert.match(
     home,
     /label: `\$\{l\.from_date\} → \$\{l\.to_date\}`/,

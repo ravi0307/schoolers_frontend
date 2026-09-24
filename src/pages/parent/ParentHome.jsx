@@ -56,7 +56,15 @@ function QuickCard({ icon, title, summary, rows, onNavigate }) {
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
       {rows && rows.length > 0 && (
-        <div style={{ marginTop: 8, borderTop: "1px solid var(--line)", paddingTop: 4 }}>
+        <div
+          style={{
+            marginTop: 8,
+            borderTop: "1px solid var(--line)",
+            paddingTop: 4,
+            maxHeight: 150,
+            overflowY: "auto",
+          }}
+        >
           <div style={{ fontSize: 10, textTransform: "uppercase", color: "var(--ink-soft)", marginBottom: 2 }}>Recent</div>
           {rows.map((row, i) => (
             <div
@@ -159,31 +167,31 @@ export default function ParentHome() {
 
   const attendanceHistory = [...(attendance || [])]
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-    .slice(0, 3)
+    .slice(0, 100)
     .map((a) => ({ label: a.date, value: a.status, tone: a.status === "Present" ? "ok" : "warn" }));
 
   const marksHistory = [...(marks || [])]
     .sort((a, b) => b.term.localeCompare(a.term))
-    .slice(0, 3)
+    .slice(0, 100)
     .map((m) => ({
       label: subjectNames.get(String(m.subject_id)) || `Subject #${m.subject_id}`,
       value: `${m.score}/100`,
       tone: m.score >= 75 ? "ok" : m.score >= 50 ? "mute" : "warn",
     }));
 
-  const leaveHistory = childLeaves.slice(0, 3).map((l) => ({
+  const leaveHistory = childLeaves.slice(0, 100).map((l) => ({
     label: `${l.from_date} → ${l.to_date}`,
     value: l.status,
     tone: l.status === "Approved" ? "ok" : l.status === "Rejected" ? "warn" : "mute",
   }));
 
   const barterHistory = (barter || [])
-    .slice(0, 3)
+    .slice(0, 100)
     .map((b) => ({ label: b.title, value: b.price || "Free", tone: "mute" }));
 
   const pickdropHistory = (pickdrop || [])
     .filter((r) => r.student_id !== selectedChild?.student_id)
-    .slice(0, 3)
+    .slice(0, 100)
     .map((r) => ({
       label: r.student_name,
       value: PICKDROP_LABEL[r.status] || r.status,
@@ -283,12 +291,12 @@ export default function ParentHome() {
         ))}
         <div className="card">
           <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
-          <div style={{ marginTop: 4 }}>
+          <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>
             <BroadcastFeed
               data={broadcasts}
               loading={loading}
               error={error}
-              limit={2}
+              limit={12}
               bare
               empty="No announcements for your children yet."
             />
