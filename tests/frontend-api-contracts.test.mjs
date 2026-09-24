@@ -256,6 +256,21 @@ test("teacher and parent homes render the broadcast feed", () => {
   assertContains("src/pages/parent/ParentHome.jsx", [/BroadcastFeed/, /communicationApi\.listBroadcasts\(\)/]);
 });
 
+test("parent home shows the selected child's weekly timetable with today highlighted", () => {
+  assertContains("src/pages/parent/ParentHome.jsx", [
+    /timetableApi\.classTimetable\(selectedChild\.class_id\)/,
+    /This week's timetable/,
+    /TIMETABLE_DAYS as DAYS/,
+    /getEntryTime\(entry, periodById\)/,
+    /subjectNames\.get\(String\(entry\.subject_id\)\)/,
+    /academicsApi\.listSubjects\(\)/,
+    /academicsApi\.listPeriods\(\)/,
+    /day === today/,
+    /toLocaleDateString\("en-US", \{ weekday: "short" \}\)/,
+    /No timetable has been published for this class yet\./,
+  ]);
+});
+
 test("marks API loads class marks and upserts scores", () => {
   assertContains("src/api/marks.js", [
     /classMarks\s*=\s*\(classId, term\)/,
