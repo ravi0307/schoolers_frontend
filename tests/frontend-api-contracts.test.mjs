@@ -293,9 +293,14 @@ test("parent home groups announcements with the quick grid and resizes the timet
   );
   assert.ok(home.indexOf("📢 Announcements") < home.indexOf('title="🖼️ Gallery"'), "gallery must sit after Announcements");
   assert.ok(home.indexOf("📢 Announcements") < home.indexOf("This week's timetable"), "announcements move above the timetable");
-  // Timetable is resized to one grid column (barter width) and sits on the left.
+  // Timetable sits on the left, same-height Gallery on the right (gallery runs to the timetable's end).
   assert.match(home, /<div className="grid2">/);
-  assert.match(home, /<div \/>\s+<\/div>\s+<\/ParentShell>/, "timetable row leaves the right half empty");
+  assert.ok(
+    home.indexOf("This week's timetable") < home.indexOf("<GalleryCard"),
+    "gallery must live in the timetable row"
+  );
+  assert.match(home, /<GalleryCard[\s\S]*<\/div>\s+<\/ParentShell>/, "gallery card closes the timetable row");
+  assert.match(home, /gridColumn: "1 \/ -1"/, "announcements span the full quick-access row");
 });
 
 test("parent home quick access cards show live summary + history for each portal", () => {

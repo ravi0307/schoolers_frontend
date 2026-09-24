@@ -330,7 +330,7 @@ export default function ParentHome() {
             onNavigate={() => navigate(q.to)}
           />
         ))}
-        <div className="card">
+        <div className="card" style={{ gridColumn: "1 / -1" }}>
           <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
           <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>
             <BroadcastFeed
@@ -343,12 +343,6 @@ export default function ParentHome() {
             />
           </div>
         </div>
-        <GalleryCard
-          title="🖼️ Gallery"
-          summary={galleryText}
-          items={galleryLoading ? [] : galleryThumbs}
-          onNavigate={() => navigate("/parent/gallery")}
-        />
       </div>
 
       <div className="section-label">This week's timetable</div>
@@ -394,7 +388,12 @@ export default function ParentHome() {
               <Empty>No timetable has been published for this class yet.</Empty>
             </div>
           ))}
-        <div />
+        <GalleryCard
+          title="🖼️ Gallery"
+          summary={galleryText}
+          items={galleryLoading ? [] : galleryThumbs}
+          onNavigate={() => navigate("/parent/gallery")}
+        />
       </div>
     </ParentShell>
   );
