@@ -59,9 +59,9 @@ test("key frontend workflows remain represented by application routes", () => {
     assert.ok(app.includes(`path="${route}"`), `route ${route} is not registered`);
   }
   const routeGroups = {
-    parent: ["home", "attendance", "marks", "leave", "barter"],
-    teacher: ["dashboard", "attendance", "marks", "timetable"],
-    admin: ["dashboard", "classes", "timetable", "album", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
+    parent: ["home", "attendance", "marks", "gallery", "leave", "barter"],
+    teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
+    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
     pilot: ["pickdrop", "broadcast", "leave"],
     master: ["schools", "schools/:schoolId", "system-health"],
   };
@@ -165,12 +165,29 @@ test("pilot pick & drop maps stop API fields (stop_name, pickup_time, drop_time)
 });
 
 test("pilot pages render web layout on wide screens and mobile on phones", () => {
+  assertContains("src/hooks/useIsWide.js", [/min-width: \$\{breakpoint\}px/]);
   assertContains("src/components/layout/PilotShell.jsx", [
     /WebLayout/,
     /MobileLayout/,
     /portalLabel="PILOT PORTAL"/,
-    /min-width: \$\{breakpoint\}px/,
+    /useIsWide\(\)/,
   ]);
+});
+
+test("parent pages render web layout on wide screens and mobile on phones", () => {
+  assertContains("src/components/layout/ParentShell.jsx", [
+    /WebLayout/,
+    /MobileLayout/,
+    /portalLabel="PARENT PORTAL"/,
+    /useIsWide\(\)/,
+    /TABS/,
+  ]);
+});
+
+test("parent pages keep per-child selection in every layout", () => {
+  const shell = source("src/components/layout/ParentShell.jsx");
+  assert.match(shell, /setSelectedChildId\(Number\(e\.target\.value\)\)/);
+  assert.match(shell, /selectedChildId/);
 });
 
 test("broadcast history is split vertically 50-50 into Posted and Received columns", () => {
@@ -315,7 +332,7 @@ test("pagination caps every list at 25 records per page", () => {
     "src/pages/admin/AdminBroadcast.jsx",
     "src/pages/admin/AdminLeave.jsx",
     "src/pages/admin/AdminNotifications.jsx",
-    "src/pages/admin/AdminAlbum.jsx",
+    "src/components/gallery/GalleryView.jsx",
     "src/pages/admin/AdminWebsite.jsx",
     "src/pages/master/MasterSchools.jsx",
     "src/pages/master/MasterSchoolDetail.jsx",
@@ -347,5 +364,41 @@ test("teacher marks rounds scores and guards unsaved edits on class switch", () 
     /window\.confirm\("You have an unsaved mark\. Discard it and switch class\?"\)/,
     /onSelect=\{changeClass\}/,
   ]);
+});
+
+test("gallery uploads media to the school and renders photos and videos", () => {
+  assertContains("src/api/gallery.js", [
+    /client\.get\("\/media"\)/,
+    /\.post\("\/media"/,
+    /\.delete\(`\/media\/\$\{mediaId\}`\)/,
+    /form\.append\("file", file\)/,
+    /form\.append\("title", title\)/,
+  ]);
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /resolveMediaUrl/,
+    /item\.media_kind === "video"/,
+    /<video/,
+    /<img/,
+    /uploadGalleryMedia/,
+    /deleteGalleryMedia/,
+    /\.filter\(\(item\) => item\.file_url\)/,
+  ]);
+});
+
+test("admin, teacher, and parent portals each expose the gallery route", () => {
+  const app = source("src/App.jsx");
+  for (const page of ["AdminGallery", "TeacherGallery", "ParentGallery"]) {
+    assert.match(app, new RegExp(`import ${page} from`), `${page} is not imported`);
+  }
+  assertContains("src/components/layout/AdminShell.jsx", [
+    /to: "\/admin\/gallery"/,
+    /label: "Gallery"/,
+  ]);
+  assertContains("src/components/layout/TeacherShell.jsx", [/to: "\/teacher\/gallery"/]);
+  assertContains("src/components/layout/ParentShell.jsx", [/to: "\/parent\/gallery"/]);
+  // Teachers upload, admins can also remove, parents only view.
+  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canDelete \/>/]);
+  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload \/>/]);
+  assertContains("src/pages/parent/ParentGallery.jsx", [/<GalleryView empty=/]);
 });
 

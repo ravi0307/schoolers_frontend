@@ -13,17 +13,19 @@ import ParentAttendance from "./pages/parent/ParentAttendance";
 import ParentMarks from "./pages/parent/ParentMarks";
 import ParentLeave from "./pages/parent/ParentLeave";
 import ParentBarter from "./pages/parent/ParentBarter";
+import ParentGallery from "./pages/parent/ParentGallery";
 
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
 import TeacherMarks from "./pages/teacher/TeacherMarks";
 import TeacherTimetable from "./pages/teacher/TeacherTimetable";
 import TeacherBroadcast from "./pages/teacher/TeacherBroadcast";
+import TeacherGallery from "./pages/teacher/TeacherGallery";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
 import AdminTimetable from "./pages/admin/AdminTimetable";
-import AdminAlbum from "./pages/admin/AdminAlbum";
+import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBroadcast from "./pages/admin/AdminBroadcast";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStaff from "./pages/admin/AdminStaff";
@@ -76,6 +78,7 @@ export default function App() {
                       <Route path="marks" element={<ParentMarks />} />
                       <Route path="leave" element={<ParentLeave />} />
                       <Route path="barter" element={<ParentBarter />} />
+                      <Route path="gallery" element={<ParentGallery />} />
                       <Route path="*" element={<Navigate to="/parent/home" replace />} />
                     </Routes>
                   </ParentProvider>
@@ -95,6 +98,7 @@ export default function App() {
                       <Route path="marks" element={<TeacherMarks />} />
                       <Route path="timetable" element={<TeacherTimetable />} />
                       <Route path="broadcast" element={<TeacherBroadcast />} />
+                      <Route path="gallery" element={<TeacherGallery />} />
                       <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
                     </Routes>
                   </TeacherProvider>
@@ -111,7 +115,7 @@ export default function App() {
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="classes" element={<AdminClasses />} />
                     <Route path="timetable" element={<AdminTimetable />} />
-                    <Route path="album" element={<AdminAlbum />} />
+                    <Route path="gallery" element={<AdminGallery />} />
                     <Route path="broadcast" element={<AdminBroadcast />} />
                     <Route path="students" element={<AdminStudents />} />
                     <Route path="staff" element={<AdminStaff />} />
