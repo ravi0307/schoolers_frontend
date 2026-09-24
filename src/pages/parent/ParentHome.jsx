@@ -30,35 +30,55 @@ function GalleryCard({ title, summary, items, onNavigate, style }) {
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
       {items.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginTop: 8, overflowX: "auto" }}>
-          {items.map((item) =>
-            item.media_kind === "video" ? (
-              <div
-                key={item.media_id}
+        <div
+          style={{
+            marginTop: 8,
+            maxHeight: 150,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          {items.map((item) => (
+            <div key={item.media_id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {item.media_kind === "video" ? (
+                <div
+                  style={{
+                    width: 40,
+                    height: 34,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--ruled-blue-light)",
+                    borderRadius: 8,
+                    fontSize: 16,
+                  }}
+                >
+                  🎬
+                </div>
+              ) : (
+                <img
+                  src={resolveMediaUrl(item.file_url)}
+                  alt={item.title}
+                  loading="lazy"
+                  style={{ width: 40, height: 34, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                />
+              )}
+              <span
                 style={{
-                  width: 56,
-                  height: 48,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "var(--ruled-blue-light)",
-                  borderRadius: 8,
-                  fontSize: 18,
+                  fontSize: 11.5,
+                  color: "var(--ink-soft)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                🎬
-              </div>
-            ) : (
-              <img
-                key={item.media_id}
-                src={resolveMediaUrl(item.file_url)}
-                alt={item.title}
-                loading="lazy"
-                style={{ width: 56, height: 48, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
-              />
-            )
-          )}
+                {item.title}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </button>
@@ -235,7 +255,6 @@ export default function ParentHome() {
   }));
 
   const galleryItems = (gallery || []).filter((i) => i.file_url);
-  const galleryThumbs = galleryItems.slice(0, 4);
   const galleryText = galleryLoading
     ? LOADING
     : galleryItems.length === 0
@@ -398,7 +417,7 @@ export default function ParentHome() {
         <GalleryCard
           title="🖼️ Gallery"
           summary={galleryText}
-          items={galleryLoading ? [] : galleryThumbs}
+          items={galleryLoading ? [] : galleryItems}
           onNavigate={() => navigate("/parent/gallery")}
           style={{ gridColumn: 2, gridRow: "1 / 3" }}
         />

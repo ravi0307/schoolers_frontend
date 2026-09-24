@@ -333,15 +333,18 @@ test("parent home quick access cards show live summary + history for each portal
   );
   assert.match(home, /\.filter\(\(r\) => r\.student_id !== selectedChild\?\.student_id\)/);
   assert.match(home, /PICKDROP_LABEL\[r\.status\]/);
-  // Summary + Recent list render together in each card, and the gallery shows media.
+  // Summary + Recent list render together in each card, and the gallery shows ALL media.
   assert.match(home, /function QuickCard/);
   assert.match(home, /function GalleryCard/);
   assert.match(home, /<QuickCard\n            key=\{q\.to\}/);
   assert.match(home, /<GalleryCard/);
+  assert.match(home, /items=\{galleryLoading \? \[\] : galleryItems\}/, "gallery card must list every media item");
+  assert.doesNotMatch(home, /slice\(0, 4\)/, "gallery must not cap its thumbnails");
   assert.match(home, /Recent/);
   assert.match(home, /onNavigate=\{\(\) => navigate\(q\.to\)\}/);
   assert.match(home, /resolveMediaUrl\(item\.file_url\)/);
   assert.match(home, /media_kind === "video"/);
+  assert.match(home, /flexDirection: "column"/, "gallery media list must scroll vertically");
   // Each card keeps navigating to its portal section.
   for (const route of [
     "/parent/pickdrop",
