@@ -41,19 +41,19 @@ function GalleryCard({ title, summary, items, onNavigate, style }) {
           }}
         >
           {items.map((item) => (
-            <div key={item.media_id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={item.media_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {item.media_kind === "video" ? (
                 <div
                   style={{
-                    width: 40,
-                    height: 34,
+                    width: 88,
+                    height: 64,
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     background: "var(--ruled-blue-light)",
                     borderRadius: 8,
-                    fontSize: 16,
+                    fontSize: 24,
                   }}
                 >
                   🎬
@@ -63,12 +63,12 @@ function GalleryCard({ title, summary, items, onNavigate, style }) {
                   src={resolveMediaUrl(item.file_url)}
                   alt={item.title}
                   loading="lazy"
-                  style={{ width: 40, height: 34, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                  style={{ width: 88, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
                 />
               )}
               <span
                 style={{
-                  fontSize: 11.5,
+                  fontSize: 12.5,
                   color: "var(--ink-soft)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
