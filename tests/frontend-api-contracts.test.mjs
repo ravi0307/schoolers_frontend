@@ -279,7 +279,7 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
   ]);
 });
 
-test("parent home quick access cards show live summary data for each portal", () => {
+test("parent home quick access cards show live summary + history for each portal", () => {
   const home = source("src/pages/parent/ParentHome.jsx");
   // Every card converges on real API data for the selected child.
   assert.match(home, /attendanceApi\.getAttendance\(selectedChild\.student_id\)/);
@@ -290,8 +290,25 @@ test("parent home quick access cards show live summary data for each portal", ()
   // Summaries derive from fetched records, not static copy.
   assert.match(home, /\.filter\(\(a\) => a\.status === "Present"\)\.length/);
   assert.match(home, /\.filter\(\(m\) => m\.term === terms\[terms\.length - 1\]\)/);
-  assert.match(home, /\.filter\(\(l\) => l\.status === "Pending"\)\.length/);
+  assert.match(home, /childLeaves\.filter\(\(l\) => l\.status === "Pending"\)\.length/);
   assert.match(home, /pickdrop\.find\(\(r\) => r\.student_id === selectedChild\.student_id\)/);
+  // History lists derive from the same records (sorted, truncated to 3).
+  assert.match(home, /\.sort\(\(a, b\) => String\(b\.date\)\.localeCompare\(String\(a\.date\)\)\)/);
+  assert.match(home, /\.sort\(\(a, b\) => b\.term\.localeCompare\(a\.term\)\)/);
+  assert.match(home, /\.slice\(0, 3\)/);
+  assert.match(home, /childLeaves\.slice\(0, 3\)/);
+  assert.match(
+    home,
+    /label: `\$\{l\.from_date\} → \$\{l\.to_date\}`/,
+    "leave history must show request dates"
+  );
+  assert.match(home, /\.filter\(\(r\) => r\.student_id !== selectedChild\?\.student_id\)/);
+  assert.match(home, /PICKDROP_LABEL\[r\.status\]/);
+  // Summary + Recent list render together in each card.
+  assert.match(home, /function QuickCard/);
+  assert.match(home, /<QuickCard\n            key=\{q\.to\}/);
+  assert.match(home, /Recent/);
+  assert.match(home, /onNavigate=\{\(\) => navigate\(q\.to\)\}/);
   // Each card keeps navigating to its portal section.
   for (const route of [
     "/parent/pickdrop",

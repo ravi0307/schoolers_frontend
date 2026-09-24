@@ -39,6 +39,51 @@ function summaryEntryTimes(entry, periodById) {
   return [null, null];
 }
 
+const TONE_COLOR = {
+  ok: "var(--ok-green)",
+  warn: "var(--red-pen)",
+  mute: "var(--ink-soft)",
+};
+
+function QuickCard({ icon, title, summary, rows, onNavigate }) {
+  return (
+    <button className="card" onClick={onNavigate} style={{ textAlign: "left", cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b style={{ fontSize: 12.5 }}>
+          {icon} {title}
+        </b>
+        <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
+      {rows && rows.length > 0 && (
+        <div style={{ marginTop: 8, borderTop: "1px solid var(--line)", paddingTop: 4 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", color: "var(--ink-soft)", marginBottom: 2 }}>Recent</div>
+          {rows.map((row, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "3px 0",
+                fontSize: 11,
+                borderBottom: i < rows.length - 1 ? "1px dotted var(--line)" : undefined,
+              }}
+            >
+              <span style={{ color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {row.label}
+              </span>
+              <span style={{ fontWeight: 600, whiteSpace: "nowrap", color: TONE_COLOR[row.tone] || "var(--ink)" }}>
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </button>
+  );
+}
+
 export default function ParentHome() {
   const { selectedChild } = useParentContext();
   const navigate = useNavigate();
@@ -104,12 +149,46 @@ export default function ParentHome() {
     return `Latest ${avg}/100 avg · ${latestRows.length} subjects`;
   }, [marks]);
 
-  const leaveStats = useMemo(() => {
-    const rows = (leaves || []).filter((l) => l.requester_name === selectedChild?.name);
-    return { pending: rows.filter((l) => l.status === "Pending").length, total: rows.length };
-  }, [leaves, selectedChild?.name]);
+  const childLeaves = useMemo(
+    () => (leaves || []).filter((l) => l.requester_name === selectedChild?.name),
+    [leaves, selectedChild?.name]
+  );
+  const leavePending = childLeaves.filter((l) => l.status === "Pending").length;
 
   const pickdropRow = pickdrop && selectedChild ? pickdrop.find((r) => r.student_id === selectedChild.student_id) : null;
+
+  const attendanceHistory = [...(attendance || [])]
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .slice(0, 3)
+    .map((a) => ({ label: a.date, value: a.status, tone: a.status === "Present" ? "ok" : "warn" }));
+
+  const marksHistory = [...(marks || [])]
+    .sort((a, b) => b.term.localeCompare(a.term))
+    .slice(0, 3)
+    .map((m) => ({
+      label: subjectNames.get(String(m.subject_id)) || `Subject #${m.subject_id}`,
+      value: `${m.score}/100`,
+      tone: m.score >= 75 ? "ok" : m.score >= 50 ? "mute" : "warn",
+    }));
+
+  const leaveHistory = childLeaves.slice(0, 3).map((l) => ({
+    label: `${l.from_date} → ${l.to_date}`,
+    value: l.status,
+    tone: l.status === "Approved" ? "ok" : l.status === "Rejected" ? "warn" : "mute",
+  }));
+
+  const barterHistory = (barter || [])
+    .slice(0, 3)
+    .map((b) => ({ label: b.title, value: b.price || "Free", tone: "mute" }));
+
+  const pickdropHistory = (pickdrop || [])
+    .filter((r) => r.student_id !== selectedChild?.student_id)
+    .slice(0, 3)
+    .map((r) => ({
+      label: r.student_name,
+      value: PICKDROP_LABEL[r.status] || r.status,
+      tone: r.status === "picked" ? "ok" : r.status === "dropped" ? "mute" : r.status === "pending" ? "warn" : "mute",
+    }));
 
   const attendanceText = attLoading
     ? LOADING
@@ -120,10 +199,10 @@ export default function ParentHome() {
   const barterText = barterLoading ? LOADING : `${(barter || []).length} live listing${(barter || []).length === 1 ? "" : "s"}`;
   const leaveText = leaveLoading
     ? LOADING
-    : leaveStats.pending > 0
-      ? `${leaveStats.pending} pending request${leaveStats.pending === 1 ? "" : "s"}`
-      : leaveStats.total > 0
-        ? `${leaveStats.total} request${leaveStats.total === 1 ? "" : "s"}`
+    : leavePending > 0
+      ? `${leavePending} pending request${leavePending === 1 ? "" : "s"}`
+      : childLeaves.length > 0
+        ? `${childLeaves.length} request${childLeaves.length === 1 ? "" : "s"}`
         : "No requests yet";
   const pickdropText = pdLoading
     ? LOADING
@@ -132,11 +211,41 @@ export default function ParentHome() {
       : PICKDROP_LABEL[pickdropRow.status] || pickdropRow.status;
 
   const quickLinks = [
-    { to: "/parent/pickdrop", icon: "🚌", title: "Pick & Drop", summary: pickdropText },
-    { to: "/parent/attendance", icon: "✅", title: "Attendance", summary: attendanceText },
-    { to: "/parent/marks", icon: "🏆", title: "Report Card", summary: marksText },
-    { to: "/parent/leave", icon: "📅", title: "Leave Request", summary: leaveText },
-    { to: "/parent/barter", icon: "🎒", title: "Barter", summary: barterText },
+    {
+      to: "/parent/pickdrop",
+      icon: "🚌",
+      title: "Pick & Drop",
+      summary: pickdropText,
+      rows: pdLoading ? [] : pickdropHistory,
+    },
+    {
+      to: "/parent/attendance",
+      icon: "✅",
+      title: "Attendance",
+      summary: attendanceText,
+      rows: attLoading ? [] : attendanceHistory,
+    },
+    {
+      to: "/parent/marks",
+      icon: "🏆",
+      title: "Report Card",
+      summary: marksText,
+      rows: marksLoading ? [] : marksHistory,
+    },
+    {
+      to: "/parent/leave",
+      icon: "📅",
+      title: "Leave Request",
+      summary: leaveText,
+      rows: leaveLoading ? [] : leaveHistory,
+    },
+    {
+      to: "/parent/barter",
+      icon: "🎒",
+      title: "Barter",
+      summary: barterText,
+      rows: barterLoading ? [] : barterHistory,
+    },
   ];
 
   if (!selectedChild) return <ParentShell>{null}</ParentShell>;
@@ -163,12 +272,14 @@ export default function ParentHome() {
       <div className="section-label">Quick access</div>
       <div className="grid2">
         {quickLinks.map((q) => (
-          <button key={q.to} className="card" onClick={() => navigate(q.to)} style={{ textAlign: "left", cursor: "pointer" }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700 }}>
-              {q.icon} {q.title}
-            </div>
-            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 6 }}>{q.summary}</div>
-          </button>
+          <QuickCard
+            key={q.to}
+            icon={q.icon}
+            title={q.title}
+            summary={q.summary}
+            rows={q.rows}
+            onNavigate={() => navigate(q.to)}
+          />
         ))}
       </div>
 
