@@ -184,6 +184,33 @@ test("parent pick & drop shows each child's live route status, bus, and stops", 
   assert.match(home, /navigate\("\/parent\/pickdrop"\)/, "ParentHome lacks the Pick & Drop shortcut");
 });
 
+test("parent pick & drop maps every status to a friendly label", () => {
+  const page = source("src/pages/parent/ParentPickDrop.jsx");
+  for (const [key, label] of [
+    ["pending", "Pickup pending"],
+    ["picked", "Picked up"],
+    ["dropped", "Dropped at school"],
+    ["not_assigned", "No transport route"],
+  ]) {
+    assert.match(page, new RegExp(`${key}: \\{ label`), `missing ${key} entry`);
+    assert.match(page, new RegExp(label), `missing label for ${key}: ${label}`);
+  }
+  assertContains("src/api/transport.js", [/getMyPickdropStatus = \(\) => client\.get\("\/routes\/mine"\)/]);
+});
+
+test("parent pick & drop is strictly read-only", () => {
+  const page = source("src/pages/parent/ParentPickDrop.jsx");
+  assert.doesNotMatch(page, /updatePickupStatus/, "parents must not flip pilots' status");
+  assert.doesNotMatch(page, /\.post\(|\.patch\(|\.delete\(/, "parent page must not mutate route data");
+  assertContains("src/pages/parent/ParentPickDrop.jsx", [
+    /ParentShell/,
+    /useParentContext\(\)/,
+    /selectedChild/,
+    /No stops set for this route\./,
+    /has not been assigned a transport route yet\./,
+  ]);
+});
+
 test("pilot pages render web layout on wide screens and mobile on phones", () => {
   assertContains("src/hooks/useIsWide.js", [/min-width: \$\{breakpoint\}px/]);
   assertContains("src/components/layout/PilotShell.jsx", [
