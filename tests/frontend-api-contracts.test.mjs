@@ -181,7 +181,7 @@ test("parent pick & drop shows each child's live route status, bus, and stops", 
   const shell = source("src/components/layout/ParentShell.jsx");
   assert.match(shell, /to: "\/parent\/pickdrop"/, "ParentShell lacks the Pick & Drop tab");
   const home = source("src/pages/parent/ParentHome.jsx");
-  assert.ok(
+assert.ok(
     home.includes('to: "/parent/pickdrop"') || /navigate\("\/parent\/pickdrop"\)/.test(home),
     "ParentHome lacks the Pick & Drop shortcut"
   );
@@ -617,6 +617,7 @@ test("gallery multi-upload saves each selected file in sequence with progress an
     /`\$\{skipped\} file\$\{skipped === 1 \? "" : "s"\} skipped/,
     /fileListLabel/,
   ]);
+});
 });
 
 test("gallery tiles render videos with controls and images lazily, then paginate", () => {

@@ -343,7 +343,7 @@ export default function ParentHome() {
 
       <div className="section-label">Quick access</div>
       <div className="grid2">
-        {quickLinks.map((q) => (
+{quickLinks.map((q) => (
           <QuickCard
             key={q.to}
             icon={q.icon}

@@ -20,7 +20,7 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
   const { data, loading, error, refetch } = useApi(() => galleryApi.listGallery(), []);
   const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [files, setFiles] = useState([]);
+const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(0);
   const [formError, setFormError] = useState(null);
@@ -28,7 +28,7 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
   const pager = usePagination(data);
   const items = (data || []).filter((item) => item.file_url);
 
-  function pickFiles(event) {
+function pickFiles(event) {
     const chosen = Array.from(event.target.files || []);
     const valid = chosen.filter(
       (f) => ACCEPT.split(",").includes(f.type) && f.size <= MAX_BYTES
@@ -54,7 +54,7 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
       setFormError("Give the media a title.");
       return;
     }
-    if (files.length === 0) {
+if (files.length === 0) {
       setFormError("Choose photos or videos to upload.");
       return;
     }
@@ -120,7 +120,7 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
             />
           </div>
           <div className="field">
-            <label>Files (photos or short videos, up to 5 MB each — you can select several)</label>
+<label>Files (photos or short videos, up to 5 MB each — you can select several)</label>
             <input ref={fileInputRef} type="file" accept={ACCEPT} multiple onChange={pickFiles} />
             {files.length > 0 && (
               <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
