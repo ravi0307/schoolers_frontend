@@ -4,7 +4,7 @@ const NAV = [
   { to: "/admin/dashboard", icon: "🏠", label: "Dashboard" },
   { to: "/admin/classes", icon: "📋", label: "Classes" },
   { to: "/admin/timetable", icon: "🗓️", label: "Manage Timetable" },
-  { to: "/admin/album", icon: "🖼️", label: "School Album" },
+  { to: "/admin/gallery", icon: "🖼️", label: "Gallery" },
   { to: "/admin/broadcast", icon: "📣", label: "Broadcast" },
   { to: "/admin/students", icon: "🧑‍🎓", label: "Students" },
   { to: "/admin/staff", icon: "👥", label: "Staff" },
