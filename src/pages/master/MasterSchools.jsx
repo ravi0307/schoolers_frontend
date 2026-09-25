@@ -19,7 +19,8 @@ export default function MasterSchools() {
   const [locationData, setLocationData] = useState(null);
   const [form, setForm] = useState({
     name: "", address: "", pincode: "", city: "", state: "", country: "India",
-    primary_contact: "", primary_email: "", alternate_contact: "", alternate_email: "",
+    first_name: "", last_name: "",
+    primary_contact: "", primary_email: "", alternative_contact: "", alternative_email: "",
   });
   const states = locationData?.[form.country] ? Object.keys(locationData[form.country]) : [];
   const cities = locationData?.[form.country]?.[form.state] || [];
@@ -51,17 +52,20 @@ export default function MasterSchools() {
       toast("Enter a valid primary email address");
       return;
     }
-    if (form.alternate_contact && !isValidPhone(form.alternate_contact)) {
+    if (form.alternative_contact && !isValidPhone(form.alternative_contact)) {
       toast("Enter a valid alternate contact number");
       return;
     }
-    if (form.alternate_email && !isValidEmail(form.alternate_email)) {
+    if (form.alternative_email && !isValidEmail(form.alternative_email)) {
       toast("Enter a valid alternate email address");
       return;
     }
     try {
-      await schoolsApi.createSchool(form);
-      toast("School added");
+      const school = await schoolsApi.createSchool(form);
+      const login = school.admin_username && school.admin_password
+        ? ` — login ${school.admin_username} / ${school.admin_password}`
+        : "";
+      toast(`School added${login}`);
       setFormOpen(false);
       refetch();
     } catch (err) {
@@ -99,6 +103,10 @@ export default function MasterSchools() {
         <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
           <div className="field"><label>School name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
           <div className="field"><label>Address</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required /></div>
+          <div className="grid2">
+            <div className="field"><label>Admin first name</label><input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} placeholder="e.g. Ravi" required /></div>
+            <div className="field"><label>Admin last name</label><input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} placeholder="e.g. Kumar" required /></div>
+          </div>
           <div className="grid2">
             <div className="field"><label>Pincode</label><input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} required /></div>
             <div className="field">
@@ -138,11 +146,11 @@ export default function MasterSchools() {
           <div className="grid2">
             <div className="field">
               <label>Alternate Contact</label>
-              <input type="tel" value={form.alternate_contact} onChange={(e) => setForm({ ...form, alternate_contact: e.target.value })} inputMode="numeric" maxLength={15} />
+              <input type="tel" value={form.alternative_contact} onChange={(e) => setForm({ ...form, alternative_contact: e.target.value })} inputMode="numeric" maxLength={15} />
             </div>
             <div className="field">
               <label>Alternate Email</label>
-              <input type="email" value={form.alternate_email} onChange={(e) => setForm({ ...form, alternate_email: e.target.value })} />
+              <input type="email" value={form.alternative_email} onChange={(e) => setForm({ ...form, alternative_email: e.target.value })} />
             </div>
           </div>
           <div className="cta-row">
