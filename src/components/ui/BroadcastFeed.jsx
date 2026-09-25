@@ -21,7 +21,7 @@ function audienceLabel(item) {
   return "School-wide";
 }
 
-export default function BroadcastFeed({ data, loading, error, limit, empty = "No announcements yet." }) {
+export default function BroadcastFeed({ data, loading, error, limit, empty = "No announcements yet.", bare = false }) {
   if (loading) return <Spinner />;
   if (error) return <ErrorBanner message={error} />;
 
@@ -30,7 +30,7 @@ export default function BroadcastFeed({ data, loading, error, limit, empty = "No
   if (!visible.length) return <Empty>{empty}</Empty>;
 
   return (
-    <div className="card">
+    <div className={bare ? "" : "card"}>
       {visible.map((item) => (
         <div key={item.broadcast_id} className="listitem">
           <div className="avatar y">📣</div>

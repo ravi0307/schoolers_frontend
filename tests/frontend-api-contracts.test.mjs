@@ -27,7 +27,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/academics.js", [/\/classes/, /\/subjects/, /\/periods/, /\/holidays/]);
   assertContains("src/api/attendance.js", [/\/attendance\/mark/, /\/attendance/]);
   assertContains("src/api/marks.js", [/\/marks\/student/, /\/marks\/class/, /\/marks\/\$\{studentId\}/]);
-  assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/]);
+  assertContains("src/api/leave.js", [/\/leave/, /approve/, /reject/, /\/leave\/mine/]);
   assertContains("src/api/people.js", [/\/teachers/, /\/staff/, /\/parents/, /\/students/]);
   assertContains("src/api/transport.js", [/\/routes/, /\/vehicles/, /\/pilots/, /\/stops/, /students/, /\/routes\/mine/]);
   assertContains("src/api/schools.js", [/\/schools/, /features/, /status/, /stats/]);
@@ -181,7 +181,10 @@ test("parent pick & drop shows each child's live route status, bus, and stops", 
   const shell = source("src/components/layout/ParentShell.jsx");
   assert.match(shell, /to: "\/parent\/pickdrop"/, "ParentShell lacks the Pick & Drop tab");
   const home = source("src/pages/parent/ParentHome.jsx");
-  assert.match(home, /navigate\("\/parent\/pickdrop"\)/, "ParentHome lacks the Pick & Drop shortcut");
+assert.ok(
+    home.includes('to: "/parent/pickdrop"') || /navigate\("\/parent\/pickdrop"\)/.test(home),
+    "ParentHome lacks the Pick & Drop shortcut"
+  );
 });
 
 test("parent pick & drop maps every status to a friendly label", () => {
@@ -254,6 +257,110 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
 test("teacher and parent homes render the broadcast feed", () => {
   assertContains("src/components/ui/BroadcastFeed.jsx", [/listitem/, /sender_name/, /broadcast_id/]);
   assertContains("src/pages/parent/ParentHome.jsx", [/BroadcastFeed/, /communicationApi\.listBroadcasts\(\)/]);
+});
+
+test("parent home shows the selected child's timetable as an admin-style weekly summary", () => {
+  assertContains("src/pages/parent/ParentHome.jsx", [
+    /timetableApi\.classTimetable\(selectedChild\.class_id\)/,
+    /Announcements & timetable/,
+    /TIMETABLE_DAYS as DAYS/,
+    /summaryEntryTimes\(entry, periodById\)/,
+    /timetable-weekly-summary-card/,
+    /timetable-preview-table/,
+    /active-cell/,
+    /displayTime\(start\)/,
+    /toTimeInput/,
+    /subjectNames\.get\(String\(entry\.subject_id\)\)/,
+    /academicsApi\.listSubjects\(\)/,
+    /academicsApi\.listPeriods\(\)/,
+    /day === today/,
+    /toLocaleDateString\("en-US", \{ weekday: "short" \}\)/,
+    /No timetable has been published for this class yet\./,
+  ]);
+});
+
+test("parent home groups announcements with the timetable and stretches the gallery beside both", () => {
+  assertContains("src/components/ui/BroadcastFeed.jsx", [/bare = false/]);
+  const home = source("src/pages/parent/ParentHome.jsx");
+  assert.match(home, /📢 Announcements/);
+  assert.match(home, /limit=\{12\}/);
+  assert.match(home, /\bbare\b/);
+  // Announcements flow under the quick links, then the timetable joins the same grid.
+  assert.ok(
+    home.indexOf('title: "Leave Request"') < home.indexOf("📢 Announcements"),
+    "announcements must follow the Leave Request card"
+  );
+  assert.ok(
+    home.indexOf("Announcements & timetable") < home.indexOf("📢 Announcements"),
+    "announcements sit inside the combined section"
+  );
+  // Timetable is pinned to the left column; gallery spans both rows on the right,
+  // so its height equals Announcements + Timetable.
+  assert.match(home, /gridTemplateRows: "auto auto"/);
+  assert.match(home, /gridColumn: 1/, "timetable must sit on the left column");
+  assert.match(home, /gridColumn: 2, gridRow: "1 \/ 3"/, "gallery must span announcements + timetable rows");
+  assert.match(home, /<GalleryCard[\s\S]*<\/div>\s+<\/ParentShell>/, "gallery card closes the timetable row");
+});
+
+test("parent home quick access cards show live summary + history for each portal", () => {
+  const home = source("src/pages/parent/ParentHome.jsx");
+  // Every card converges on real API data for the selected child.
+  assert.match(home, /attendanceApi\.getAttendance\(selectedChild\.student_id\)/);
+  assert.match(home, /marksApi\.studentMarks\(selectedChild\.student_id\)/);
+  assert.match(home, /galleryApi\.listGallery\(\)/);
+  assert.match(home, /leaveApi\.listMine\(\)/);
+  assert.match(home, /transportApi\.getMyPickdropStatus\(\)/);
+  // Barter is no longer on the home page.
+  assert.doesNotMatch(home, /barter|Barter/);
+  // Summaries derive from fetched records, not static copy.
+  assert.match(home, /\.filter\(\(a\) => a\.status === "Present"\)\.length/);
+  assert.match(home, /\.filter\(\(m\) => m\.term === terms\[terms\.length - 1\]\)/);
+  assert.match(home, /childLeaves\.filter\(\(l\) => l\.status === "Pending"\)\.length/);
+  assert.match(home, /pickdrop\.find\(\(r\) => r\.student_id === selectedChild\.student_id\)/);
+  // History lists derive from the same records (sorted, capped, scrollable).
+  assert.match(home, /\.sort\(\(a, b\) => String\(b\.date\)\.localeCompare\(String\(a\.date\)\)\)/);
+  assert.match(home, /\.sort\(\(a, b\) => b\.term\.localeCompare\(a\.term\)\)/);
+  assert.match(home, /\.slice\(0, 100\)/);
+  assert.match(home, /maxHeight/, "cards need a max-height scroll area");
+  assert.match(home, /overflowY: "auto"/, "cards need a vertical scrollbar");
+  // Announcements scroll too.
+  assert.match(home, /limit=\{12\}/);
+  assert.match(home, /childLeaves\.slice\(0, 100\)/);
+  assert.match(
+    home,
+    /label: `\$\{l\.from_date\} → \$\{l\.to_date\}`/,
+    "leave history must show request dates"
+  );
+  assert.match(home, /\.filter\(\(r\) => r\.student_id !== selectedChild\?\.student_id\)/);
+  assert.match(home, /PICKDROP_LABEL\[r\.status\]/);
+  // Summary + Recent list render together in each card, and the gallery shows ALL media.
+  assert.match(home, /function QuickCard/);
+  assert.match(home, /function GalleryCard/);
+  assert.match(home, /<QuickCard\n            key=\{q\.to\}/);
+  assert.match(home, /<GalleryCard/);
+  assert.match(home, /items=\{galleryLoading \? \[\] : galleryItems\}/, "gallery card must list every media item");
+  assert.doesNotMatch(home, /slice\(0, 4\)/, "gallery must not cap its thumbnails");
+  assert.match(home, /Recent/);
+  assert.match(home, /onNavigate=\{\(\) => navigate\(q\.to\)\}/);
+  assert.match(home, /resolveMediaUrl\(item\.file_url\)/);
+  assert.match(home, /media_kind === "video"/);
+  assert.match(home, /flexDirection: "column"/, "gallery media list must scroll vertically");
+  // Each card keeps navigating to its portal section.
+  for (const route of [
+    "/parent/pickdrop",
+    "/parent/attendance",
+    "/parent/marks",
+    "/parent/leave",
+    "/parent/gallery",
+  ]) {
+    assert.ok(home.includes(`navigate("${route}")`) || home.includes(`to: "${route}"`), `missing quick links to ${route}`);
+  }
+});
+
+test("parent leave history reads the parent-scoped /leave/mine endpoint", () => {
+  assertContains("src/api/leave.js", [/listMine = \(\) => client\.get\("\/leave\/mine"\)/]);
+  assertContains("src/pages/parent/ParentLeave.jsx", [/leaveApi\.listMine\(\)/]);
+  assertContains("src/pages/parent/ParentHome.jsx", [/leaveApi\.listMine\(\)/]);
 });
 
 test("marks API loads class marks and upserts scores", () => {
@@ -473,18 +580,42 @@ test("useIsWide consults matchMedia once and subscribes for change events", () =
   ]);
 });
 
-test("gallery upload form gates file type, size, and required title before sending", () => {
+test("gallery upload form accepts several files and gates type, size, and required title", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
     /const ACCEPT = "image\/png,image\/jpeg,image\/gif,image\/webp,video\/mp4,video\/webm,video\/quicktime"/,
     /const MAX_BYTES = 5 \* 1024 \* 1024/,
-    /"Choose a JPEG\/PNG\/GIF\/WebP image or an MP4\/WebM\/MOV video\."/,
-    /"Files must be 5 MB or smaller\."/,
     /"Give the media a title\."/,
-    /"Choose a photo or video to upload\."/,
+    /"Choose photos or videos to upload\."/,
     /accept=\{ACCEPT\}/,
     /type="file"/,
+    /multiple/,
+    /onChange=\{pickFiles\}/,
+    /Array\.from\(event\.target\.files \|\| \[\]\)/,
+    /\.filter\(\s*\(f\) => ACCEPT\.split\(","\)\.includes\(f\.type\) && f\.size <= MAX_BYTES/,
+    /uploadGalleryMedia\(files\[i\], title\.trim\(\)\)/,
+    /for \(let i = 0; i < files\.length; i\+\+\)/,
     /disabled=\{saving\}/,
-    /Uploading…/,
+    /Uploading/,
+  ]);
+});
+
+test("gallery multi-upload saves each selected file in sequence with progress and partial-failure reporting", () => {
+  assertContains("src/components/gallery/GalleryView.jsx", [
+    /const \[done, setDone\] = useState\(0\)/,
+    /setFiles\(valid\)/,
+    /fileInputRef\.current\.value = ""/,
+    /setFiles\(\[\]\)/,
+    /for \(let i = 0; i < files\.length; i\+\+\) \{/,
+    /uploadGalleryMedia\(files\[i\], title\.trim\(\)\)/,
+    /setDone\(i \+ 1\)/,
+    /`Uploading \$\{done\}\/\$\{files\.length\}(\.\.\.|…)`/,
+    /`Upload \$\{files\.length\} to Gallery`/,
+    /refetch\(\)/,
+    /ok === files\.length/,
+    /`Uploaded \$\{ok\} photos\/videos to the gallery`/,
+    /`\$\{ok\} uploaded, \$\{files\.length - ok\} failed/,
+    /`\$\{skipped\} file\$\{skipped === 1 \? "" : "s"\} skipped/,
+    /fileListLabel/,
   ]);
 });
 

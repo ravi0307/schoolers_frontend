@@ -20,27 +20,33 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
   const { data, loading, error, refetch } = useApi(() => galleryApi.listGallery(), []);
   const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [file, setFile] = useState(null);
+const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(0);
   const [formError, setFormError] = useState(null);
   const fileInputRef = useRef(null);
   const pager = usePagination(data);
   const items = (data || []).filter((item) => item.file_url);
 
-  function pickFile(event) {
-    const chosen = event.target.files?.[0];
-    if (!chosen) return;
-    if (!ACCEPT.split(",").includes(chosen.type)) {
-      setFormError("Choose a JPEG/PNG/GIF/WebP image or an MP4/WebM/MOV video.");
+function pickFiles(event) {
+    const chosen = Array.from(event.target.files || []);
+    const valid = chosen.filter(
+      (f) => ACCEPT.split(",").includes(f.type) && f.size <= MAX_BYTES
+    );
+    if (valid.length === 0) {
+      setFormError("Choose JPEG/PNG/GIF/WebP images or MP4/WebM/MOV videos up to 5 MB each.");
       return;
     }
-    if (chosen.size > MAX_BYTES) {
-      setFormError("Files must be 5 MB or smaller.");
-      return;
-    }
-    setFormError(null);
-    setFile(chosen);
+    const skipped = chosen.length - valid.length;
+    setFormError(
+      skipped ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (type or size not allowed).` : null
+    );
+    setFiles(valid);
   }
+
+  const fileListLabel = files.length <= 3
+    ? files.map((f) => f.name).join(", ")
+    : `${files.slice(0, 2).map((f) => f.name).join(", ")}, +${files.length - 2} more`;
 
   async function submit(event) {
     event.preventDefault();
@@ -48,23 +54,38 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
       setFormError("Give the media a title.");
       return;
     }
-    if (!file) {
-      setFormError("Choose a photo or video to upload.");
+if (files.length === 0) {
+      setFormError("Choose photos or videos to upload.");
       return;
     }
     setSaving(true);
+    setDone(0);
     setFormError(null);
-    try {
-      await galleryApi.uploadGalleryMedia(file, title.trim());
-      refetch();
+    let ok = 0;
+    let firstError = null;
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await galleryApi.uploadGalleryMedia(files[i], title.trim());
+        ok++;
+      } catch (err) {
+        firstError = firstError || err?.response?.data?.detail || err?.message || "Upload failed";
+      }
+      setDone(i + 1);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setFiles([]);
+    if (ok > 0) refetch();
+    setSaving(false);
+    if (ok === files.length) {
       setTitle("");
-      setFile(null);
       setFormOpen(false);
-      toast("Added to the gallery");
-    } catch (err) {
-      setFormError(err?.response?.data?.detail || err?.message || "Upload failed");
-    } finally {
-      setSaving(false);
+      toast(ok === 1 ? "Added to the gallery" : `Uploaded ${ok} photos/videos to the gallery`);
+    } else {
+      setFormError(
+        ok > 0
+          ? `${ok} uploaded, ${files.length - ok} failed (${firstError || "unknown error"})`
+          : firstError || "Upload failed"
+      );
     }
   }
 
@@ -99,13 +120,23 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
             />
           </div>
           <div className="field">
-            <label>File (photo or short video, up to 5 MB)</label>
-            <input ref={fileInputRef} type="file" accept={ACCEPT} onChange={pickFile} />
-            {file && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>{file.name}</div>}
+<label>Files (photos or short videos, up to 5 MB each — you can select several)</label>
+            <input ref={fileInputRef} type="file" accept={ACCEPT} multiple onChange={pickFiles} />
+            {files.length > 0 && (
+              <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+                {fileListLabel}
+              </div>
+            )}
           </div>
           {formError && <div className="error-text" style={{ marginBottom: 10 }}>{formError}</div>}
           <button className="btn primary block" type="submit" disabled={saving}>
-            {saving ? "Uploading…" : "Upload to Gallery"}
+            {saving
+              ? done > 0
+                ? `Uploading ${done}/${files.length}…`
+                : "Uploading…"
+              : files.length > 1
+                ? `Upload ${files.length} to Gallery`
+                : "Upload to Gallery"}
           </button>
         </form>
       )}
