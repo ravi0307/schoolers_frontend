@@ -163,11 +163,11 @@ export default function AdminStaff() {
       };
 
       if (editingId) {
-        await peopleApi.updateStaff(editingId, payload);
-        toast(name + " updated");
+        const updated = await peopleApi.updateStaff(editingId, payload);
+        toast(updated?.admin_username ? `${name} updated — login ${updated.admin_username} / ${updated.admin_password}` : name + " updated");
       } else {
-        await peopleApi.createStaff(payload);
-        toast(name + " added");
+        const created = await peopleApi.createStaff(payload);
+        toast(created?.admin_username ? `${name} added — login ${created.admin_username} / ${created.admin_password}` : name + " added");
       }
 
       resetForm();
