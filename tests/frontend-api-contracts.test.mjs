@@ -618,7 +618,6 @@ test("gallery multi-upload saves each selected file in sequence with progress an
     /fileListLabel/,
   ]);
 });
-});
 
 test("gallery tiles render videos with controls and images lazily, then paginate", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
