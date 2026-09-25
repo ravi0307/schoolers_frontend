@@ -363,6 +363,63 @@ body {
   box-shadow: 0 10px 26px -8px rgba(0,0,0,.6);
 }
 
+/* ---- Pick & Drop live journey ---- */
+.journey-card { padding: 16px 18px; }
+.journey-heading {
+  display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700;
+  color: var(--chalk-green-dark);
+}
+.journey-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ok-green);
+  box-shadow: 0 0 0 0 var(--ok-green); animation: journey-pulse 1.6s infinite;
+  flex-shrink: 0;
+}
+@keyframes journey-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 168, 83, .5); }
+  70% { box-shadow: 0 0 0 9px rgba(52, 168, 83, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+}
+.journey-next { margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+.journey-next b { color: var(--ink); }
+.journey-progress {
+  height: 8px; border-radius: 6px; background: var(--line); overflow: hidden;
+  margin: 14px 0 6px;
+}
+.journey-progress-fill {
+  height: 100%; border-radius: 6px; background: var(--ok-green);
+  transition: width .5s ease;
+}
+.journey-progress-caption { font-size: 11px; color: var(--ink-soft); margin-bottom: 12px; }
+
+.stop-timeline { display: flex; flex-direction: column; }
+.timeline-stop {
+  display: flex; align-items: center; gap: 12px; padding: 10px 4px;
+  border-bottom: 1px solid var(--line); position: relative;
+}
+.timeline-stop:last-child { border-bottom: none; }
+.timeline-stop .meta { flex: 1; min-width: 0; }
+.timeline-stop .meta b { display: block; font-size: 13.5px; }
+.timeline-stop .meta span { font-size: 11.5px; color: var(--ink-soft); }
+.timeline-stop.reached .meta b { color: var(--ink-soft); text-decoration: line-through; }
+.timeline-stop.current { background: var(--pencil-yellow); border-radius: 10px; }
+.timeline-node {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.timeline-node .timeline-dot {
+  width: 12px; height: 12px; border-radius: 50%; background: var(--line);
+}
+.timeline-node .timeline-tick {
+  width: 100%; height: 100%; border-radius: 50%; background: var(--ok-green);
+  color: #fff; font-size: 14px; font-weight: 800; display: flex;
+  align-items: center; justify-content: center;
+}
+.timeline-stop.current .timeline-node .timeline-dot,
+.timeline-stop.current .timeline-node {
+  background: var(--pencil-yellow-dark);
+}
+.timeline-stop.upcoming .timeline-node .timeline-dot { background: var(--line); }
+
 .login-wrap {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh; padding: 30px; text-align: center; background: var(--chalk-green-dark);
