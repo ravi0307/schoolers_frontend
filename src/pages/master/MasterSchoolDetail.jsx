@@ -27,10 +27,12 @@ function schoolDetailsForm(school) {
     state: school.state || "",
     country: school.country || "",
     pincode: school.pincode || "",
+    first_name: school.first_name || "",
+    last_name: school.last_name || "",
     primary_contact: school.primary_contact || "",
     primary_email: school.primary_email || "",
-    alternate_contact: school.alternate_contact || "",
-    alternate_email: school.alternate_email || "",
+    alternative_contact: school.alternative_contact || "",
+    alternative_email: school.alternative_email || "",
     logo_url: school.logo_url || "",
   };
 }
@@ -140,8 +142,11 @@ export default function MasterSchoolDetail() {
   async function saveDetails(e) {
     e.preventDefault();
     try {
-      await schoolsApi.updateSchool(schoolId, detailsForm);
-      toast("School details updated");
+      const result = await schoolsApi.updateSchool(schoolId, detailsForm);
+      const login = result.admin_username && result.admin_password
+        ? ` — login ${result.admin_username} / ${result.admin_password}`
+        : "";
+      toast(`School details updated${login}`);
       setDetailsEditing(false);
       refetch();
     } catch (err) {
@@ -211,6 +216,14 @@ export default function MasterSchoolDetail() {
               <input value={detailsForm.pincode} onChange={(e) => setDetailsForm({ ...detailsForm, pincode: e.target.value })} required />
             </div>
             <div className="field">
+              <label>Admin First Name</label>
+              <input value={detailsForm.first_name} onChange={(e) => setDetailsForm({ ...detailsForm, first_name: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>Admin Last Name</label>
+              <input value={detailsForm.last_name} onChange={(e) => setDetailsForm({ ...detailsForm, last_name: e.target.value })} />
+            </div>
+            <div className="field">
               <label>Primary Contact</label>
               <input type="tel" value={detailsForm.primary_contact} onChange={(e) => setDetailsForm({ ...detailsForm, primary_contact: e.target.value })} required />
             </div>
@@ -220,11 +233,11 @@ export default function MasterSchoolDetail() {
             </div>
             <div className="field">
               <label>Alternate Contact</label>
-              <input type="tel" value={detailsForm.alternate_contact} onChange={(e) => setDetailsForm({ ...detailsForm, alternate_contact: e.target.value })} />
+              <input type="tel" value={detailsForm.alternative_contact} onChange={(e) => setDetailsForm({ ...detailsForm, alternative_contact: e.target.value })} />
             </div>
             <div className="field">
               <label>Alternate Email</label>
-              <input type="email" value={detailsForm.alternate_email} onChange={(e) => setDetailsForm({ ...detailsForm, alternate_email: e.target.value })} />
+              <input type="email" value={detailsForm.alternative_email} onChange={(e) => setDetailsForm({ ...detailsForm, alternative_email: e.target.value })} />
             </div>
             <div className="cta-row school-detail-wide">
               <button className="btn primary" type="submit">Save Details</button>
@@ -269,6 +282,14 @@ export default function MasterSchoolDetail() {
               <b>{school.pincode || "Not provided"}</b>
             </div>
             <div className="school-detail-item">
+              <span>Admin First Name</span>
+              <b>{school.first_name || "Not provided"}</b>
+            </div>
+            <div className="school-detail-item">
+              <span>Admin Last Name</span>
+              <b>{school.last_name || "Not provided"}</b>
+            </div>
+            <div className="school-detail-item">
               <span>Primary Contact</span>
               <b>{school.primary_contact || "Not provided"}</b>
             </div>
@@ -278,11 +299,11 @@ export default function MasterSchoolDetail() {
             </div>
             <div className="school-detail-item">
               <span>Alternate Contact</span>
-              <b>{school.alternate_contact || "Not provided"}</b>
+              <b>{school.alternative_contact || "Not provided"}</b>
             </div>
             <div className="school-detail-item">
               <span>Alternate Email</span>
-              <b>{school.alternate_email || "Not provided"}</b>
+              <b>{school.alternative_email || "Not provided"}</b>
             </div>
           </div>
           <SchoolLogoPanel school={school} editing={false} schoolId={schoolId} />
