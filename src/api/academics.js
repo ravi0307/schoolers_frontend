@@ -8,7 +8,8 @@ export const deleteClass = (id) => client.delete(`/classes/${id}`);
 export const listSubjects = () => client.get("/subjects").then((r) => r.data);
 export const createSubject = (data) => client.post("/subjects", data).then((r) => r.data);
 export const updateSubject = (id, data) => client.patch(`/subjects/${id}`, data).then((r) => r.data);
-export const deleteSubject = (id) => client.delete(`/subjects/${id}`);
+export const deactivateSubject = (id) => client.patch(`/subjects/${id}/deactivate`).then((r) => r.data);
+export const activateSubject = (id) => client.patch(`/subjects/${id}/activate`).then((r) => r.data);
 export const listPeriods = () => client.get("/periods").then((r) => r.data);
 export const updatePeriod = (id, period_time) =>
   client.patch(`/periods/${id}`, { period_time }).then((r) => r.data);
