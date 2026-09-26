@@ -27,6 +27,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
 import AdminTimetable from "./pages/admin/AdminTimetable";
 import AdminGallery from "./pages/admin/AdminGallery";
+import AdminSubjects from "./pages/admin/AdminSubjects";
 import AdminBroadcast from "./pages/admin/AdminBroadcast";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStaff from "./pages/admin/AdminStaff";
@@ -117,6 +118,7 @@ export default function App() {
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="classes" element={<AdminClasses />} />
                     <Route path="timetable" element={<AdminTimetable />} />
+                    <Route path="subjects" element={<AdminSubjects />} />
                     <Route path="gallery" element={<AdminGallery />} />
                     <Route path="broadcast" element={<AdminBroadcast />} />
                     <Route path="students" element={<AdminStudents />} />
