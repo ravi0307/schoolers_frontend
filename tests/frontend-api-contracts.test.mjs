@@ -47,6 +47,22 @@ test("every frontend API module is wired to its required backend surface", () =>
   ]);
 });
 
+test("academics API exposes subject deactivation and reactivation (soft delete)", () => {
+  const academics = source("src/api/academics.js");
+  assert.match(academics, /deactivateSubject/);
+  assert.match(academics, /activateSubject/);
+});
+
+test("gallery components render albums and a confirmation dialog for removal", () => {
+  const gallery = source("src/components/gallery/GalleryView.jsx");
+  assert.match(gallery, /album/);
+  assert.match(gallery, /ConfirmDialog/);
+  assert.match(gallery, /formatDateTime/);
+  assert.match(gallery, /pendingDelete/);
+  const primitives = source("src/components/ui/Primitives.jsx");
+  assert.match(primitives, /ConfirmDialog/);
+});
+
 test("timetable API uses entry updates for subject, teacher, and time changes", () => {
   const timetable = source("src/api/timetable.js");
   assert.match(timetable, /client\.patch\(`\/timetable\/entry\/\$\{entryId\}`, data\)/);
@@ -530,7 +546,7 @@ test("gallery uploads media to the school and renders photos and videos", () => 
   ]);
   assertContains("src/components/gallery/GalleryView.jsx", [
     /resolveMediaUrl/,
-    /item\.media_kind === "video"/,
+    /media_kind === "video"/,
     /<video/,
     /<img/,
     /uploadGalleryMedia/,
@@ -628,19 +644,20 @@ test("gallery tiles render videos with controls and images lazily, then paginate
     /preload="metadata"/,
     /<img/,
     /loading="lazy"/,
-    /alt=\{item\.title\}/,
-    /resolveMediaUrl\(item\.file_url\)/,
-    /key=\{item\.media_id\}/,
+    /alt=\{it\.title\}/,
+    /resolveMediaUrl\(it\.file_url\)/,
+    /key=\{it\.media_id\}/,
     /gallery-tile-meta/,
-    /item\.posted_by/,
-    /formatDate\(item\.created_at\)/,
-    /toLocaleDateString\(\)/,
+    /it\.posted_by/,
+    /formatDateTime\(it\.created_at\)/,
+    /toLocaleString\(\)/,
   ]);
 });
 
-test("gallery removal asks for confirmation scoped to the item title", () => {
+test("gallery removal opens a confirmation dialog before deleting", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
-    /window\.confirm\(`Remove "\$\{item\.title\}" from the gallery\?`\)/,
+    /pendingDelete/,
+    /ConfirmDialog/,
     /canDelete && \(/,
     /gallery-tile-remove/,
     /refetch\(\)/,
