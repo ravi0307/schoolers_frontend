@@ -569,4 +569,114 @@ body {
   line-height: 1;
 }
 .gallery-tile-remove:hover { background: var(--red-pen); }
+
+/* ---- Album (stacked media) ---- */
+.gallery-album {
+  position: relative;
+  background: var(--paper-light);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.gallery-album-head {
+  cursor: pointer;
+  padding-bottom: 8px;
+}
+.album-thumbs {
+  position: relative;
+  height: 80px;
+  margin: 8px 12px 0;
+}
+.album-thumb {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid var(--paper-light);
+  left: 4px;
+  top: 4px;
+}
+.album-meta {
+  padding: 8px 12px 10px;
+}
+.album-meta b { display: block; font-size: 13px; }
+.album-meta span { font-size: 11.5px; color: var(--ink-soft); }
+.album-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid #e5e7eb;
+}
+.album-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.album-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: var(--ruled-blue-light);
+}
+.album-item-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.album-item-info .gallery-tile-remove {
+  position: static;
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
 .error-text { font-size: 12px; color: var(--red-pen); font-weight: 600; }
+
+/* ---- Confirm dialog ---- */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(1, 28, 64, 0.55);
+  backdrop-filter: blur(2px);
+}
+.confirm-box {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 24px 18px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.confirm-message {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.confirm-actions .btn.danger:hover {
+  background: var(--red-pen);
+  color: #fff;
+}
