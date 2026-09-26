@@ -16,7 +16,9 @@ export default function AdminSubjects() {
   const [editName, setEditName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const pager = usePagination(data);
+  const active = (data || []).filter((s) => s.is_active);
+  const inactive = (data || []).filter((s) => !s.is_active);
+  const pager = usePagination(active);
 
   async function submit(e) {
     e.preventDefault();
@@ -55,10 +57,20 @@ export default function AdminSubjects() {
     }
   }
 
-  async function remove(id) {
+  async function deactivate(id, subjectName) {
     try {
-      await academicsApi.deleteSubject(id);
-      toast("Subject removed");
+      await academicsApi.deactivateSubject(id);
+      toast(`Subject "${subjectName}" is now inactive`);
+      refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function activate(id, subjectName) {
+    try {
+      await academicsApi.activateSubject(id);
+      toast(`Subject "${subjectName}" is active again`);
       refetch();
     } catch (err) {
       toast(apiErrorMessage(err));
@@ -68,12 +80,14 @@ export default function AdminSubjects() {
   return (
     <AdminShell>
       <div className="scr-title">Subjects</div>
-      <div className="scr-sub">{data ? `${data.length} subjects` : ""}</div>
+      <div className="scr-sub">
+        {data ? `${active.length} active · ${inactive.length} inactive` : ""}
+      </div>
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
         <div className="card">
-          {data && data.length ? (
+          {active.length ? (
             pager.pageItems.map((s) => (
               <div key={s.subject_id} style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <div className="listitem">
@@ -83,7 +97,12 @@ export default function AdminSubjects() {
                   </div>
                   <div className="cta-row" style={{ gap: 8 }}>
                     <button className="btn ghost sm" onClick={() => { setEditingId(s.subject_id); setEditName(s.name); }}>Edit</button>
-                    <button className="btn ghost sm" onClick={() => remove(s.subject_id)}>Remove</button>
+                    <button
+                      className="btn ghost sm"
+                      onClick={() => deactivate(s.subject_id, s.name)}
+                    >
+                      Inactive
+                    </button>
                   </div>
                 </div>
                 {editingId === s.subject_id && (
@@ -101,9 +120,31 @@ export default function AdminSubjects() {
               </div>
             ))
           ) : (
-            <Empty>No subjects yet.</Empty>
+            <Empty>No active subjects yet.</Empty>
           )}
-          <Pagination {...pager} />
+          {active.length > 0 && <Pagination {...pager} />}
+        </div>
+      )}
+
+      {!loading && !error && inactive.length > 0 && (
+        <div className="card" style={{ marginTop: 10 }}>
+          <div className="section-label">Inactive subjects</div>
+          {inactive.map((s) => (
+            <div key={s.subject_id} className="listitem">
+              <div className="avatar m">{s.name[0]}</div>
+              <div className="meta" style={{ flex: 1 }}>
+                <b>{s.name}</b>
+              </div>
+              <div className="cta-row" style={{ gap: 8 }}>
+                <button
+                  className="btn primary sm"
+                  onClick={() => activate(s.subject_id, s.name)}
+                >
+                  Make active
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

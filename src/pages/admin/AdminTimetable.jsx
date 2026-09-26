@@ -88,6 +88,10 @@ export default function AdminTimetable() {
     () => new Map((subjects || []).map((item) => [String(item.subject_id), item.name])),
     [subjects]
   );
+  const activeSubjects = useMemo(
+    () => (subjects || []).filter((s) => s.is_active !== false),
+    [subjects]
+  );
   const teacherNames = useMemo(
     () => new Map((teachers || []).map((item) => [String(item.teacher_id), item.name])),
     [teachers]
@@ -644,7 +648,7 @@ export default function AdminTimetable() {
               <label>Subject</label>
               <select value={newSubjectId} onChange={(event) => setNewSubjectId(event.target.value)}>
                 <option value="">Select subject</option>
-                {(subjects || []).map((subject) => (
+                {activeSubjects.map((subject) => (
                   <option key={subject.subject_id} value={subject.subject_id}>{subject.name}</option>
                 ))}
               </select>
@@ -808,7 +812,7 @@ export default function AdminTimetable() {
               <label>Subject</label>
               <select value={editSubjectId} onChange={(event) => setEditSubjectId(event.target.value)}>
                 <option value="">Select subject</option>
-                {(subjects || []).map((subject) => (
+                {activeSubjects.map((subject) => (
                   <option key={subject.subject_id} value={subject.subject_id}>{subject.name}</option>
                 ))}
               </select>
