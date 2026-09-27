@@ -34,12 +34,26 @@ function studentNameOf(student) {
   );
 }
 
+function pilotNameForId(pilotId, pilotRecords) {
+  const match = pilotRecords.find((record) => String(record.id) === String(pilotId));
+  return match ? match.value : "";
+}
+
+// The route payload only carries the derived driver_name, so match it back to a
+// pilot id for the edit form.
+function pilotIdOf(route, pilotRecords) {
+  const name = route?.driver_name;
+  if (!name) return "";
+  const match = pilotRecords.find((record) => record.value === name);
+  return match ? match.id : "";
+}
+
 function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords }) {
   const toast = useToast();
   const [routeSummary, setRouteSummary] = useState(route);
   const [routeEditOpen, setRouteEditOpen] = useState(false);
   const [routeVehicle, setRouteVehicle] = useState(route.vehicle || "");
-  const [routeDriver, setRouteDriver] = useState(route.driver_name || "");
+  const [routeDriver, setRouteDriver] = useState(pilotIdOf(route, pilotRecords) || "");
   const [savingRoute, setSavingRoute] = useState(false);
   const { data: stops, refetch: refetchStops } = useApi(() => transportApi.listStops(route.route_id), [route.route_id]);
   const { data: routeStudents, refetch: refetchStudents } = useApi(
@@ -63,7 +77,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
 
   function openRouteEditor() {
     setRouteVehicle(routeSummary.vehicle || "");
-    setRouteDriver(routeSummary.driver_name || "");
+    setRouteDriver(pilotIdOf(routeSummary, pilotRecords) || "");
     setRouteEditOpen(true);
   }
 
@@ -78,9 +92,15 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
     try {
       await transportApi.updateRoute(route.route_id, {
         vehicle: routeVehicle,
-        driver_name: routeDriver,
+        driver_pilot_id: Number(routeDriver),
       });
-      setRouteSummary((current) => ({ ...current, vehicle: routeVehicle, driver_name: routeDriver }));
+      // driver_name is derived server-side, so refetch to show the real value.
+      onChanged();
+      setRouteSummary((current) => ({
+        ...current,
+        vehicle: routeVehicle,
+        driver_name: pilotNameForId(routeDriver, pilotRecords),
+      }));
       setRouteEditOpen(false);
       toast("Route assignment updated");
       onChanged();
@@ -372,7 +392,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
 export default function AdminRoutes() {
   const { data, loading, error, refetch } = useApi(() => transportApi.listRoutes(), []);
   const { data: vehicles, refetch: refetchVehicles } = useApi(() => transportApi.listVehicles(), []);
-  const { data: staff } = useApi(() => peopleApi.listStaff(), []);
+  const { data: pilots } = useApi(() => transportApi.listPilots(), []);
   const toast = useToast();
   const [selected, setSelected] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -399,17 +419,14 @@ export default function AdminRoutes() {
     [vehicles]
   );
   const pilotRecords = useMemo(
-    () => (staff || [])
-      .filter((member) => {
-        const role = member.role || member.role_title || "";
-        return member.is_active !== false && String(role).toLowerCase() === "pilot";
-      })
-      .map((member) => ({
-        id: member.staff_id || member.id,
-        username: member.name || member.full_name,
-        value: member.name || member.full_name,
+    () => (pilots || [])
+      .filter((pilot) => pilot.is_active !== false)
+      .map((pilot) => ({
+        id: pilot.pilot_id,
+        username: pilot.username || "No login",
+        value: pilot.full_name || pilot.username || `Pilot ${pilot.pilot_id}`,
       })),
-    [staff]
+    [pilots]
   );
   const routePager = usePagination(data);
   const vehiclePager = usePagination(vehicleRecords);
@@ -484,7 +501,7 @@ export default function AdminRoutes() {
       return;
     }
     try {
-      await transportApi.createRoute({ name: name.trim(), vehicle, driver_name: driver });
+      await transportApi.createRoute({ name: name.trim(), vehicle, driver_pilot_id: Number(driver) });
       toast("Route created");
       setName("");
       setVehicle("");
@@ -619,10 +636,10 @@ export default function AdminRoutes() {
             </div>
             <div className="field">
               <label>Driver</label>
-              <select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!staff}>
+              <select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots}>
                 <option value="">Select driver</option>
                 {pilotRecords.map((record) => (
-                  <option key={record.id} value={record.value}>
+                  <option key={record.id} value={record.id}>
                     {record.value} · {record.username}
                   </option>
                 ))}
