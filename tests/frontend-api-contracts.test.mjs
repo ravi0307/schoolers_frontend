@@ -47,6 +47,22 @@ test("every frontend API module is wired to its required backend surface", () =>
   ]);
 });
 
+test("academics API exposes subject deactivation and reactivation (soft delete)", () => {
+  const academics = source("src/api/academics.js");
+  assert.match(academics, /deactivateSubject/);
+  assert.match(academics, /activateSubject/);
+});
+
+test("gallery components render albums and a confirmation dialog for removal", () => {
+  const gallery = source("src/components/gallery/GalleryView.jsx");
+  assert.match(gallery, /album/);
+  assert.match(gallery, /ConfirmDialog/);
+  assert.match(gallery, /formatDateTime/);
+  assert.match(gallery, /pendingDelete/);
+  const primitives = source("src/components/ui/Primitives.jsx");
+  assert.match(primitives, /ConfirmDialog/);
+});
+
 test("timetable API uses entry updates for subject, teacher, and time changes", () => {
   const timetable = source("src/api/timetable.js");
   assert.match(timetable, /client\.patch\(`\/timetable\/entry\/\$\{entryId\}`, data\)/);
@@ -530,7 +546,7 @@ test("gallery uploads media to the school and renders photos and videos", () => 
   ]);
   assertContains("src/components/gallery/GalleryView.jsx", [
     /resolveMediaUrl/,
-    /item\.media_kind === "video"/,
+    /media_kind === "video"/,
     /<video/,
     /<img/,
     /uploadGalleryMedia/,
@@ -628,19 +644,20 @@ test("gallery tiles render videos with controls and images lazily, then paginate
     /preload="metadata"/,
     /<img/,
     /loading="lazy"/,
-    /alt=\{item\.title\}/,
-    /resolveMediaUrl\(item\.file_url\)/,
-    /key=\{item\.media_id\}/,
+    /alt=\{it\.title\}/,
+    /resolveMediaUrl\(it\.file_url\)/,
+    /key=\{it\.media_id\}/,
     /gallery-tile-meta/,
-    /item\.posted_by/,
-    /formatDate\(item\.created_at\)/,
-    /toLocaleDateString\(\)/,
+    /it\.posted_by/,
+    /formatDateTime\(it\.created_at\)/,
+    /toLocaleString\(\)/,
   ]);
 });
 
-test("gallery removal asks for confirmation scoped to the item title", () => {
+test("gallery removal opens a confirmation dialog before deleting", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
-    /window\.confirm\(`Remove "\$\{item\.title\}" from the gallery\?`\)/,
+    /pendingDelete/,
+    /ConfirmDialog/,
     /canDelete && \(/,
     /gallery-tile-remove/,
     /refetch\(\)/,
@@ -661,3 +678,102 @@ test("gallery API sends a multipart form with file, title, and optional class", 
   ]);
 });
 
+// ---------------------------------------------------------------------------
+// Unified staff model: teachers, pilots and staff collapsed into one staff
+// table, with driver names derived through pilots -> staff.name.
+// ---------------------------------------------------------------------------
+
+test("teachers are still served from the staff-backed teacher endpoints", () => {
+  // teacher_id survives only as a response alias of staff_id, so the API keeps
+  // /teachers even though the teachers table is gone.
+  assertContains("src/api/people.js", [
+    /\/teachers/,
+    /\/staff/,
+  ]);
+  const people = source("src/api/people.js");
+  assert.doesNotMatch(
+    people,
+    /\/pilots/,
+    "pilots must come from the transport API, not people"
+  );
+});
+
+test("pilots are listed from the transport pilots endpoint, keyed by pilot_id", () => {
+  assertContains("src/api/transport.js", [
+    /export const listPilots = \(\) => client\.get\("\/pilots"\)/,
+    /export const createPilot = \(data\) => client\.post\("\/pilots", data\)/,
+    /export const updatePilot = \(id, data\) => client\.patch\(`\/pilots\/\$\{id\}`, data\)/,
+  ]);
+  assert.doesNotMatch(
+    source("src/api/transport.js"),
+    /listPilots = \(\) => client\.get\("\/staff"/,
+    "pilot listing must not read the staff table directly"
+  );
+});
+
+test("admin route form assigns a driver via driver_pilot_id, not a free-text name", () => {
+  assertContains("src/pages/admin/AdminRoutes.jsx", [
+    /transportApi\.listPilots\(\)/,
+    /driver_pilot_id: Number\(routeDriver\)/,
+    /transportApi\.createRoute\(\{ name: name\.trim\(\), vehicle, driver_pilot_id: Number\(driver\) \}\)/,
+  ]);
+  // driver_name is derived server-side, so it must not appear in either route
+  // write payload. (The local setRouteSummary display update may reference it.)
+  const page = source("src/pages/admin/AdminRoutes.jsx");
+  for (const call of ["updateRoute", "createRoute"]) {
+    const start = page.indexOf(`transportApi.${call}(`);
+    assert.notEqual(start, -1, `AdminRoutes.jsx must call transportApi.${call}`);
+    const payload = page.slice(start, start + 220);
+    assert.doesNotMatch(
+      payload,
+      /driver_name\s*:/,
+      `${call} must send driver_pilot_id, not a derived driver_name`
+    );
+  }
+});
+
+test("route driver select is fed by the pilot endpoint and keyed on pilot_id", () => {
+  assertContains("src/pages/admin/AdminRoutes.jsx", [
+    /id: pilot\.pilot_id/,
+    /pilot\.is_active !== false/,
+    /pilot\.full_name \|\| pilot\.username/,
+    /<select value=\{driver\} onChange=\{\(e\) => setDriver\(e\.target\.value\)\} disabled=\{!pilots\}/,
+  ]);
+});
+
+test("admin route display uses the server-derived driver_name", () => {
+  assertContains("src/pages/admin/AdminRoutes.jsx", [
+    /Driver: \{routeSummary\.driver_name \|\| "Not assigned"\}/,
+    /\{r\.driver_name\}/,
+  ]);
+  // The edit form reverse-maps the derived name back to an id; that fallback
+  // must stay in place or opening the editor would silently drop the driver.
+  assertContains("src/pages/admin/AdminRoutes.jsx", [
+    /function pilotIdOf\(route, pilotRecords\)/,
+    /const name = route\?\.driver_name/,
+    /pilotRecords\.find\(\(record\) => record\.value === name\)/,
+  ]);
+});
+
+test("parent pick & drop shows the derived driver name", () => {
+  assertContains("src/pages/parent/ParentPickDrop.jsx", [
+    /snapshot\.vehicle\} · Driver \{snapshot\.driver_name\}/,
+  ]);
+  // Parents are read-only, so they must never post a driver back.
+  assert.doesNotMatch(
+    source("src/pages/parent/ParentPickDrop.jsx"),
+    /driver_pilot_id/,
+    "parents must not assign a route driver"
+  );
+});
+
+test("no frontend module posts a teacher id where the API now expects staff_id", () => {
+  // /staff writes take staff_id; teacher_id is a read-only alias.
+  const people = source("src/api/people.js");
+  assert.doesNotMatch(
+    people,
+    /createTeacher[\s\S]{0,200}teacher_id\s*:/,
+    "teacher creation must not send a teacher_id field"
+  );
+  assertContains("src/api/people.js", [/\/teachers/]);
+});
