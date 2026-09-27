@@ -7,6 +7,8 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import DurationSelect from "../../components/ui/DurationSelect";
+import WeekSelector from "../../components/ui/WeekSelector";
+import TimetableWeekHeader from "../../components/ui/TimetableWeekHeader";
 import { apiErrorMessage } from "../../api/client";
 import {
   TIMETABLE_DAYS as DAYS,
@@ -16,6 +18,11 @@ import {
   buildCreatePeriodPayload,
   buildUpdateEntryPayload,
   getEntryTime,
+  startOfWeekIso,
+  buildWeekColumns,
+  mergeWeekColumns,
+  holidayNamesByWeekday,
+  formatHolidayDate,
 } from "../../utils/timetableFlow";
 
 // Add an integer number of hours and minutes to an "HH:MM" string and return
@@ -68,10 +75,45 @@ export default function AdminTimetable() {
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [showAddPeriod, setShowAddPeriod] = useState(false);
+  // Defaults to the week containing today; the admin can page to any week.
+  const [weekStart, setWeekStart] = useState(() => startOfWeekIso());
   const toast = useToast();
-  const { data: entries, loading, error, refetch: refetchEntries } = useApi(
-    () => (selectedClassId ? timetableApi.classTimetable(selectedClassId) : Promise.resolve([])),
-    [selectedClassId]
+  // The week endpoint returns the recurring entries plus each day's date and
+  // holiday flag, which is what the grid header needs.
+  const { data: week, loading, error, refetch: refetchWeek } = useApi(
+    () =>
+      selectedClassId
+        ? timetableApi.classTimetableWeek(selectedClassId, weekStart)
+        : Promise.resolve(null),
+    [selectedClassId, weekStart]
+  );
+  const entries = useMemo(
+    () => (week?.days || []).flatMap((day) => day.entries || []),
+    [week]
+  );
+  const weekColumns = useMemo(
+    () => mergeWeekColumns(buildWeekColumns(weekStart), week),
+    [weekStart, week]
+  );
+  const { data: holidays } = useApi(() => academicsApi.listHolidays(), []);
+  // The class-picker summary has no week endpoint, so resolve the selected
+  // week's holidays from the list directly, keyed by weekday to match its
+  // column headers. Without this it would either lose the red marking or
+  // highlight a weekday for a holiday that is not on that week's date.
+  const holidayByWeekday = useMemo(
+    () => holidayNamesByWeekday(holidays || [], weekStart),
+    [holidays, weekStart]
+  );
+  // The summary headers are weekday names only, so a red column gave no way to
+  // tell which date the holiday actually falls on. Pair each weekday with its
+  // real date for the selected week and show both.
+  const summaryColumns = useMemo(
+    () => buildWeekColumns(weekStart).map((column) => ({
+      day: column.day,
+      date: column.date,
+      holiday: holidayByWeekday[column.day] || null,
+    })),
+    [weekStart, holidayByWeekday]
   );
   const { data: classTimetables, loading: classTimetablesLoading } = useApi(
     () => Promise.all((classes || []).map(async (item) => ({
@@ -305,7 +347,7 @@ export default function AdminTimetable() {
       setEditStartTime("");
       setEditDurationHours("1");
       setEditDurationMinutes("0");
-      refetchEntries();
+      refetchWeek();
     } catch (err) {
       toast(apiErrorMessage(err));
     } finally {
@@ -393,7 +435,7 @@ export default function AdminTimetable() {
       setNewDayOfWeek("");
       setShowAddPeriod(false);
       toast("New weekly period added");
-      refetchEntries();
+      refetchWeek();
       refetchPeriods();
     } catch (err) {
       toast(apiErrorMessage(err));
@@ -456,7 +498,7 @@ export default function AdminTimetable() {
       );
       toast("Timetable entry updated");
       closeEditor();
-      refetchEntries();
+      refetchWeek();
     } catch (err) {
       toast(apiErrorMessage(err));
     } finally {
@@ -466,8 +508,13 @@ export default function AdminTimetable() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Manage Timetable</div>
-      <div className="scr-sub">View the weekly schedule for each class</div>
+      <div className="scr-title-row">
+        <div className="scr-title-text">
+          <div className="scr-title">Manage Timetable</div>
+          <div className="scr-sub">View the weekly schedule for each class</div>
+        </div>
+        <WeekSelector weekStart={weekStart} onChange={setWeekStart} busy={loading} />
+      </div>
 
       <div className="section-label">Classes</div>
       <div className="section-sub">Weekly timetable summary — click a class to manage its periods</div>
@@ -514,17 +561,40 @@ export default function AdminTimetable() {
                         <thead>
                           <tr>
                             <th className="time-col-header">Time</th>
-                            {DAYS.map((day) => <th key={day}>{day}</th>)}
+                            {summaryColumns.map(({ day, date, holiday }) => (
+                              <th
+                                key={day}
+                                className={holiday ? "timetable-day-holiday" : undefined}
+                                title={
+                                  holiday
+                                    ? `${holiday} - ${formatHolidayDate(date)}`
+                                    : formatHolidayDate(date)
+                                }
+                              >
+                                <span className="timetable-preview-day">{day}</span>
+                                <span className="timetable-preview-date">
+                                  {formatHolidayDate(date)}
+                                </span>
+                                {holiday ? (
+                                  <span className="timetable-preview-holiday">
+                                    {holiday}
+                                  </span>
+                                ) : null}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
                           {timeSlots.map((start) => (
                             <tr key={start}>
                               <td className="time-cell">{displayTime(start)}</td>
-                              {DAYS.map((day) => {
+                              {summaryColumns.map(({ day, holiday }) => {
                                 const entry = entryMap.get(`${day}|${start}`);
                                 return (
-                                  <td key={day} className={entry ? "active-cell" : ""}>
+                                  <td
+                                    key={day}
+                                    className={`${entry ? "active-cell" : ""}${holiday ? " timetable-day-holiday" : ""}`}
+                                  >
                                     {entry
                                       ? (subjectNames.get(String(entry.subject_id)) || "Unassigned")
                                       : ""}
@@ -553,7 +623,10 @@ export default function AdminTimetable() {
       )}
       {selectedClassId && (
         <div className="selected-timetable-label">
-          Managing timetable for {(classes || []).find((item) => String(item.class_id) === String(selectedClassId))?.name}
+          <span>
+            Managing timetable for{" "}
+            {(classes || []).find((item) => String(item.class_id) === String(selectedClassId))?.name}
+          </span>
         </div>
       )}
 
@@ -563,12 +636,21 @@ export default function AdminTimetable() {
         <div className="card white" style={{ overflowX: "auto" }}>
           {entries?.length ? (
             <table className="data-table">
-              <thead><tr>{DAYS.map((day) => <th key={day}>{day}</th>)}</tr></thead>
+              <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} caption="Period" />
               <tbody>
                 <tr>
-                  {DAYS.map((day) => (
-                    <td key={day} style={{ verticalAlign: "top" }}>
-                      {(entries.filter((entry) => entry.day_of_week === day)).map((entry) => (
+                  {/* The header leads with a caption column, so the body needs a
+                      matching corner cell. Without it every day cell renders one
+                      column to the left and a holiday note appears under the
+                      previous day. */}
+                  <td className="timetable-week-corner" />
+                  {weekColumns.map((column) => (
+                    <td
+                      key={column.day}
+                      style={{ verticalAlign: "top" }}
+                      className={column.isHoliday ? "timetable-day-holiday" : undefined}
+                    >
+                      {column.entries.map((entry) => (
                         <button
                           key={entry.entry_id}
                           className="pill info timetable-entry-button"
@@ -584,6 +666,11 @@ export default function AdminTimetable() {
                           </span>
                         </button>
                       ))}
+                      {column.isHoliday && (
+                        <span className="timetable-day-note">
+                          {column.holidayName || "Holiday"}
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>

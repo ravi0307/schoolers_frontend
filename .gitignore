@@ -5,3 +5,7 @@ dist
 .env.*
 !.env.example
 .logs/
+
+# Local database dumps contain PII and password hashes - never commit.
+schoolers_data.sql
+*.sql.gz

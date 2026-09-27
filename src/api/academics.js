@@ -15,5 +15,6 @@ export const updatePeriod = (id, period_time) =>
   client.patch(`/periods/${id}`, { period_time }).then((r) => r.data);
 
 export const listHolidays = () => client.get("/holidays").then((r) => r.data);
-export const setHoliday = (day, is_holiday) =>
-  client.patch(`/holidays/${day}`, { is_holiday }).then((r) => r.data);
+export const createHoliday = (data) => client.post("/holidays", data).then((r) => r.data);
+export const updateHoliday = (id, data) => client.patch(`/holidays/${id}`, data).then((r) => r.data);
+export const deleteHoliday = (id) => client.delete(`/holidays/${id}`);
