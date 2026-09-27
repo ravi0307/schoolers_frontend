@@ -282,6 +282,28 @@ body {
   color: var(--chalk-green-dark);
   font-size: 10px;
   text-transform: uppercase;
+  white-space: normal;
+  min-width: 74px;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-day {
+  display: block;
+  font-weight: 800;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-date {
+  display: block;
+  font-weight: 500;
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-holiday {
+  display: block;
+  font-weight: 800;
+  font-size: 9px;
+  color: #b3261e;
+  text-transform: none;
+  line-height: 1.2;
 }
 .timetable-weekly-summary-card .timetable-preview-table .time-col-header {
   width: 60px;
@@ -300,6 +322,152 @@ body {
   color: var(--ruled-blue);
 }
 .selected-timetable-label { font-size: 16px; font-weight: 800; color: var(--chalk-green); margin: 6px 0 14px; }
+
+/* Week navigation. Sits inline with the page title on Manage Timetable, and
+   still has its own margins when rendered standalone on the teacher timetable. */
+.scr-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.scr-title-text { min-width: 0; }
+.scr-title-row .scr-title,
+.scr-title-row .scr-sub { margin-bottom: 0; }
+.scr-title-row .week-selector { margin: 0; }
+.week-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+}
+
+/* The selector sits directly on the light page background, not on the dark
+   sidebar, so the shared `.btn.ghost` light-on-dark styling rendered the arrows
+   near-white on near-white and made them invisible. These buttons need explicit
+   light-surface styling. */
+.web-content .week-selector .btn.ghost {
+  color: var(--chalk-green-dark);
+  border-color: var(--ruled-blue);
+  background: var(--paper-light);
+  font-size: 15px;
+  font-weight: 800;
+  min-width: 34px;
+  padding: 6px 10px;
+}
+.web-content .week-selector .btn.ghost:hover:not(:disabled) {
+  background: var(--ruled-blue-light);
+  color: var(--chalk-green-dark);
+}
+.web-content .week-selector .btn.ghost:disabled { opacity: 0.45; }
+
+/* The selected week is the control's primary state, so it gets a chip rather
+   than bare text sandwiched between two arrows. */
+.web-content .week-selector-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 10px;
+  background: var(--ruled-blue-light);
+  color: var(--chalk-green-dark);
+  font-size: 16px;
+  font-weight: 800;
+  min-width: 210px;
+  text-align: center;
+  white-space: nowrap;
+}
+.week-selector-date {
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ruled-blue);
+  background: var(--paper);
+  color: var(--ink);
+}
+.web-content .selected-timetable-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* A holiday column is flagged in red across the header and the cells. */
+.timetable-week-head th.timetable-day-holiday,
+.data-table th.timetable-day-holiday {
+  background: var(--red-pen-light);
+  color: var(--red-pen);
+}
+.timetable-day-name { display: block; font-weight: 800; }
+.timetable-day-date { display: block; font-size: 11px; font-weight: 600; opacity: 0.8; }
+.timetable-day-flag {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--red-pen);
+}
+.timetable-week-caption { text-align: left; }
+/* Body corner cell that lines the day columns up with the header caption. */
+.timetable-week-corner { background: var(--paper); }
+.timetable-week-range {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.data-table td.timetable-day-holiday { background: var(--red-pen-light); }
+.timetable-day-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--red-pen);
+}
+
+/* The per-class summary cards use their own table styles, whose rules are more
+   specific than the .data-table ones above — match them here so a holiday
+   column is red in the cards too, including cells that are also .active-cell. */
+.timetable-weekly-summary-card .timetable-preview-table th.timetable-day-holiday,
+.timetable-weekly-summary-card .timetable-preview-table td.timetable-day-holiday,
+.timetable-weekly-summary-card .timetable-preview-table td.active-cell.timetable-day-holiday {
+  background: var(--red-pen-light);
+  color: var(--red-pen);
+}
+
+/* Holiday calendar on the admin Holidays page: an add row plus the list table. */
+.holiday-form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.holiday-form-row .field { flex: 1 1 200px; margin-bottom: 0; }
+.holiday-form-row .btn { margin-bottom: 1px; }
+
+.holiday-table th:first-child,
+.holiday-table td:first-child { min-width: 180px; }
+.holiday-table td:nth-child(2) { white-space: nowrap; }
+.holiday-actions-head { width: 1%; white-space: nowrap; }
+
+/* A row being edited inline, so the change is visibly attached to its holiday. */
+.holiday-table tr.holiday-editing { background: var(--ruled-blue-light); }
+.holiday-edit-input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--paper-light);
+}
+
 .section-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }

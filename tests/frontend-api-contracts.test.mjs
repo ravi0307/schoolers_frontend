@@ -431,12 +431,12 @@ test("teacher student list expands an accordion with details, attendance %, and 
 
 test("teacher timetable shows subject names and times from the weekly grid", () => {
   assertContains("src/pages/teacher/TeacherTimetable.jsx", [
-    /timetableApi\.classTimetable\(selectedClassId\)/,
+    /timetableApi\.classTimetableWeek\(selectedClassId, weekStart\)/,
     /academicsApi\.listSubjects\(\)/,
     /academicsApi\.listPeriods\(\)/,
     /getEntryTime\(entry, periodById\)/,
     /subjectNames\.get\(String\(entry\.subject_id\)\)/,
-    /entry\.day_of_week === day/,
+    /column\.entries\.map/,
   ]);
   const page = source("src/pages/teacher/TeacherTimetable.jsx");
   assert.doesNotMatch(page, /Subj #\{e\.subject_id\}/);
@@ -454,7 +454,7 @@ test("teacher timetable is read-only while admin keeps write controls", () => {
   ]) {
     assert.ok(!teacher.includes(forbidden), `teacher timetable must not contain ${forbidden}`);
   }
-  assert.match(teacher, /timetableApi\.classTimetable\(selectedClassId\)/);
+  assert.match(teacher, /timetableApi\.classTimetableWeek\(selectedClassId, weekStart\)/);
   assertContains("src/pages/admin/AdminTimetable.jsx", [
     /timetableApi\.createWeekPeriod/,
     /timetableApi\.updateEntry/,
