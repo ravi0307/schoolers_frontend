@@ -1431,9 +1431,46 @@ test("the report explains that unmarked days are not absences", () => {
 test("the report reads its data from the single server-side endpoint", () => {
   // The marks API returns subject_id with no name and the students API returns
   // class_id with no name. A client-side join would need every subject and
-    // class loaded per report, so the server does it in one read.
+  // class loaded per report, so the server does it in one read.
   const dialog = source("src/components/reports/StudentReportDialog.jsx");
   assert.match(dialog, /reportsApi\.studentReport\(studentId\)/);
   assert.doesNotMatch(dialog, /marksApi|marksService|api\/marks/);
   assert.doesNotMatch(dialog, /listSubjects/, "no per-report subject lookup");
+});
+
+test("the popup's Download button renders the term that is on screen", () => {
+  // A PDF is a snapshot of what the admin is looking at, so the button has to
+  // hand the rendered term to the printer -- not invent its own.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /import \{ downloadStudentReport \} from "\.\.\/\.\.\/utils\/studentReportPdf"/);
+  assert.match(dialog, /onClick=\{\(\) => downloadStudentReport\(data, term\)\}/);
+  assert.match(dialog, />\s*Download PDF\s*<\/button>/);
+  // The term lives in the dialog so both the selector and the printer agree.
+  assert.match(dialog, /onTermChange=\{setTerm\}/);
+});
+
+test("Download and Close are visibly buttons, not ghost text", () => {
+  // Download sits on the report's head and is the action an admin came for, so
+  // it must not render as bare dark text next to the student's name. These
+  // styles are what the earlier invisible-button regression was about.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /className="btn gold"/, "Download is the app's add-style action");
+  const css = source("src/styles/global.css");
+  assert.match(css, /\.sr-head \.btn \{/);
+  assert.match(css, /\.sr-head \.btn\.ghost \{/, "Close has a solid fill of its own");
+});
+
+test("the report prints through a pure model, reachable by the tests", () => {
+  // The drawing code is thin; buildPdfModel decides what a PDF may and may not
+  // contain, and it returns the document as data so node tests can read it
+  // without a PDF parser.
+  const pdf = source("src/utils/studentReportPdf.js");
+  assert.match(pdf, /export function buildPdfModel/);
+  assert.match(pdf, /export function downloadStudentReport/);
+  assert.match(pdf, /from "jspdf"/);
+  assert.match(pdf, /from "jspdf-autotable"/);
+  assertContains("src/utils/studentReportPdf.js", [
+    /\.save\(studentReportFilename\(/,
+    /student-report-[a-z0-9-]+\.pdf/,
+  ]);
 });
