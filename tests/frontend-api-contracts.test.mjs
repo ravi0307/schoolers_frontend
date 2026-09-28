@@ -1045,7 +1045,11 @@ test("an unpaid month is shown as a dash, never as a zero", () => {
   // admin chasing unpaid money needs to tell them apart.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /value === null \|\| value === undefined/);
-  assert.match(page, /rows\.reduce\(\(sum, row\) => sum \+ \(row\.amounts\?\.\[m\] \|\| 0\), 0\)/, "totals may sum missing as zero");
+  // With the totals row gone, nothing may collapse a missing month into a 0.
+  // A per-month sum would render "0" for a month nobody was paid in, which
+  // reads as "we paid everyone nothing" rather than "we paid nobody".
+  assert.doesNotMatch(page, /<tfoot>/, "the grid must not sum months into a totals row");
+  assert.doesNotMatch(page, /rows\.reduce\(/, "a row total would reintroduce the missing-as-zero sum");
 });
 
 test("a recorded amount must be a non-negative number before it is sent", () => {
@@ -1134,9 +1138,44 @@ test("every rendered amount passes through the thousands formatter", () => {
   assert.match(page, /money\(feeSheet\?\.total_collected\)/);
 });
 
-test("the accounts totals row is labelled so it is not read as a person", () => {
+test("the accounts grid has no totals row, and the per-month cards carry the totals", () => {
+  // The sum of a column of mostly-missing cells is not information an admin
+  // can act on, and it competed with the person rows for vertical space. The
+  // school-wide figures live in the summary cards above each grid instead.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /<th scope="row" className="acct-sticky">Total<\/th>/);
+  assert.doesNotMatch(page, /<tfoot>/);
+  assert.doesNotMatch(page, /acct-total/);
+  assert.match(page, /money\(salarySheet\?\.total_paid\)/, "the salary total still has a home");
+  assert.match(page, /money\(feeSheet\?\.total_collected\)/, "the fee total still has a home");
+});
+
+test("each accounts grid can search and sort its own people", () => {
+  // Sorting and filtering are per-grid state, so a search for a staff member
+  // must not filter the student list below it.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /const \[query, setQuery\] = useState\(""\)/);
+  assert.match(page, /const \[sort, setSort\] = useState\("name"\)/);
+  assert.match(page, /filterAndSortRows\(\{ rows: allRows, months, query, sort, nameOf, secondaryOf \}\)/);
+  // SheetTable is rendered once per grid, and each call supplies its own label
+  // and empty-search copy, so the two cannot share one search box.
+  assert.match(page, /label="staff"/);
+  assert.match(page, /label="students"/);
+  assert.match(page, /noMatchText="No staff match that search\."/);
+  assert.match(page, /noMatchText="No students match that search\."/);
+});
+
+test("the accounts grids scroll vertically at six rows with a sticky header", () => {
+  // A school of hundreds of staff or students would otherwise bury the person
+  // the admin is looking for under a full-page table.
+  const utils = source("src/utils/accountsTable.js");
+  assert.match(utils, /export const VISIBLE_ROWS = 6/);
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /className="table-scroll acct-vertical"/);
+  assert.match(page, /scrollHint\(rows\.length\)/, "the grid says how many rows are below the fold");
+  assertContains("src/styles/global.css", [
+    /\.acct-vertical\s*\{[^}]*overflow-y:\s*auto/s,
+    /\.acct-vertical \.acct-table thead th\s*\{[^}]*position:\s*sticky/s,
+  ]);
 });
 
 test("editing and clearing are both reachable without hover", () => {
