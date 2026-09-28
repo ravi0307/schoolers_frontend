@@ -188,7 +188,9 @@ test("parent pick & drop shows each child's live route status, bus, and stops", 
     /STATUS_META\[snapshot\.status\]/,
     /pending|picked|dropped/,
     /not_assigned/,
-    /transportApi\.listStops\(snapshot\.route_id\)/,
+    // The stop schedule arrives on the snapshot itself, so the page must not
+    // re-fetch it per route — that was the source of the missing where/when.
+    /snapshot\?\.stops \|\| NO_STOPS/,
     /setInterval\(refetch, /,
     /Pill tone=/,
     /driver_name/,
@@ -874,4 +876,46 @@ test("parent, teacher, pilot and master sidebars stay flat", () => {
   for (const file of FLAT_NAV_SHELLS) {
     assert.doesNotMatch(source(file), /group:\s*"/, `${file} must not opt into sidebar groups`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Parent pick & drop: stop name and time
+//
+// ParentPickDropRead used to carry no stop name or time, so a parent saw
+// "Route 1 / Picked up" and could not tell where the bus stops or when. The
+// backend now returns the route's stop schedule on each snapshot and the
+// parent portal must actually surface it.
+// ---------------------------------------------------------------------------
+
+test("parent home pairs pick & drop status with a stop and time", () => {
+  const home = source("src/pages/parent/ParentHome.jsx");
+  // The card summary must include the stop, not just the status label.
+  assert.match(home, /pickdropStopText/);
+  assert.match(
+    home,
+    /\$\{stop\.stop_name\} · \$\{when\}/,
+    "the pick & drop summary must name the stop and its time"
+  );
+  assert.match(home, /stop\.pickup_time/);
+  assert.match(
+    home,
+    /PICKDROP_LABEL\[pickdropRow\.status\][\s\S]{0,200}pickdropStopText\(pickdropRow\)/,
+    "status and stop must be shown together on the quick card"
+  );
+});
+
+test("parent home and pick & drop read stops off the snapshot", () => {
+  for (const file of ["src/pages/parent/ParentHome.jsx", "src/pages/parent/ParentPickDrop.jsx"]) {
+    assert.match(source(file), /\.stops\b/, `${file} must read the snapshot stop list`);
+  }
+});
+
+test("parent pick & drop no longer re-fetches stops per route", () => {
+  // One payload, one request. listStops stays available for admin screens.
+  const page = source("src/pages/parent/ParentPickDrop.jsx");
+  assert.doesNotMatch(
+    page,
+    /transportApi\s*\.\s*listStops/,
+    "the parent page must not issue a second request for stops"
+  );
 });
