@@ -7,11 +7,11 @@ import {
   attendanceRangeLabel,
   attendanceTone,
   averageLabel,
-  defaultTerm,
   formatDay,
   subjectCoverage,
   termsForSelector,
 } from "../../utils/studentReport";
+import { downloadStudentReport } from "../../utils/studentReportPdf";
 
 /**
  * The student report, in a popup.
@@ -39,9 +39,8 @@ function ScorePill({ score }) {
   return <Pill tone={tone}>{score}</Pill>;
 }
 
-function MarksSection({ report }) {
+function MarksSection({ report, term, onTermChange }) {
   const terms = report.terms || [];
-  const [term, setTerm] = useState(() => defaultTerm(terms));
   const byTerm = (report.marks_by_term || []).find((t) => t.term === term);
 
   if (!terms.length) {
@@ -60,7 +59,7 @@ function MarksSection({ report }) {
           <select
             className="sr-term-select"
             value={term || ""}
-            onChange={(e) => setTerm(e.target.value)}
+            onChange={(e) => onTermChange(e.target.value)}
             aria-label="Term"
           >
             {termsForSelector(terms).map((t) => (
@@ -179,6 +178,15 @@ export function StudentReportDialog({ studentId, onClose }) {
   );
   const boxRef = useRef(null);
 
+  // Which term the marks section shows. Kept here rather than in MarksSection
+  // so the Download button prints the term the admin is actually looking at.
+  const [term, setTerm] = useState(null);
+  useEffect(() => {
+    if (!term && data?.marks_by_term?.length) {
+      setTerm(data.marks_by_term[data.marks_by_term.length - 1].term);
+    }
+  }, [term, data?.marks_by_term]);
+
   // Escape closes, and focus lands in the dialog so a keyboard user is not
   // left tabbing through the page behind it.
   useEffect(() => {
@@ -218,6 +226,15 @@ export function StudentReportDialog({ studentId, onClose }) {
             </div>
           </div>
           <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+          {data && (
+            <button
+              className="btn"
+              type="button"
+              onClick={() => downloadStudentReport(data, term)}
+            >
+              Download PDF
+            </button>
+          )}
         </div>
 
         <div className="sr-body">
@@ -268,7 +285,7 @@ export function StudentReportDialog({ studentId, onClose }) {
               </section>
 
               <section className="sr-section">
-                <MarksSection key={student.student_id} report={data} />
+                <MarksSection key={student.student_id} report={data} term={term} onTermChange={setTerm} />
               </section>
 
               <section className="sr-section">
