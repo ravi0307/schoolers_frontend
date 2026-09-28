@@ -64,6 +64,16 @@ body {
   color: #CBDACF; text-decoration: none; font-size: 13.5px; font-weight: 500;
 }
 .sidebar nav a.active { background: var(--pencil-yellow); color: var(--chalk-green-dark); font-weight: 700; }
+/* Optional section heading. Portals with a flat nav never render one. */
+.sidebar nav .sidebar-group {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(203, 218, 207, 0.72);
+  padding: 16px 12px 6px;
+}
+.sidebar nav .sidebar-group:first-child { padding-top: 0; }
 .sidebar .signout {
   margin-top: auto; background: none; border: 1px solid rgba(255,255,255,.18);
   color: #CBDACF; padding: 10px 12px; border-radius: 9px; cursor: pointer;
