@@ -912,7 +912,6 @@ body {
 .acct-table tbody .acct-sticky { font-weight: 600; }
 .acct-month { text-align: right !important; }
 .acct-cell { text-align: right !important; font-variant-numeric: tabular-nums; }
-.acct-total { text-align: right !important; font-weight: 700; font-variant-numeric: tabular-nums; }
 .acct-person { display: flex; flex-direction: column; gap: 1px; }
 .acct-person-name { font-weight: 600; }
 .acct-person-meta { color: var(--ink-soft); font-size: 11px; font-weight: 400; }
@@ -939,3 +938,37 @@ body {
 @media (hover: none) {
   .acct-cell-actions { opacity: 1; }
 }
+
+/* ---- Accounts: filter, sort, and a fixed-height scrolling grid ---- */
+/* Six rows then scroll. The height is derived from the row box rather than
+   hard-coded, so the sticky header keeps sitting on the first row instead of
+   overlapping it. */
+.acct-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-bottom: 10px;
+}
+.acct-search {
+  flex: 1 1 190px;
+  font: inherit;
+  max-width: 320px;
+  min-width: 150px;
+  padding: 7px 10px;
+}
+.acct-sort {
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 8px;
+}
+.acct-count, .acct-scroll-hint { color: var(--ink-soft); font-size: 12px; }
+.acct-scroll-hint { font-style: italic; }
+
+/* max-height is a fallback; the JS sets the exact box so the sticky header
+   has a row of its own rather than sitting on the first one. */
+.acct-vertical { max-height: 340px; overflow-y: auto; }
+.acct-vertical .acct-table thead th { position: sticky; top: 0; z-index: 2; }
