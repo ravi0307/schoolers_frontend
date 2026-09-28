@@ -14,6 +14,7 @@ import {
   scrollHintText,
 } from "../../utils/accountsTable";
 import { apiErrorMessage } from "../../api/client";
+import { formatDay } from "../../utils/studentReport";
 
 /*
  * Six-month month grid for money.
@@ -46,7 +47,7 @@ function money(value) {
   return frac ? `${grouped}.${frac}` : grouped;
 }
 
-function RecordCell({ value, onSave, onClear, busy, rowName, month }) {
+function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState("");
 
@@ -79,19 +80,26 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month }) {
             —
           </button>
         ) : (
-          <span className="acct-amount">
-            <span className="acct-value">{money(value)}</span>
-            <span className="acct-cell-actions">
-              <button type="button" onClick={begin} title="Edit">✎</button>
-              <button
-                type="button"
-                onClick={() => onClear()}
-                title={`Clear the ${monthLabel(month)} entry for ${rowName}`}
-              >
-                ×
-              </button>
+          <>
+            <span className="acct-amount">
+              <span className="acct-value">{money(value)}</span>
+              <span className="acct-cell-actions">
+                <button type="button" onClick={begin} title="Edit">✎</button>
+                <button
+                  type="button"
+                  onClick={() => onClear()}
+                  title={`Clear the ${monthLabel(month)} entry for ${rowName}`}
+                >
+                  ×
+                </button>
+              </span>
             </span>
-          </span>
+            {paidOn && (
+              <span className="acct-paid" title={`Paid on ${formatDay(paidOn)}`}>
+                {formatDay(paidOn)}
+              </span>
+            )}
+          </>
         )}
       </td>
     );
@@ -232,6 +240,7 @@ function SheetTable({
                           month={m}
                           rowName={name}
                           value={row.amounts?.[m]}
+                          paidOn={row.paid_on?.[m]}
                           busy={busy}
                           onSave={(amount) => onSave(id, m, amount)}
                           onClear={() => onClear(id, m)}

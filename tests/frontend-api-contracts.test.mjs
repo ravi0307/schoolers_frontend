@@ -1084,6 +1084,21 @@ test("both new admin pages are routed and reachable", () => {
   }
 });
 
+test("a paid amount shows the date it was paid, formatted not raw", () => {
+  // The API returns paid_on next to every amount; the grid must show the
+  // "when" under the "how much" so an admin can see at a glance whether the
+  // September figure was paid in September. The date is humanised through
+  // formatDay ("28 Sep 2026"), never printed as the raw "2026-09-28".
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /formatDay/);
+  assert.match(page, /paidOn=\{row\.paid_on\?\.\[m\]\}/);
+  assert.match(page, /\{formatDay\(paidOn\)\}/);
+  assert.doesNotMatch(page, /\{paidOn\}/, "the ISO date must not reach the DOM raw");
+  assertContains("src/styles/global.css", [
+    /\.acct-paid\s*\{[^}]*color:\s*var\(--ink-soft\)/s,
+  ]);
+});
+
 test("the accounts grid keeps the person column visible while months scroll", () => {
   assertContains("src/styles/global.css", [
     /\.acct-sticky\s*\{[^}]*position:\s*sticky/s,
