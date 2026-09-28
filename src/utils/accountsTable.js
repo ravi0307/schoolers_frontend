@@ -99,14 +99,14 @@ export function filterAndSortRows({
 /**
  * Rows a grid shows at once before it scrolls.
  *
- * Six is a deliberate choice rather than a round number picked for looks: it
- * keeps the whole grid roughly in one screen's worth of attention, so the
- * header, the period selector and the footer summary all stay visible while
- * an admin scans for a person. Past that, scrolling beats a paginated page
- * because the comparison an admin is making is vertical — "who else has
- * nothing in May".
+ * Eight rows clears an active roster of a small-to-mid school (eight staff,
+ * or the whole student roll at this demo's size) without ever needing the
+ * scroll, while still keeping the sticky header, the period selector and the
+ * summary line in one screen's worth of attention. Past that, scrolling beats
+ * a paginated page because the comparison an admin is making is vertical —
+ * "who else has nothing in May".
  */
-export const VISIBLE_ROWS = 6;
+export const VISIBLE_ROWS = 8;
 
 /** How many rows precede `visible` in the full list, for a "showing X of Y" note. */
 export function scrollHint(total, visible = VISIBLE_ROWS) {

@@ -129,13 +129,13 @@ test("searching does not mutate the caller's array", () => {
   assert.deepEqual(input.map((r) => r.staff_id), [1, 2, 3]);
 });
 
-test("the grid shows six rows and only then scrolls", () => {
-  assert.equal(VISIBLE_ROWS, 6);
-  // Six people exactly: no scroll, no "more" hint.
-  assert.equal(scrollHint(6), 0);
+test("the grid shows eight rows and only then scrolls", () => {
+  assert.equal(VISIBLE_ROWS, 8);
+  // Eight people exactly: no scroll, no "more" hint.
+  assert.equal(scrollHint(8), 0);
   assert.equal(scrollHint(3), 0);
-  assert.equal(scrollHint(7), 1);
-  assert.equal(scrollHint(9), 3);
+  assert.equal(scrollHint(9), 1);
+  assert.equal(scrollHint(12), 4);
   // An empty grid must not promise rows that are not there.
   assert.equal(scrollHint(0), 0);
 });
@@ -241,13 +241,13 @@ test("the count note only does arithmetic once the grid is narrowed", () => {
 });
 
 test("the scroll hint appears only when rows are actually below the fold", () => {
-  assert.equal(scrollHintText(6), null);
+  assert.equal(scrollHintText(8), null);
   assert.equal(scrollHintText(3), null);
-  assert.equal(scrollHintText(7), "scroll for 1 more");
-  assert.equal(scrollHintText(9), "scroll for 3 more");
+  assert.equal(scrollHintText(9), "scroll for 1 more");
+  assert.equal(scrollHintText(12), "scroll for 4 more");
   // Counting is against the filtered list, so a search that leaves one row
   // must not keep promising the whole school's worth of scrolling.
   assert.equal(scrollHintText(1), null);
-  // A custom row count is honoured, for callers that do not use six.
+  // A custom row count is honoured, for callers that do not use eight.
   assert.equal(scrollHintText(10, 3), "scroll for 7 more");
 });

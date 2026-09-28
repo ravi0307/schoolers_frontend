@@ -82,7 +82,6 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
         ) : (
           <>
             <span className="acct-amount">
-              <span className="acct-value">{money(value)}</span>
               <span className="acct-cell-actions">
                 <button type="button" onClick={begin} title="Edit">✎</button>
                 <button
@@ -93,6 +92,7 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
                   ×
                 </button>
               </span>
+              <span className="acct-value">{money(value)}</span>
             </span>
             {paidOn && (
               <span className="acct-paid" title={`Paid on ${formatDay(paidOn)}`}>

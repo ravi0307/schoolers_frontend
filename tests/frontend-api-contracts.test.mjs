@@ -1094,6 +1094,13 @@ test("a paid amount shows the date it was paid, formatted not raw", () => {
   assert.match(page, /paidOn=\{row\.paid_on\?\.\[m\]\}/);
   assert.match(page, /\{formatDay\(paidOn\)\}/);
   assert.doesNotMatch(page, /\{paidOn\}/, "the ISO date must not reach the DOM raw");
+  // The figure is the rightmost thing in the cell, so the paid date below it
+  // shares its right edge (ledger alignment). If the hover buttons came after
+  // it, the invisible-buttons slot would push the number off the date's edge.
+  const actionsAt = page.indexOf('className="acct-cell-actions"');
+  const valueAt = page.indexOf('className="acct-value"');
+  assert.ok(actionsAt !== -1 && valueAt !== -1, "the paid cell must have actions and a value");
+  assert.ok(actionsAt < valueAt, "actions must sit before the figure, keeping the right edge aligned");
   assertContains("src/styles/global.css", [
     /\.acct-paid\s*\{[^}]*color:\s*var\(--ink-soft\)/s,
   ]);
@@ -1179,11 +1186,11 @@ test("each accounts grid can search and sort its own people", () => {
   assert.match(page, /noMatchText="No students match that search\."/);
 });
 
-test("the accounts grids scroll vertically at six rows with a sticky header", () => {
+test("the accounts grids scroll vertically at eight rows with a sticky header", () => {
   // A school of hundreds of staff or students would otherwise bury the person
   // the admin is looking for under a full-page table.
   const utils = source("src/utils/accountsTable.js");
-  assert.match(utils, /export const VISIBLE_ROWS = 6/);
+  assert.match(utils, /export const VISIBLE_ROWS = 8/);
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /className="table-scroll acct-vertical"/);
   assert.match(page, /scrollHintText\(rows\.length\)/, "the grid says how many rows are below the fold");
