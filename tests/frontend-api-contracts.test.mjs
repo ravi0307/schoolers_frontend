@@ -777,3 +777,101 @@ test("no frontend module posts a teacher id where the API now expects staff_id",
   );
   assertContains("src/api/people.js", [/\/teachers/]);
 });
+
+// ---------------------------------------------------------------------------
+// Admin sidebar ordering
+//
+// The admin nav is grouped by purpose and ordered by dependency inside each
+// group, so these lock in the order as a contract rather than a preference.
+// A route typo here silently 404s on click, which is how "/admin/commute" got
+// caught during the reorder.
+// ---------------------------------------------------------------------------
+
+const ADMIN_SHELL = "src/components/layout/AdminShell.jsx";
+const ADMIN_NAV = [
+  "/admin/dashboard",
+  "/admin/routes",
+  "/admin/broadcast",
+  "/admin/leave",
+  "/admin/gallery",
+  "/admin/notifications",
+  "/admin/staff",
+  "/admin/subjects",
+  "/admin/classes",
+  "/admin/students",
+  "/admin/timetable",
+  "/admin/holidays",
+  "/admin/website",
+];
+// "Set up" is a real sequence: each entry feeds the one below it.
+const SET_UP_SEQUENCE = [
+  "/admin/staff",
+  "/admin/subjects",
+  "/admin/classes",
+  "/admin/students",
+  "/admin/timetable",
+  "/admin/holidays",
+];
+// The other portals keep a flat nav, so they must stay group-free.
+const FLAT_NAV_SHELLS = [
+  "src/components/layout/ParentShell.jsx",
+  "src/components/layout/TeacherShell.jsx",
+  "src/components/layout/PilotShell.jsx",
+  "src/components/layout/MasterShell.jsx",
+];
+
+function navOrder(file) {
+  return [...source(file).matchAll(/to:\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+test("admin sidebar is ordered by dependency, not alphabetically", () => {
+  assert.deepEqual(
+    navOrder(ADMIN_SHELL),
+    ADMIN_NAV,
+    "admin nav order changed; update this test only if the dependency order really changed"
+  );
+});
+
+test("admin 'Set up' group keeps its prerequisite sequence", () => {
+  const labels = [...source(ADMIN_SHELL).matchAll(/to:\s*"([^"]+)".*?label:\s*"([^"]+)"/g)].map(
+    ([, to, label]) => ({ to, label })
+  );
+  const setup = labels
+    .filter((i) => SET_UP_SEQUENCE.includes(i.to))
+    .map((i) => i.to);
+  assert.deepEqual(setup, SET_UP_SEQUENCE, "'Set up' must read Staff -> Timetable -> Holidays");
+});
+
+test("every admin sidebar link resolves to a real route", () => {
+  const app = source("src/App.jsx");
+  const routes = new Set([...app.matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1]));
+  for (const to of navOrder(ADMIN_SHELL)) {
+    const leaf = to.split("/").pop();
+    assert.ok(routes.has(leaf), `admin nav "${to}" has no matching <Route path="${leaf}">`);
+  }
+});
+
+test("admin sidebar keeps its four groups in order", () => {
+  const groups = [...source(ADMIN_SHELL).matchAll(/group:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(
+    [...new Set(groups)],
+    ["Overview", "Day to day", "Set up", "Public"]
+  );
+});
+
+test("grouped nav support in WebLayout is optional and off by default", () => {
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assertContains("src/components/layout/WebLayout.jsx", [/sidebar-group/, /item\.group/]);
+  // A flat nav must render zero headings rather than empty ones.
+  assert.match(
+    layout,
+    /item\.group\s*&&/,
+    "group heading must be conditional so flat portals render nothing"
+  );
+});
+
+test("parent, teacher, pilot and master sidebars stay flat", () => {
+  for (const file of FLAT_NAV_SHELLS) {
+    assert.doesNotMatch(source(file), /group:\s*"/, `${file} must not opt into sidebar groups`);
+  }
+});
