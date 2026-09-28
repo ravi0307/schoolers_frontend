@@ -919,3 +919,97 @@ test("parent pick & drop no longer re-fetches stops per route", () => {
     "the parent page must not issue a second request for stops"
   );
 });
+
+// ---------------------------------------------------------------------------
+// School branding header
+//
+// Every role of a school (admin, teacher, parent, pilot) needs the school's
+// name and logo pinned at the top of the sidebar, on every page. The name and
+// logo arrive on /auth/me because a parent or teacher cannot read the school
+// endpoints at all — both are 403 for those roles.
+// ---------------------------------------------------------------------------
+
+test("the sidebar header shows the caller's school name and logo", () => {
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.match(layout, /user\?\.schoolName/, "the header must read the school name off the session");
+  assert.match(layout, /className="school-name"/, "the school name must be rendered");
+  assert.match(layout, /className="school-logo"/, "the school logo must be rendered");
+});
+
+test("the school logo goes through resolveMediaUrl", () => {
+  // logo_url is stored server-relative (/api/v1/schools/uploads/...). The dev
+  // server has no /api proxy, so an unresolved path makes the <img> receive
+  // the SPA's index.html and silently fail to decode -- which is exactly what
+  // happened before this was caught in the browser.
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.match(layout, /import \{ resolveMediaUrl \} from "\.\.\/\.\.\/api\/client"/);
+  assert.match(layout, /resolveMediaUrl\(user\?\.schoolLogoUrl\)/);
+});
+
+test("a missing or broken logo falls back to a monogram", () => {
+  const layout = source("src/components/layout/WebLayout.jsx");
+  // Both schools have logo_url = NULL today, so the monogram is the normal
+  // path, not an edge case.
+  assert.match(layout, /className="school-monogram"/);
+  assert.match(layout, /onError=/, "a 404 or stale file must not leave a broken image icon");
+  // A school name is still shown when there is no logo at all.
+  assert.match(layout, /hidden=\{!!schoolLogo\}/);
+});
+
+test("a user with no school keeps the product brand", () => {
+  // Master has no school of its own; /auth/me returns nulls for it.
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.match(layout, /\{schoolName \? \(/);
+  assert.match(layout, /<b>Schoolers<\/b>/, "master must fall back to the product brand");
+});
+
+test("the header is pinned so it survives a long nav", () => {
+  const css = source("src/styles/global.css");
+  const head = /\.sidebar-head\s*\{([^}]*)\}/.exec(css);
+  assert.ok(head, "there is no .sidebar-head rule");
+  assert.match(head[1], /position:\s*sticky/, "the school header must be sticky");
+  // The sidebar is its own scroll container (overflow-y: auto), so without
+  // sticky the name scrolls away once the nav is taller than the viewport --
+  // which the admin nav (13 routes) is.
+  assert.match(css, /\.sidebar\s*\{[^}]*overflow-y:\s*auto/);
+  // Nav content must scroll underneath the header rather than past a
+  // floating block, so the header needs an opaque background and a z-index.
+  assert.match(head[1], /background:\s*var\(--chalk-green\)/);
+  assert.match(head[1], /z-index:\s*\d/);
+  // `top` must cancel the sidebar's padding-top, or the header pins 22px
+  // too low and leaves a gap.
+  assert.match(head[1], /top:\s*-22px/);
+});
+
+test("all five role shells share the branding header", () => {
+  // The requirement is admin, staff and parents -- implemented once in
+  // WebLayout rather than per shell, so a new role cannot miss it.
+  for (const shell of [
+    "src/components/layout/AdminShell.jsx",
+    "src/components/layout/MasterShell.jsx",
+    "src/components/layout/ParentShell.jsx",
+    "src/components/layout/PilotShell.jsx",
+    "src/components/layout/TeacherShell.jsx",
+  ]) {
+    assert.match(source(shell), /WebLayout/, `${shell} does not render through WebLayout`);
+  }
+});
+
+test("the session hydrates the school name and logo from /auth/me", () => {
+  const auth = source("src/context/AuthContext.jsx");
+  assert.match(auth, /authApi\.me\(\)/, "the session must ask /auth/me for the branding");
+  assert.match(auth, /schoolName:\s*me\.school_name/);
+  assert.match(auth, /schoolLogoUrl:\s*me\.school_logo_url/);
+  // A failure here must not sign the user out: the cached session still
+  // works, the header just falls back to the portal label.
+  assert.match(auth, /catch\s*\{[^}]*keep the cached session/s);
+  // It runs once per session, not on every render.
+  assert.match(auth, /\[user\?\.userId\]/);
+});
+
+test("the branding does not add a request per page", () => {
+  // One extra call per session, not one per route. WebLayout must read from
+  // the already-hydrated context rather than fetching the school itself.
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.doesNotMatch(layout, /useApi|schoolsApi|getSchool|listSchools/);
+});
