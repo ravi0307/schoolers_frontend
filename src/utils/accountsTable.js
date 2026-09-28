@@ -112,3 +112,29 @@ export const VISIBLE_ROWS = 6;
 export function scrollHint(total, visible = VISIBLE_ROWS) {
   return total > visible ? total - visible : 0;
 }
+
+/**
+ * The "N of M people" note above a grid.
+ *
+ * Only mentions the total once the view is actually narrowed. A grid showing
+ * every name needs no arithmetic, and printing "16 of 16 staff" on load reads
+ * as though a filter is already applied.
+ */
+export function peopleCountLabel({ matched, total, singular, plural }) {
+  const word = total === 1 ? singular : plural;
+  // Build the count and the noun separately, then join once. Doing it inline
+  // with a trailing space in the branch is what produced "1 of 16  students".
+  const count = matched === total ? String(total) : `${matched} of ${total}`;
+  return `${count} ${word}`;
+}
+
+/**
+ * "scroll for N more", or null when the grid fits.
+ *
+ * Returns null rather than an empty string so the caller can skip the element
+ * entirely instead of leaving a bare separator with no text.
+ */
+export function scrollHintText(total, visible = VISIBLE_ROWS) {
+  const hidden = scrollHint(total, visible);
+  return hidden > 0 ? `scroll for ${hidden} more` : null;
+}

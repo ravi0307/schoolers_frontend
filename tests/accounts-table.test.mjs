@@ -5,9 +5,11 @@ import {
   STAFF_SORTS,
   VISIBLE_ROWS,
   filterAndSortRows,
+  peopleCountLabel,
   rowPaidMonths,
   rowTotal,
   scrollHint,
+  scrollHintText,
   visibleMonths,
 } from "../src/utils/accountsTable.js";
 
@@ -157,4 +159,95 @@ test("an empty window sorts an empty sheet without dividing by zero", () => {
   // visibleMonths tolerates a missing sheet, which is the pre-load state.
   assert.deepEqual(visibleMonths(undefined), []);
   assert.deepEqual(visibleMonths(sheet([], [])), []);
+});
+
+// ---- The student grid has a different secondary line, so it gets its own
+// ---- coverage. Searching a student by admission number is a real task: the
+// ---- number is on their card in the UI and on every notice the school sends.
+
+const studentRow = (id, name, extra) => ({
+  student_id: id,
+  student_name: name,
+  class_name: extra?.class_name,
+  admission_no: extra?.admission_no,
+  amounts: extra?.amounts,
+});
+
+const studentNameOf = (r) => r.student_name;
+const studentSecondaryOf = (r) =>
+  [r.class_name, r.admission_no].filter(Boolean).join(" · ");
+
+const runStudents = (rows, sort, query = "") =>
+  filterAndSortRows({
+    rows, months: MONTHS, query, sort,
+    nameOf: studentNameOf, secondaryOf: studentSecondaryOf,
+  });
+
+const STUDENTS = [
+  studentRow(1, "Aarav Mehta", { class_name: "Grade 3", admission_no: "ADM-1001", amounts: { "2026-09": 500 } }),
+  studentRow(2, "Diya Kapoor", { class_name: "Grade 4", admission_no: "ADM-1002", amounts: { "2026-08": 500, "2026-09": 500 } }),
+  studentRow(3, "Kabir Singh", { class_name: "Grade 3", admission_no: "ADM-1003", amounts: {} }),
+];
+
+test("a student is findable by admission number as well as by name", () => {
+  assert.deepEqual(runStudents(STUDENTS, "name", "adm-1002").map((r) => r.student_name), ["Diya Kapoor"]);
+  assert.deepEqual(runStudents(STUDENTS, "name", "grade 3").map((r) => r.student_name), ["Aarav Mehta", "Kabir Singh"]);
+  // The two halves of the secondary line read as one search target.
+  assert.deepEqual(runStudents(STUDENTS, "name", "grade 4 · ").map((r) => r.student_name), ["Diya Kapoor"]);
+  assert.deepEqual(runStudents(STUDENTS, "name", "adm-100").map((r) => r.student_name), ["Aarav Mehta", "Diya Kapoor", "Kabir Singh"]);
+});
+
+test("a student missing class and admission number is still sortable and findable", () => {
+  // Students imported without a class must not break the secondary line.
+  const bare = [studentRow(4, "Zoya Khan", {}), ...STUDENTS];
+  assert.equal(studentSecondaryOf(bare[0]), "");
+  assert.equal(runStudents(bare, "name", "zoya").length, 1);
+  assert.deepEqual(runStudents(bare, "name").map((r) => r.student_name), ["Aarav Mehta", "Diya Kapoor", "Kabir Singh", "Zoya Khan"]);
+  // An empty amounts object is an all-unpaid student, not a crash.
+  assert.equal(rowTotal(bare[0], MONTHS), 0);
+  assert.equal(rowPaidMonths(bare[0], MONTHS), 0);
+});
+
+test("student amount and unpaid sorts order the same way the staff grid does", () => {
+  // Aarav 500, Diya 1000, Kabir 0, Zoya 0.
+  const bare = [...STUDENTS, studentRow(4, "Zoya Khan", {})];
+  assert.deepEqual(
+    runStudents(bare, "total_desc").map((r) => r.student_name),
+    ["Diya Kapoor", "Aarav Mehta", "Kabir Singh", "Zoya Khan"]
+  );
+  assert.deepEqual(
+    runStudents(bare, "unpaid_desc").map((r) => r.student_name),
+    ["Kabir Singh", "Zoya Khan", "Aarav Mehta", "Diya Kapoor"]
+  );
+});
+
+test("the count note only does arithmetic once the grid is narrowed", () => {
+  const label = (matched, total, singular = "student", plural = "students") =>
+    peopleCountLabel({ matched, total, singular, plural });
+  // Unfiltered: just the number. "16 of 16 students" would read as filtered.
+  assert.equal(label(16, 16), "16 students");
+  // Filtered: show what the search is hiding.
+  assert.equal(label(1, 16), "1 of 16 students");
+  // Re-sorted but nothing hidden still reads as the plain total. "8 of 8
+  // staff" would imply a filter is applied when only the order changed.
+  assert.equal(label(8, 8, "staff", "staff"), "8 staff");
+  // Singular is stated by the caller, not guessed by trimming an "s".
+  assert.equal(label(1, 1, "staff", "staff"), "1 staff");
+  assert.equal(label(1, 1), "1 student");
+  assert.equal(label(0, 16), "0 of 16 students");
+  assert.equal(label(0, 0), "0 students");
+  // A filter matching everything is still unfiltered.
+  assert.equal(label(16, 16), "16 students");
+});
+
+test("the scroll hint appears only when rows are actually below the fold", () => {
+  assert.equal(scrollHintText(6), null);
+  assert.equal(scrollHintText(3), null);
+  assert.equal(scrollHintText(7), "scroll for 1 more");
+  assert.equal(scrollHintText(9), "scroll for 3 more");
+  // Counting is against the filtered list, so a search that leaves one row
+  // must not keep promising the whole school's worth of scrolling.
+  assert.equal(scrollHintText(1), null);
+  // A custom row count is honoured, for callers that do not use six.
+  assert.equal(scrollHintText(10, 3), "scroll for 7 more");
 });

@@ -1171,11 +1171,39 @@ test("the accounts grids scroll vertically at six rows with a sticky header", ()
   assert.match(utils, /export const VISIBLE_ROWS = 6/);
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /className="table-scroll acct-vertical"/);
-  assert.match(page, /scrollHint\(rows\.length\)/, "the grid says how many rows are below the fold");
+  assert.match(page, /scrollHintText\(rows\.length\)/, "the grid says how many rows are below the fold");
   assertContains("src/styles/global.css", [
     /\.acct-vertical\s*\{[^}]*overflow-y:\s*auto/s,
     /\.acct-vertical \.acct-table thead th\s*\{[^}]*position:\s*sticky/s,
   ]);
+});
+
+test("the scroll box is sized from the measured row height, not a hard-coded one", () => {
+  // A hard-coded pixel height silently breaks the sticky header: it either
+  // covers the first row or wastes the last one. Measuring keeps both honest
+  // at any font size or zoom.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /useLayoutEffect\(/, "the box must be sized before paint, not after a visible jump");
+  assert.match(page, /headHeight \+ rowHeight \* VISIBLE_ROWS/);
+  assert.match(page, /if \(!rowHeight\) return/, "an unmeasured row must not collapse the box to the header");
+  // And a narrowed grid must not stay scrolled past its own new end.
+  assert.match(page, /box\.scrollTop = 0/);
+});
+
+test("the count note only does arithmetic once the grid is narrowed", () => {
+  // "16 of 16 staff" on load reads as though a filter is already applied.
+  const utils = source("src/utils/accountsTable.js");
+  assert.match(utils, /export function peopleCountLabel/);
+  // Joined once, so the note never reads "1 of 16  students".
+  assert.match(utils, /const count = matched === total \? String\(total\) : `\$\{matched\} of \$\{total\}`/);
+  assert.doesNotMatch(utils, /\$\{total\} `\}/, "no trailing space smuggled into the branch");
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /peopleCountLabel\(\{ matched: rows\.length, total: allRows\.length, singular, plural: label \}\)/);
+  // Both grids pass a real singular, rather than the component guessing by
+  // trimming an "s" off a word that may not end in one.
+  assert.match(page, /singular="staff"/);
+  assert.match(page, /singular="student"/);
+  assert.doesNotMatch(page, /label\.replace\(\/s\$\//, "singular forms are stated, not derived");
 });
 
 test("editing and clearing are both reachable without hover", () => {

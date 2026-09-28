@@ -10,7 +10,8 @@ import {
   STAFF_SORTS,
   VISIBLE_ROWS,
   filterAndSortRows,
-  scrollHint,
+  peopleCountLabel,
+  scrollHintText,
 } from "../../utils/accountsTable";
 import { apiErrorMessage } from "../../api/client";
 
@@ -133,6 +134,7 @@ function SheetTable({
   noMatchText,
   nameHeader,
   label,
+  singular,
 }) {
   const months = sheet?.months || [];
   const allRows = sheet?.rows || [];
@@ -140,7 +142,7 @@ function SheetTable({
   const [sort, setSort] = useState("name");
 
   const rows = filterAndSortRows({ rows: allRows, months, query, sort, nameOf, secondaryOf });
-  const remaining = scrollHint(rows.length);
+  const scrollNote = scrollHintText(rows.length);
 
   // Pin the scroll box to six rows. Measuring the real row height keeps the
   // sticky header sitting above the first row instead of on top of it, which
@@ -191,10 +193,9 @@ function SheetTable({
           ))}
         </select>
         <span className="acct-count">
-          {query || sort !== "name" ? `${rows.length} of ${allRows.length}` : allRows.length}{" "}
-          {allRows.length === 1 ? label.replace(/s$/, "") : label}
+          {peopleCountLabel({ matched: rows.length, total: allRows.length, singular, plural: label })}
         </span>
-        {remaining > 0 && <span className="acct-scroll-hint">scroll for {remaining} more</span>}
+        {scrollNote && <span className="acct-scroll-hint">{scrollNote}</span>}
       </div>
 
       {!rows.length ? (
@@ -338,6 +339,7 @@ export default function AdminAccounts() {
                 sheet={salarySheet}
                 nameHeader="Staff"
                 label="staff"
+                singular="staff"
                 idOf={(r) => r.staff_id}
                 nameOf={(r) => r.staff_name}
                 secondaryOf={(r) => r.designation}
@@ -379,6 +381,7 @@ export default function AdminAccounts() {
                 sheet={feeSheet}
                 nameHeader="Student"
                 label="students"
+                singular="student"
                 idOf={(r) => r.student_id}
                 nameOf={(r) => r.student_name}
                 secondaryOf={(r) => [r.class_name, r.admission_no].filter(Boolean).join(" · ")}
