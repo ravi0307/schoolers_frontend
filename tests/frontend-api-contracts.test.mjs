@@ -1031,11 +1031,12 @@ test("the accounts API module matches the backend accounts surface", () => {
 
 test("the month window comes from the API rather than being recomputed per client", () => {
   // One definition of "the last six months", owned by the server, so the
-  // columns and the totals can never disagree.
+  // columns and the totals can never disagree. The page sends an anchor and
+  // renders whatever months come back.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.doesNotMatch(page, /new Date\(\)/, "the page must not derive the window itself");
-  assert.match(page, /salarySheet\(6\)/);
-  assert.match(page, /feeSheet\(6\)/);
+  assert.doesNotMatch(page, /monthWindowValues\(/, "the page must not build its own window");
+  assert.match(page, /salarySheet\(6, salaryAnchor\)/);
+  assert.match(page, /feeSheet\(6, feeAnchor\)/);
   assert.match(page, /const months = sheet\?\.months \|\| \[\]/, "the grid must render the months the API returned");
 });
 
@@ -1101,12 +1102,12 @@ test("the accounts page asks for the six-month window, not an unbounded range", 
   assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount \}\)/);
 });
 
-test("both accounts sheets are fetched on one page load", () => {
-  // A salary grid and a fee grid are one decision for the admin, so the page
-  // fetches both up front rather than making them navigate.
+test("both accounts sheets are on one page, with no tab to navigate", () => {
+  // A salary grid and a fee grid are one decision for the admin, so both
+  // render together rather than behind a tab.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /salarySheet\(6\)/);
-  assert.match(page, /feeSheet\(6\)/);
+  assert.match(page, /Staff salaries/);
+  assert.match(page, /Student fees/);
   assert.doesNotMatch(page, /setTab\(|activeTab/);
 });
 
@@ -1155,6 +1156,91 @@ test("clearing an entry asks the server, it does not just hide the cell", () => 
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /accountsApi\.clearSalary\(id, month\)/);
   assert.match(page, /accountsApi\.clearFee\(id, month\)/);
-  // And it refetches, so the total cannot drift from what the server holds.
-  assert.match(page, /await Promise\.all\(\[salaries\.refetch\(\), fees\.refetch\(\)\]\)/);
+  // And it refetches the grid it cleared, so the total cannot drift from what
+  // the server holds.
+  assert.match(page, /if \(kind === "salary"\) salaries\.refetch\(\);\s*else fees\.refetch\(\);/);
+});
+
+/* ---- Accounts month selector ---- */
+
+test("salary and fee grids page independently", () => {
+  // Two selectors, two anchors, two fetches. Sharing one would mean paging
+  // salaries also moved the fees, losing the side-by-side comparison the
+  // separate controls exist for.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /const \[salaryAnchor, setSalaryAnchor\] = useState/);
+  assert.match(page, /const \[feeAnchor, setFeeAnchor\] = useState/);
+  assert.match(page, /salarySheet\(6, salaryAnchor\)/);
+  assert.match(page, /feeSheet\(6, feeAnchor\)/);
+  // Both default to the current month rather than being derived from each other.
+  assert.equal(
+    (page.match(/useState\(\(\) => currentMonthAnchor\(\)\)/g) || []).length,
+    2,
+    "both anchors must default to the current month"
+  );
+  // And each selector is bound to its own anchor.
+  assert.match(page, /anchor=\{salaryAnchor\}\s+onChange=\{setSalaryAnchor\}/);
+  assert.match(page, /anchor=\{feeAnchor\}\s+onChange=\{setFeeAnchor\}/);
+});
+
+test("a write refetches only the grid it belongs to", () => {
+  // Refetching both would re-request the other sheet at its current anchor,
+  // which is harmless on the server but wasted, and flashes the wrong grid.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /if \(kind === "salary"\) salaries\.refetch\(\);\s*else fees\.refetch\(\);/);
+  assert.doesNotMatch(page, /Promise\.all\(\[salaries\.refetch\(\), fees\.refetch\(\)\]\)/);
+});
+
+test("each grid owns its loading and error state", () => {
+  // With independent paging, one shared spinner would blank the whole page
+  // every time either selector moved.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.doesNotMatch(page, /const loading = salaries\.loading \|\| fees\.loading/);
+  assert.doesNotMatch(page, /const error = salaries\.error \|\| fees\.error/);
+  assert.match(page, /salaries\.error && <ErrorBanner message=\{salaries\.error\}/);
+  assert.match(page, /fees\.error && <ErrorBanner message=\{fees\.error\}/);
+  assert.match(page, /salarySheet && \(/);
+  assert.match(page, /feeSheet && \(/);
+});
+
+test("the accounts API forwards the anchor so the server owns the window", () => {
+  assertContains("src/api/accounts.js", [
+    /client\.get\("\/accounts\/salaries", \{ params: \{ months, end \} \}\)/,
+    /client\.get\("\/accounts\/fees", \{ params: \{ months, end \} \}\)/,
+  ]);
+});
+
+test("the month selector mirrors the week selector's affordances", () => {
+  // Same shape as WeekSelector so the two feel like one product: arrows to
+  // step, an input to jump, a shortcut back to now.
+  assertContains("src/components/ui/MonthSelector.jsx", [
+    /Previous month/,
+    /Next month/,
+    /This month/,
+    /aria-label=\{`Select \$\{label\}`\}/,
+    /formatMonthWindow\(anchor\)/,
+  ]);
+});
+
+test("the selector cannot page past the current month", () => {
+  // Nothing is recorded in the future, so the forward controls stop at now
+  // rather than paging an admin into six empty months.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  const forward = selector.slice(selector.indexOf("go(1)"), selector.indexOf("go(6)"));
+  assert.match(forward, /disabled=\{busy \|\| isCurrent\}/);
+  const jump = selector.slice(selector.indexOf("go(6)"));
+  assert.match(jump, /disabled=\{busy \|\| isCurrent\}/);
+  // Backwards stays open: history is the point.
+  // Backwards stays open: history is the point. Checked on the two backward
+  // buttons themselves, not the whole file, since isCurrent is legitimately
+  // declared above them for the shortcut button.
+  const backButtons = selector.slice(0, selector.indexOf("formatMonthWindow(anchor)"));
+  assert.doesNotMatch(backButtons, /disabled=\{[^}]*isCurrent/, "backwards must not be blocked at the current month");
+});
+
+test("the selector uses a month input, not a date input", () => {
+  // The window is whole calendar months; letting an admin pick a day of a
+  // month would only mean truncating it to something they did not intend.
+  assertContains("src/components/ui/MonthSelector.jsx", [/type="month"/]);
+  assertContains("src/components/ui/WeekSelector.jsx", [/type="date"/]);
 });

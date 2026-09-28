@@ -1,10 +1,12 @@
 import client from "./client";
 
-export const salarySheet = (months = 6) =>
-  client.get("/accounts/salaries", { params: { months } }).then((r) => r.data);
+// `end` anchors the window on its last month, so the admin can page backwards
+// through history. Omitting it asks for the window ending this month.
+export const salarySheet = (months = 6, end) =>
+  client.get("/accounts/salaries", { params: { months, end } }).then((r) => r.data);
 
-export const feeSheet = (months = 6) =>
-  client.get("/accounts/fees", { params: { months } }).then((r) => r.data);
+export const feeSheet = (months = 6, end) =>
+  client.get("/accounts/fees", { params: { months, end } }).then((r) => r.data);
 
 export const recordSalary = (payload) =>
   client.post("/accounts/salaries", payload).then((r) => r.data);
