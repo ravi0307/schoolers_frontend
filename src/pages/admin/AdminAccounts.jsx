@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
@@ -6,6 +6,12 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import MonthSelector from "../../components/ui/MonthSelector";
 import { currentMonthAnchor } from "../../utils/accountsFlow";
+import {
+  STAFF_SORTS,
+  VISIBLE_ROWS,
+  filterAndSortRows,
+  scrollHint,
+} from "../../utils/accountsTable";
 import { apiErrorMessage } from "../../api/client";
 
 /*
@@ -115,70 +121,130 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month }) {
   );
 }
 
-function SheetTable({ sheet, idOf, nameOf, secondaryOf, onSave, onClear, busy, emptyText, nameHeader }) {
+function SheetTable({
+  sheet,
+  idOf,
+  nameOf,
+  secondaryOf,
+  onSave,
+  onClear,
+  busy,
+  emptyText,
+  noMatchText,
+  nameHeader,
+  label,
+}) {
   const months = sheet?.months || [];
-  const rows = sheet?.rows || [];
+  const allRows = sheet?.rows || [];
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("name");
 
-  if (!rows.length) {
+  const rows = filterAndSortRows({ rows: allRows, months, query, sort, nameOf, secondaryOf });
+  const remaining = scrollHint(rows.length);
+
+  // Pin the scroll box to six rows. Measuring the real row height keeps the
+  // sticky header sitting above the first row instead of on top of it, which
+  // a hard-coded pixel height would get wrong at any other font size.
+  const scrollRef = useRef(null);
+  useLayoutEffect(() => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const head = box.querySelector("thead tr");
+    const row = box.querySelector("tbody tr");
+    if (!head || !row) return;
+    const headHeight = head.getBoundingClientRect().height;
+    const rowHeight = row.getBoundingClientRect().height;
+    if (!rowHeight) return;
+    box.style.maxHeight = `${Math.round(headHeight + rowHeight * VISIBLE_ROWS)}px`;
+  }, [rows.length, months.length, sort, query]);
+
+  // A filter change can leave the list scrolled past its new end, which reads
+  // as an empty grid. Send it back to the top.
+  useEffect(() => {
+    const box = scrollRef.current;
+    if (box) box.scrollTop = 0;
+  }, [query, sort, months.length]);
+
+  if (!allRows.length) {
     return <Empty>{emptyText}</Empty>;
   }
 
   return (
-    <div className="table-card">
-      <div className="table-scroll">
-      <table className="data-table acct-table">
-        <thead>
-          <tr>
-            <th className="acct-sticky">{nameHeader}</th>
-            {months.map((m) => (
-              <th key={m} className="acct-month">{monthLabel(m)}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const id = idOf(row);
-            const name = nameOf(row);
-            return (
-              <tr key={id}>
-                <th scope="row" className="acct-sticky">
-                  <div className="acct-person">
-                    <span className="acct-person-name">{name}</span>
-                    {secondaryOf(row) && (
-                      <span className="acct-person-meta">{secondaryOf(row)}</span>
-                    )}
-                  </div>
-                </th>
-                {months.map((m) => (
-                  <RecordCell
-                    key={m}
-                    month={m}
-                    rowName={name}
-                    value={row.amounts?.[m]}
-                    busy={busy}
-                    onSave={(amount) => onSave(id, m, amount)}
-                    onClear={() => onClear(id, m)}
-                  />
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row" className="acct-sticky">Total</th>
-            {months.map((m) => (
-              <td key={m} className="acct-total">
-                {money(
-                  rows.reduce((sum, row) => sum + (row.amounts?.[m] || 0), 0)
-                )}
-              </td>
-            ))}
-          </tr>
-        </tfoot>
-      </table>
+    <>
+      <div className="acct-controls">
+        <input
+          className="field acct-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`Search ${label} by name`}
+          aria-label={`Search ${label} by name`}
+        />
+        <select
+          className="acct-sort"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label={`Sort ${label}`}
+        >
+          {Object.entries(STAFF_SORTS).map(([value, { label: text }]) => (
+            <option key={value} value={value}>{text}</option>
+          ))}
+        </select>
+        <span className="acct-count">
+          {query || sort !== "name" ? `${rows.length} of ${allRows.length}` : allRows.length}{" "}
+          {allRows.length === 1 ? label.replace(/s$/, "") : label}
+        </span>
+        {remaining > 0 && <span className="acct-scroll-hint">scroll for {remaining} more</span>}
       </div>
-    </div>
+
+      {!rows.length ? (
+        <Empty>{noMatchText}</Empty>
+      ) : (
+        <div className="table-card">
+          <div className="table-scroll acct-vertical" ref={scrollRef}>
+            <table className="data-table acct-table">
+              <thead>
+                <tr>
+                  <th className="acct-sticky">{nameHeader}</th>
+                  {months.map((m) => (
+                    <th key={m} className="acct-month">{monthLabel(m)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const id = idOf(row);
+                  const name = nameOf(row);
+                  return (
+                    <tr key={id}>
+                      <th scope="row" className="acct-sticky">
+                        <div className="acct-person">
+                          <span className="acct-person-name">{name}</span>
+                          {secondaryOf(row) && (
+                            <span className="acct-person-meta">{secondaryOf(row)}</span>
+                          )}
+                        </div>
+                      </th>
+                      {months.map((m) => (
+                        <RecordCell
+                          key={m}
+                          month={m}
+                          rowName={name}
+                          value={row.amounts?.[m]}
+                          busy={busy}
+                          onSave={(amount) => onSave(id, m, amount)}
+                          onClear={() => onClear(id, m)}
+                        />
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -271,6 +337,7 @@ export default function AdminAccounts() {
               <SheetTable
                 sheet={salarySheet}
                 nameHeader="Staff"
+                label="staff"
                 idOf={(r) => r.staff_id}
                 nameOf={(r) => r.staff_name}
                 secondaryOf={(r) => r.designation}
@@ -278,6 +345,7 @@ export default function AdminAccounts() {
                 onSave={(id, m, amount) => save("salary", id, m, amount)}
                 onClear={(id, m) => clear("salary", id, m)}
                 emptyText="No active staff yet. Add staff under Set up to track salaries."
+                noMatchText="No staff match that search."
               />
             </section>
 
@@ -310,6 +378,7 @@ export default function AdminAccounts() {
               <SheetTable
                 sheet={feeSheet}
                 nameHeader="Student"
+                label="students"
                 idOf={(r) => r.student_id}
                 nameOf={(r) => r.student_name}
                 secondaryOf={(r) => [r.class_name, r.admission_no].filter(Boolean).join(" · ")}
@@ -317,6 +386,7 @@ export default function AdminAccounts() {
                 onSave={(id, m, amount) => save("fee", id, m, amount)}
                 onClear={(id, m) => clear("fee", id, m)}
                 emptyText="No active students yet. Add students under Set up to track fees."
+                noMatchText="No students match that search."
               />
             </section>
         </>
