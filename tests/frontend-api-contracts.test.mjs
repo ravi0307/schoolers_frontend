@@ -803,6 +803,8 @@ const ADMIN_NAV = [
   "/admin/students",
   "/admin/timetable",
   "/admin/holidays",
+  "/admin/accounts",
+  "/admin/reports",
   "/admin/website",
 ];
 // "Set up" is a real sequence: each entry feeds the one below it.
@@ -853,11 +855,11 @@ test("every admin sidebar link resolves to a real route", () => {
   }
 });
 
-test("admin sidebar keeps its four groups in order", () => {
+test("admin sidebar keeps its five groups in order", () => {
   const groups = [...source(ADMIN_SHELL).matchAll(/group:\s*"([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(
     [...new Set(groups)],
-    ["Overview", "Day to day", "Set up", "Public"]
+    ["Overview", "Day to day", "Set up", "Accounts and Reporting", "Public"]
   );
 });
 
@@ -1012,4 +1014,147 @@ test("the branding does not add a request per page", () => {
   // the already-hydrated context rather than fetching the school itself.
   const layout = source("src/components/layout/WebLayout.jsx");
   assert.doesNotMatch(layout, /useApi|schoolsApi|getSchool|listSchools/);
+});
+
+/* ---- Admin accounts ---- */
+
+test("the accounts API module matches the backend accounts surface", () => {
+  assertContains("src/api/accounts.js", [
+    /client\.get\("\/accounts\/salaries"/,
+    /client\.get\("\/accounts\/fees"/,
+    /client\.post\("\/accounts\/salaries"/,
+    /client\.post\("\/accounts\/fees"/,
+    /client\.delete\(`\/accounts\/salaries\/\$\{staffId\}\/\$\{month\}`/,
+    /client\.delete\(`\/accounts\/fees\/\$\{studentId\}\/\$\{month\}`/,
+  ]);
+});
+
+test("the month window comes from the API rather than being recomputed per client", () => {
+  // One definition of "the last six months", owned by the server, so the
+  // columns and the totals can never disagree.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.doesNotMatch(page, /new Date\(\)/, "the page must not derive the window itself");
+  assert.match(page, /salarySheet\(6\)/);
+  assert.match(page, /feeSheet\(6\)/);
+  assert.match(page, /const months = sheet\?\.months \|\| \[\]/, "the grid must render the months the API returned");
+});
+
+test("an unpaid month is shown as a dash, never as a zero", () => {
+  // "Nothing recorded" and "recorded as zero" are different facts, and an
+  // admin chasing unpaid money needs to tell them apart.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /value === null \|\| value === undefined/);
+  assert.match(page, /rows\.reduce\(\(sum, row\) => sum \+ \(row\.amounts\?\.\[m\] \|\| 0\), 0\)/, "totals may sum missing as zero");
+});
+
+test("a recorded amount must be a non-negative number before it is sent", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /Number\.isFinite\(num\)/);
+  assert.match(page, /num < 0/);
+});
+
+test("accounts and reporting are one nav group below Set up, above Public", () => {
+  const shell = source("src/components/layout/AdminShell.jsx");
+  const setUp = shell.indexOf('group: "Set up"');
+  const accounts = shell.indexOf('group: "Accounts and Reporting"');
+  const publicGroup = shell.indexOf('group: "Public"');
+  assert.ok(setUp !== -1 && accounts !== -1 && publicGroup !== -1);
+  assert.ok(setUp < accounts, "Accounts must come after Set up");
+  assert.ok(accounts < publicGroup, "Public must stay last");
+  assert.match(shell, /to: "\/admin\/accounts"/);
+  assert.match(shell, /to: "\/admin\/reports"/);
+});
+
+test("both new admin pages are routed and reachable", () => {
+  assertContains("src/App.jsx", [
+    /import AdminAccounts from "\.\/pages\/admin\/AdminAccounts"/,
+    /import AdminReports from "\.\/pages\/admin\/AdminReports"/,
+    /<Route path="accounts" element=\{<AdminAccounts \/>\}/,
+    /<Route path="reports" element=\{<AdminReports \/>\}/,
+  ]);
+  // Both are admin-only pages; they must render through AdminShell so they
+  // cannot lose the pinned school header.
+  for (const page of ["src/pages/admin/AdminAccounts.jsx", "src/pages/admin/AdminReports.jsx"]) {
+    assert.match(source(page), /AdminShell/, `${page} must render through AdminShell`);
+  }
+});
+
+test("the accounts grid keeps the person column visible while months scroll", () => {
+  assertContains("src/styles/global.css", [
+    /\.acct-sticky\s*\{[^}]*position:\s*sticky/s,
+    /\.acct-table\s*\{[^}]*min-width/s,
+  ]);
+});
+
+test("the accounts page asks for the six-month window, not an unbounded range", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  // The grid renders whatever months the API returns, so the window has to be
+  // requested explicitly. Without the argument the API default would apply,
+  // which happens to be 6 today but is not a guarantee the page makes.
+  const reads = [...page.matchAll(/accountsApi\.(salarySheet|feeSheet)\(([^)]*)\)/g)];
+  assert.ok(reads.length > 0, "the page must read the accounts API");
+  for (const [, fn, arg] of reads) {
+    assert.match(arg, /6/, `${fn} must ask for six months, got "${arg}"`);
+  }
+  // The write and delete calls take no window: they address one person and
+  // one month, so requiring a range of them would be wrong.
+  assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount \}\)/);
+});
+
+test("both accounts sheets are fetched on one page load", () => {
+  // A salary grid and a fee grid are one decision for the admin, so the page
+  // fetches both up front rather than making them navigate.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /salarySheet\(6\)/);
+  assert.match(page, /feeSheet\(6\)/);
+  assert.doesNotMatch(page, /setTab\(|activeTab/);
+});
+
+test("every rendered amount passes through the thousands formatter", () => {
+  // A raw amount would print 10000 while a total prints 10,000, and an
+  // accounts page that disagrees with itself about number formatting is one
+  // nobody trusts.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /function money\(value\)/);
+  assert.match(page, /replace\(\/\\B\(\?=\(\\d\{3\}\)\+\(\?!\\d\)\)\/g, ","\)/);
+  // A raw amount may be handed to a cell as a prop, but must never be printed
+  // directly: the only two places a number reaches the DOM are the cell and
+  // the total row, and both wrap it in money().
+  const printed = [...page.matchAll(/\{([^{}]*(?:amounts|total_paid|total_collected)[^{}]*)\}/g)]
+    .map((m) => m[1].trim())
+    .filter((expr) => expr.includes("amounts") && !expr.startsWith("money("));
+  for (const expr of printed) {
+    // row.amounts?.[m] is only ever passed as a prop, never as text.
+    const isProp = expr === "row.amounts?.[m]";
+    assert.ok(isProp, `amount printed without money(): {${expr}}`);
+  }
+  // The two aggregates the API returns are formatted, not printed raw.
+  assert.match(page, /money\(salarySheet\?\.total_paid\)/);
+  assert.match(page, /money\(feeSheet\?\.total_collected\)/);
+});
+
+test("the accounts totals row is labelled so it is not read as a person", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /<th scope="row" className="acct-sticky">Total<\/th>/);
+});
+
+test("editing and clearing are both reachable without hover", () => {
+  // Hover-revealed actions are unusable on touch, so the stylesheet also
+  // exposes them when there is no hover.
+  assertContains("src/styles/global.css", [
+    /@media\s*\(hover:\s*none\)\s*\{[^}]*\.acct-cell-actions\s*\{\s*opacity:\s*1/s,
+  ]);
+  // And the cell offers an empty-state target, so an unpaid month can be
+  // filled in without knowing the hover trick.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /className="acct-empty"/);
+  assert.match(page, /onClick=\{begin\}/);
+});
+
+test("clearing an entry asks the server, it does not just hide the cell", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /accountsApi\.clearSalary\(id, month\)/);
+  assert.match(page, /accountsApi\.clearFee\(id, month\)/);
+  // And it refetches, so the total cannot drift from what the server holds.
+  assert.match(page, /await Promise\.all\(\[salaries\.refetch\(\), fees\.refetch\(\)\]\)/);
 });

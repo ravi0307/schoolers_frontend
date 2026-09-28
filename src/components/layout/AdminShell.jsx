@@ -17,6 +17,10 @@ import WebLayout from "../layout/WebLayout";
  *   Holidays   -> nothing. Dates are independent; the Timetable only reads
  *                 them to mark a column red.
  *
+ * "Accounts and Reporting" sits below "Set up" because both are downstream of
+ * a school having staff and students to bill: an empty salary or fee grid tells
+ * you nothing until the people on it exist.
+ *
  * That order holds inside the group regardless of where the group sits, and
  * "Public" is the outward-facing site, so it stays last.
  */
@@ -35,6 +39,9 @@ const NAV = [
   { to: "/admin/students", icon: "🧑‍🎓", label: "Students", group: "Set up" },
   { to: "/admin/timetable", icon: "🗓️", label: "Manage Timetable", group: "Set up" },
   { to: "/admin/holidays", icon: "🎉", label: "Holidays", group: "Set up" },
+
+  { to: "/admin/accounts", icon: "💰", label: "Accounts", group: "Accounts and Reporting" },
+  { to: "/admin/reports", icon: "📊", label: "Reporting", group: "Accounts and Reporting" },
 
   { to: "/admin/website", icon: "🌐", label: "School Website", group: "Public" },
 ];

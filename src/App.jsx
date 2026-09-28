@@ -36,6 +36,8 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
 import AdminWebsite from "./pages/admin/AdminWebsite";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminAccounts from "./pages/admin/AdminAccounts";
+import AdminReports from "./pages/admin/AdminReports";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -129,6 +131,8 @@ export default function App() {
                     <Route path="leave" element={<AdminLeave />} />
                     <Route path="website" element={<AdminWebsite />} />
                     <Route path="notifications" element={<AdminNotifications />} />
+                    <Route path="accounts" element={<AdminAccounts />} />
+                    <Route path="reports" element={<AdminReports />} />
                     <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                   </Routes>
                 </ProtectedRoute>
