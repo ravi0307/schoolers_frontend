@@ -932,6 +932,15 @@ body {
   font-size: 12px; line-height: 1; padding: 2px 3px;
 }
 .acct-cell-actions button:hover { color: var(--ink); }
+/* The date a figure was paid, under the amount: "how much" plus "when". */
+.acct-paid {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  margin-top: 3px;
+}
 .acct-cell-editing { background: var(--paper); }
 .acct-input { font-size: 13px; max-width: 110px; padding: 4px 6px; text-align: right; }
 /* Touch has no hover, so keep the cell actions permanently visible there. */
