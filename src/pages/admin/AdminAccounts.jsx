@@ -4,14 +4,18 @@ import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import MonthSelector from "../../components/ui/MonthSelector";
+import { currentMonthAnchor } from "../../utils/accountsFlow";
 import { apiErrorMessage } from "../../api/client";
 
 /*
  * Six-month month grid for money.
  *
- * The month window comes from the API (server owns the "last six months"
- * definition) so the columns always agree with what the totals are computed
- * over. An unpaid cell is rendered as a dash, not a zero: "nothing recorded"
+ * Each grid carries its own month selector, so an admin can hold the salary
+ * window at one period and the fee window at another without losing their
+ * place. The window is sent as an anchor (its last month) and the columns
+ * still come from the API, so the header and the totals are always computed
+ * over the same range. An unpaid cell is rendered as a dash, not a zero: "nothing recorded"
  * and "recorded as zero" are different facts, and an admin chasing unpaid
  * money needs to see which is which.
  */
@@ -179,8 +183,12 @@ function SheetTable({ sheet, idOf, nameOf, secondaryOf, onSave, onClear, busy, e
 }
 
 export default function AdminAccounts() {
-  const salaries = useApi(() => accountsApi.salarySheet(6), []);
-  const fees = useApi(() => accountsApi.feeSheet(6), []);
+  // Each grid pages independently: an admin comparing September salaries
+  // against March fees needs the two windows to move separately.
+  const [salaryAnchor, setSalaryAnchor] = useState(() => currentMonthAnchor());
+  const [feeAnchor, setFeeAnchor] = useState(() => currentMonthAnchor());
+  const salaries = useApi(() => accountsApi.salarySheet(6, salaryAnchor), [salaryAnchor]);
+  const fees = useApi(() => accountsApi.feeSheet(6, feeAnchor), [feeAnchor]);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
@@ -192,7 +200,8 @@ export default function AdminAccounts() {
       } else {
         await accountsApi.recordFee({ student_id: id, month, amount });
       }
-      await Promise.all([salaries.refetch(), fees.refetch()]);
+      if (kind === "salary") salaries.refetch();
+      else fees.refetch();
       toast(`${monthLabel(month)} recorded`);
       return true;
     } catch (err) {
@@ -211,7 +220,8 @@ export default function AdminAccounts() {
       } else {
         await accountsApi.clearFee(id, month);
       }
-      await Promise.all([salaries.refetch(), fees.refetch()]);
+      if (kind === "salary") salaries.refetch();
+      else fees.refetch();
       toast(`${monthLabel(month)} entry cleared`);
     } catch (err) {
       toast(apiErrorMessage(err));
@@ -220,8 +230,9 @@ export default function AdminAccounts() {
     }
   }
 
-  const loading = salaries.loading || fees.loading;
-  const error = salaries.error || fees.error;
+  // Each grid reports its own loading and error state. With independent
+  // selectors, one shared spinner would blank both tables every time an admin
+  // paged one of them.
   const salarySheet = salaries.data;
   const feeSheet = fees.data;
 
@@ -229,19 +240,27 @@ export default function AdminAccounts() {
     <AdminShell>
       <div className="scr-title">Accounts</div>
       <div className="scr-sub">
-        Staff salaries and student fees for the last six months. Click an empty
-        cell to record a payment, or use ✎ to correct one.
+        Staff salaries and student fees over six months. Each table has its own
+        period selector, so you can compare different months side by side.
+        Click an empty cell to record a payment, or use ✎ to correct one.
       </div>
 
-      {error && <ErrorBanner message={error} />}
+      {salaries.error && <ErrorBanner message={salaries.error} />}
 
-      {loading && <Spinner label="Loading accounts" />}
+      {salaries.loading && !salarySheet && <Spinner label="Loading salaries" />}
 
-      {!loading && !error && (
+      {salarySheet && (
         <>
-          <div className="section-label" style={{ marginTop: 0 }}>Six-month summary</div>
             <section className="card white">
-              <div className="section-label" style={{ marginTop: 0 }}>Staff salaries</div>
+              <div className="scr-title-row">
+                <div className="section-label" style={{ marginTop: 0 }}>Staff salaries</div>
+                <MonthSelector
+                  anchor={salaryAnchor}
+                  onChange={setSalaryAnchor}
+                  busy={busy}
+                  label="salary period"
+                />
+              </div>
               <div className="scr-sub" style={{ marginBottom: 12 }}>
                 <span>
                   {salarySheet?.rows?.length || 0} staff ·{" "}
@@ -262,8 +281,25 @@ export default function AdminAccounts() {
               />
             </section>
 
-            <section className="card white">
-              <div className="section-label" style={{ marginTop: 0 }}>Student fees</div>
+        </>
+      )}
+
+      {fees.error && <ErrorBanner message={fees.error} />}
+
+      {fees.loading && !feeSheet && <Spinner label="Loading fees" />}
+
+      {feeSheet && (
+        <>
+          <section className="card white">
+              <div className="scr-title-row">
+                <div className="section-label" style={{ marginTop: 0 }}>Student fees</div>
+                <MonthSelector
+                  anchor={feeAnchor}
+                  onChange={setFeeAnchor}
+                  busy={busy}
+                  label="fee period"
+                />
+              </div>
               <div className="scr-sub" style={{ marginBottom: 12 }}>
                 <span>
                   {feeSheet?.rows?.length || 0} students ·{" "}
@@ -283,8 +319,8 @@ export default function AdminAccounts() {
                 emptyText="No active students yet. Add students under Set up to track fees."
               />
             </section>
-          </>
-        )}
+        </>
+      )}
     </AdminShell>
   );
 }
