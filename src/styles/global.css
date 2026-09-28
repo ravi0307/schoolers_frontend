@@ -1043,6 +1043,16 @@ body {
 .sr-head-text { flex: 1 1 auto; min-width: 0; }
 .sr-name { font-size: 17px; font-weight: 700; }
 .sr-sub { color: var(--ink-soft); font-size: 12.5px; }
+/* The two things an open report offers must not look like plain text beside
+   the name: Download is the report's own primary action, and Close is solidly
+   a button on purpose, so a reader cannot mistake the sheet for a static
+   message. Gold + a quiet slate is the app's add/cancel pair. */
+.sr-head .btn { font-weight: 700; white-space: nowrap; }
+.sr-head .btn.ghost {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+  color: var(--paper-light);
+}
 .sr-body { max-height: 70vh; overflow-y: auto; padding: 18px 20px 20px; }
 .sr-section { border-top: 1px solid var(--line); padding-top: 14px; }
 .sr-section:first-of-type { border-top: 0; padding-top: 0; }

@@ -225,16 +225,16 @@ export function StudentReportDialog({ studentId, onClose }) {
                 : ""}
             </div>
           </div>
-          <button className="btn ghost" type="button" onClick={onClose}>Close</button>
           {data && (
             <button
-              className="btn"
+              className="btn gold"
               type="button"
               onClick={() => downloadStudentReport(data, term)}
             >
               Download PDF
             </button>
           )}
+          <button className="btn ghost" type="button" onClick={onClose}>Close</button>
         </div>
 
         <div className="sr-body">
