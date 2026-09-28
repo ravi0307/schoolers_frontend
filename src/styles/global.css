@@ -56,8 +56,36 @@ body {
   height: 100vh; position: sticky; top: 0; padding: 22px 14px;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sidebar .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 24px; }
+.sidebar .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
 .sidebar .brand b { font-size: 17px; }
+
+/* Pinned school header. The sidebar is its own scroll container, so without
+   this the name and logo scroll away once the nav is longer than the viewport
+   (the admin nav is). `top: -22px` cancels the sidebar padding-top so it pins
+   flush to the top, and the negative side margins bleed it to the sidebar
+   edges so nav links scroll underneath rather than past a floating block. */
+.sidebar-head {
+  position: sticky; top: -22px; z-index: 3;
+  background: var(--chalk-green);
+  margin: -22px -14px 18px; padding: 22px 14px 12px;
+}
+.sidebar .portal-label { font-size: 10px; letter-spacing: .14em; color: var(--pencil-yellow); }
+.school-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.school-logo {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  object-fit: contain; background: #fff; padding: 3px;
+}
+.school-monogram {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  background: var(--pencil-yellow); color: var(--chalk-green-dark);
+  display: grid; place-items: center; font-size: 13px; font-weight: 800;
+}
+/* `display: grid` above would otherwise beat the `hidden` attribute. */
+.school-monogram[hidden] { display: none; }
+.school-name {
+  font-size: 14.5px; font-weight: 700; line-height: 1.2;
+  color: var(--paper-light); overflow-wrap: anywhere;
+}
 .sidebar nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .sidebar nav a {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;
