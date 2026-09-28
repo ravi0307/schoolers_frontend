@@ -1,0 +1,290 @@
+import { useState } from "react";
+import AdminShell from "../../components/layout/AdminShell";
+import { useApi } from "../../hooks/useApi";
+import * as accountsApi from "../../api/accounts";
+import { useToast } from "../../context/ToastContext";
+import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { apiErrorMessage } from "../../api/client";
+
+/*
+ * Six-month month grid for money.
+ *
+ * The month window comes from the API (server owns the "last six months"
+ * definition) so the columns always agree with what the totals are computed
+ * over. An unpaid cell is rendered as a dash, not a zero: "nothing recorded"
+ * and "recorded as zero" are different facts, and an admin chasing unpaid
+ * money needs to see which is which.
+ */
+
+const MONTH_LABELS = {
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+  "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+};
+
+function monthLabel(month) {
+  const [year, mon] = month.split("-");
+  return `${MONTH_LABELS[mon] || mon} ${year.slice(2)}`;
+}
+
+/** Group a 6-digit+ number the way a ledger does, without losing decimals. */
+function money(value) {
+  if (value === null || value === undefined) return "";
+  const [whole, frac] = String(value).split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return frac ? `${grouped}.${frac}` : grouped;
+}
+
+function RecordCell({ value, onSave, onClear, busy, rowName, month }) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState("");
+
+  function begin() {
+    setAmount(value === null || value === undefined ? "" : String(value));
+    setEditing(true);
+  }
+
+  async function commit() {
+    const trimmed = amount.trim();
+    if (!trimmed) return;
+    const num = Number(trimmed);
+    if (!Number.isFinite(num) || num < 0) {
+      return;
+    }
+    const ok = await onSave(num);
+    if (ok) setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <td className="acct-cell">
+        {value === null || value === undefined ? (
+          <button
+            type="button"
+            className="acct-empty"
+            onClick={begin}
+            title={`No ${monthLabel(month)} entry for ${rowName}`}
+          >
+            —
+          </button>
+        ) : (
+          <span className="acct-amount">
+            <span className="acct-value">{money(value)}</span>
+            <span className="acct-cell-actions">
+              <button type="button" onClick={begin} title="Edit">✎</button>
+              <button
+                type="button"
+                onClick={() => onClear()}
+                title={`Clear the ${monthLabel(month)} entry for ${rowName}`}
+              >
+                ×
+              </button>
+            </span>
+          </span>
+        )}
+      </td>
+    );
+  }
+
+  return (
+    <td className="acct-cell acct-cell-editing">
+      <input
+        autoFocus
+        type="number"
+        min="0"
+        step="0.01"
+        className="acct-input"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        onBlur={() => {
+          if (amount.trim()) commit();
+          else setEditing(false);
+        }}
+        disabled={busy}
+        aria-label={`${monthLabel(month)} amount for ${rowName}`}
+      />
+    </td>
+  );
+}
+
+function SheetTable({ sheet, idOf, nameOf, secondaryOf, onSave, onClear, busy, emptyText, nameHeader }) {
+  const months = sheet?.months || [];
+  const rows = sheet?.rows || [];
+
+  if (!rows.length) {
+    return <Empty>{emptyText}</Empty>;
+  }
+
+  return (
+    <div className="table-card">
+      <div className="table-scroll">
+      <table className="data-table acct-table">
+        <thead>
+          <tr>
+            <th className="acct-sticky">{nameHeader}</th>
+            {months.map((m) => (
+              <th key={m} className="acct-month">{monthLabel(m)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const id = idOf(row);
+            const name = nameOf(row);
+            return (
+              <tr key={id}>
+                <th scope="row" className="acct-sticky">
+                  <div className="acct-person">
+                    <span className="acct-person-name">{name}</span>
+                    {secondaryOf(row) && (
+                      <span className="acct-person-meta">{secondaryOf(row)}</span>
+                    )}
+                  </div>
+                </th>
+                {months.map((m) => (
+                  <RecordCell
+                    key={m}
+                    month={m}
+                    rowName={name}
+                    value={row.amounts?.[m]}
+                    busy={busy}
+                    onSave={(amount) => onSave(id, m, amount)}
+                    onClear={() => onClear(id, m)}
+                  />
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" className="acct-sticky">Total</th>
+            {months.map((m) => (
+              <td key={m} className="acct-total">
+                {money(
+                  rows.reduce((sum, row) => sum + (row.amounts?.[m] || 0), 0)
+                )}
+              </td>
+            ))}
+          </tr>
+        </tfoot>
+      </table>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminAccounts() {
+  const salaries = useApi(() => accountsApi.salarySheet(6), []);
+  const fees = useApi(() => accountsApi.feeSheet(6), []);
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function save(kind, id, month, amount) {
+    setBusy(true);
+    try {
+      if (kind === "salary") {
+        await accountsApi.recordSalary({ staff_id: id, month, amount });
+      } else {
+        await accountsApi.recordFee({ student_id: id, month, amount });
+      }
+      await Promise.all([salaries.refetch(), fees.refetch()]);
+      toast(`${monthLabel(month)} recorded`);
+      return true;
+    } catch (err) {
+      toast(apiErrorMessage(err));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clear(kind, id, month) {
+    setBusy(true);
+    try {
+      if (kind === "salary") {
+        await accountsApi.clearSalary(id, month);
+      } else {
+        await accountsApi.clearFee(id, month);
+      }
+      await Promise.all([salaries.refetch(), fees.refetch()]);
+      toast(`${monthLabel(month)} entry cleared`);
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const loading = salaries.loading || fees.loading;
+  const error = salaries.error || fees.error;
+  const salarySheet = salaries.data;
+  const feeSheet = fees.data;
+
+  return (
+    <AdminShell>
+      <div className="scr-title">Accounts</div>
+      <div className="scr-sub">
+        Staff salaries and student fees for the last six months. Click an empty
+        cell to record a payment, or use ✎ to correct one.
+      </div>
+
+      {error && <ErrorBanner message={error} />}
+
+      {loading && <Spinner label="Loading accounts" />}
+
+      {!loading && !error && (
+        <>
+          <div className="section-label" style={{ marginTop: 0 }}>Six-month summary</div>
+            <section className="card white">
+              <div className="section-label" style={{ marginTop: 0 }}>Staff salaries</div>
+              <div className="scr-sub" style={{ marginBottom: 12 }}>
+                <span>
+                  {salarySheet?.rows?.length || 0} staff ·{" "}
+                  {money(salarySheet?.total_paid)} paid ·{" "}
+                  {salarySheet?.total_outstanding_months || 0} unpaid months
+                </span>
+              </div>
+              <SheetTable
+                sheet={salarySheet}
+                nameHeader="Staff"
+                idOf={(r) => r.staff_id}
+                nameOf={(r) => r.staff_name}
+                secondaryOf={(r) => r.designation}
+                busy={busy}
+                onSave={(id, m, amount) => save("salary", id, m, amount)}
+                onClear={(id, m) => clear("salary", id, m)}
+                emptyText="No active staff yet. Add staff under Set up to track salaries."
+              />
+            </section>
+
+            <section className="card white">
+              <div className="section-label" style={{ marginTop: 0 }}>Student fees</div>
+              <div className="scr-sub" style={{ marginBottom: 12 }}>
+                <span>
+                  {feeSheet?.rows?.length || 0} students ·{" "}
+                  {money(feeSheet?.total_collected)} collected ·{" "}
+                  {feeSheet?.outstanding_count || 0} with unpaid months
+                </span>
+              </div>
+              <SheetTable
+                sheet={feeSheet}
+                nameHeader="Student"
+                idOf={(r) => r.student_id}
+                nameOf={(r) => r.student_name}
+                secondaryOf={(r) => [r.class_name, r.admission_no].filter(Boolean).join(" · ")}
+                busy={busy}
+                onSave={(id, m, amount) => save("fee", id, m, amount)}
+                onClear={(id, m) => clear("fee", id, m)}
+                emptyText="No active students yet. Add students under Set up to track fees."
+              />
+            </section>
+          </>
+        )}
+    </AdminShell>
+  );
+}

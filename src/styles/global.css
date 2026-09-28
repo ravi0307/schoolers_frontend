@@ -897,3 +897,45 @@ body {
   background: var(--red-pen);
   color: #fff;
 }
+
+/* ---- Admin accounts: month grid ---- */
+/* One row per person, one column per month. The name column sticks while the
+   months scroll, so an admin comparing figures across a wide school always
+   knows whose row they are reading. */
+.acct-table { min-width: 720px; }
+.acct-table th, .acct-table td { white-space: nowrap; }
+.acct-sticky {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--paper-light);
+  min-width: 190px;
+}
+.acct-table tbody .acct-sticky { font-weight: 600; }
+.acct-month { text-align: right !important; }
+.acct-cell { text-align: right !important; font-variant-numeric: tabular-nums; }
+.acct-total { text-align: right !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.acct-person { display: flex; flex-direction: column; gap: 1px; }
+.acct-person-name { font-weight: 600; }
+.acct-person-meta { color: var(--ink-soft); font-size: 11px; font-weight: 400; }
+/* An empty cell is a dash, not a zero: "nothing recorded" and "recorded as
+   zero" are different facts, and unpaid money is the thing being chased. */
+.acct-empty {
+  background: none; border: 1px dashed var(--line); border-radius: 6px;
+  color: var(--ink-soft); cursor: pointer; font-size: 13px;
+  min-width: 34px; padding: 2px 6px;
+}
+.acct-empty:hover { border-color: var(--ink-soft); color: var(--ink); }
+.acct-amount { align-items: center; display: inline-flex; gap: 6px; justify-content: flex-end; }
+.acct-value { font-variant-numeric: tabular-nums; }
+.acct-cell-actions { display: flex; gap: 2px; opacity: 0; }
+.acct-amount:hover .acct-cell-actions, .acct-amount:focus-within .acct-cell-actions { opacity: 1; }
+.acct-cell-actions button {
+  background: none; border: none; color: var(--ink-soft); cursor: pointer;
+  font-size: 12px; line-height: 1; padding: 2px 3px;
+}
+.acct-cell-actions button:hover { color: var(--ink); }
+.acct-cell-editing { background: var(--paper); }
+.acct-input { font-size: 13px; max-width: 110px; padding: 4px 6px; text-align: right; }
+/* Touch has no hover, so keep the cell actions permanently visible there. */
+@media (hover: none) {
+  .acct-cell-actions { opacity: 1; }
+}

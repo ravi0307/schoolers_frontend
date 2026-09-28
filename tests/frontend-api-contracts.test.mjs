@@ -803,6 +803,8 @@ const ADMIN_NAV = [
   "/admin/students",
   "/admin/timetable",
   "/admin/holidays",
+  "/admin/accounts",
+  "/admin/reports",
   "/admin/website",
 ];
 // "Set up" is a real sequence: each entry feeds the one below it.
@@ -853,11 +855,11 @@ test("every admin sidebar link resolves to a real route", () => {
   }
 });
 
-test("admin sidebar keeps its four groups in order", () => {
+test("admin sidebar keeps its five groups in order", () => {
   const groups = [...source(ADMIN_SHELL).matchAll(/group:\s*"([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(
     [...new Set(groups)],
-    ["Overview", "Day to day", "Set up", "Public"]
+    ["Overview", "Day to day", "Set up", "Accounts and Reporting", "Public"]
   );
 });
 
@@ -1012,4 +1014,74 @@ test("the branding does not add a request per page", () => {
   // the already-hydrated context rather than fetching the school itself.
   const layout = source("src/components/layout/WebLayout.jsx");
   assert.doesNotMatch(layout, /useApi|schoolsApi|getSchool|listSchools/);
+});
+
+/* ---- Admin accounts ---- */
+
+test("the accounts API module matches the backend accounts surface", () => {
+  assertContains("src/api/accounts.js", [
+    /client\.get\("\/accounts\/salaries"/,
+    /client\.get\("\/accounts\/fees"/,
+    /client\.post\("\/accounts\/salaries"/,
+    /client\.post\("\/accounts\/fees"/,
+    /client\.delete\(`\/accounts\/salaries\/\$\{staffId\}\/\$\{month\}`/,
+    /client\.delete\(`\/accounts\/fees\/\$\{studentId\}\/\$\{month\}`/,
+  ]);
+});
+
+test("the month window comes from the API rather than being recomputed per client", () => {
+  // One definition of "the last six months", owned by the server, so the
+  // columns and the totals can never disagree.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.doesNotMatch(page, /new Date\(\)/, "the page must not derive the window itself");
+  assert.match(page, /salarySheet\(6\)/);
+  assert.match(page, /feeSheet\(6\)/);
+  assert.match(page, /const months = sheet\?\.months \|\| \[\]/, "the grid must render the months the API returned");
+});
+
+test("an unpaid month is shown as a dash, never as a zero", () => {
+  // "Nothing recorded" and "recorded as zero" are different facts, and an
+  // admin chasing unpaid money needs to tell them apart.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /value === null \|\| value === undefined/);
+  assert.match(page, /rows\.reduce\(\(sum, row\) => sum \+ \(row\.amounts\?\.\[m\] \|\| 0\), 0\)/, "totals may sum missing as zero");
+});
+
+test("a recorded amount must be a non-negative number before it is sent", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /Number\.isFinite\(num\)/);
+  assert.match(page, /num < 0/);
+});
+
+test("accounts and reporting are one nav group below Set up, above Public", () => {
+  const shell = source("src/components/layout/AdminShell.jsx");
+  const setUp = shell.indexOf('group: "Set up"');
+  const accounts = shell.indexOf('group: "Accounts and Reporting"');
+  const publicGroup = shell.indexOf('group: "Public"');
+  assert.ok(setUp !== -1 && accounts !== -1 && publicGroup !== -1);
+  assert.ok(setUp < accounts, "Accounts must come after Set up");
+  assert.ok(accounts < publicGroup, "Public must stay last");
+  assert.match(shell, /to: "\/admin\/accounts"/);
+  assert.match(shell, /to: "\/admin\/reports"/);
+});
+
+test("both new admin pages are routed and reachable", () => {
+  assertContains("src/App.jsx", [
+    /import AdminAccounts from "\.\/pages\/admin\/AdminAccounts"/,
+    /import AdminReports from "\.\/pages\/admin\/AdminReports"/,
+    /<Route path="accounts" element=\{<AdminAccounts \/>\}/,
+    /<Route path="reports" element=\{<AdminReports \/>\}/,
+  ]);
+  // Both are admin-only pages; they must render through AdminShell so they
+  // cannot lose the pinned school header.
+  for (const page of ["src/pages/admin/AdminAccounts.jsx", "src/pages/admin/AdminReports.jsx"]) {
+    assert.match(source(page), /AdminShell/, `${page} must render through AdminShell`);
+  }
+});
+
+test("the accounts grid keeps the person column visible while months scroll", () => {
+  assertContains("src/styles/global.css", [
+    /\.acct-sticky\s*\{[^}]*position:\s*sticky/s,
+    /\.acct-table\s*\{[^}]*min-width/s,
+  ]);
 });
