@@ -1311,3 +1311,166 @@ test("the selector uses a month input, not a date input", () => {
   assertContains("src/components/ui/MonthSelector.jsx", [/type="month"/]);
   assertContains("src/components/ui/WeekSelector.jsx", [/type="date"/]);
 });
+
+// ---- Per-student report ----
+
+test("the reports API client reaches the server's student report endpoint", () => {
+  assertContains("src/api/reports.js", [
+    /export const studentReport = \(studentId\) =>\s*client\.get\(`\/reports\/student\/\$\{studentId\}`\)/,
+  ]);
+});
+
+test("the reports page lists students with a search rather than being a placeholder", () => {
+  const page = source("src/pages/admin/AdminReports.jsx");
+  assert.match(page, /peopleApi\.listStudents\(\)/, "the list must come from the students API");
+  assert.match(page, /type="search"/, "the list needs a search box");
+  assert.match(page, /aria-label="Search students"/);
+  // A stub that renders an empty message is what this page used to be.
+  assert.doesNotMatch(page, /Nothing to report yet/);
+});
+
+test("the student list scrolls instead of hiding anyone behind a page boundary", () => {
+  // Slicing to N rows would hide students behind a search the reader has to
+  // already know the name of.
+  const page = source("src/pages/admin/AdminReports.jsx");
+  assert.doesNotMatch(page, /\.slice\(0,\s*VISIBLE/, "the list must not be truncated");
+  assert.doesNotMatch(page, /hidden > 0/, "no hidden-behind-a-search rows");
+  assert.doesNotMatch(page, /scrollHint|scroll for/, "the count note belongs to the accounts grids");
+  assertContains("src/styles/global.css", [
+    /\.sr-list\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/s,
+  ]);
+});
+
+test("searching the student list matches name, admission number and class", () => {
+  const page = source("src/pages/admin/AdminReports.jsx");
+  // The students API has no class_name, so class names are loaded from /classes
+  // and joined in. Matching class_id as well as the name means both "class 2"
+  // and "Class 2" hit. The joining itself lives in the util, where it is
+  // unit-tested -- node cannot import a .jsx, so a filter defined on the page
+  // would be untestable by construction.
+  assert.match(page, /listClasses\(\)/);
+  assert.match(page, /import \{ classNameFor, filterStudents \} from "\.\.\/\.\.\/utils\/studentReport"/);
+  assert.match(page, /filterStudents\(all, query, classesById\)/);
+  assertContains("src/utils/studentReport.js", [
+    /export function filterStudents/,
+    /export function classNameFor/,
+    /\[s\.name, s\.admission_no, className, s\.class_id\]/,
+  ]);
+  // And a no-match state distinct from "no students at all".
+  assert.match(page, /No students match that search\./);
+  assert.match(page, /No students yet\./);
+});
+
+test("the report popup is a real dialog that closes on Escape", () => {
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /role="dialog"/);
+  assert.match(dialog, /aria-modal="true"/);
+  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/, "Escape must close the report");
+  // Clicking the backdrop closes; clicking inside must not.
+  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
+});
+
+test("the report shows details, marks and attendance", () => {
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /<h4 className="sr-h4">Details<\/h4>/);
+  assert.match(dialog, /<h4 className="sr-h4">Marks<\/h4>/);
+  assert.match(dialog, /<h4 className="sr-h4">Attendance<\/h4>/);
+  // Guardians are the point of a report card, so every one is rendered.
+  assert.match(dialog, /student\.guardians\?\.length/);
+  assert.match(dialog, /student\.guardians\.map/);
+  // The class name is resolved server-side; the page must not re-derive it.
+  assert.match(dialog, /student\.class_name/);
+});
+
+test("the report never invents a grade, a pass or a rank", () => {
+  // There are no exam, grade or result tables in the system. Emitting a grade
+  // band or a pass/fail would mean shipping thresholds nobody agreed to.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  const invented = [
+    /\bGrade:\s*[A-F]/,
+    /letter_grade/i,
+    /\bpassed\b/i,
+    /\bRank\b/,
+    /percentage\s*of\s*marks/i,
+  ];
+  for (const pattern of invented) {
+    assert.doesNotMatch(dialog, pattern, `the report must not show ${pattern}`);
+  }
+  // Instead it says what the scores are and what they are not.
+  assert.match(dialog, /out of 100 as recorded per subject per term/);
+  assert.match(dialog, /no exam, grade band or pass\/fail in the system/);
+});
+
+test("an ungraded term is caveated rather than presented as complete", () => {
+  // Three scores out of six subjects must not read like three straight results.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /subjectCoverage\(byTerm\)/);
+  const utils = source("src/utils/studentReport.js");
+  assert.match(utils, /if \(graded >= total\) return null/, "a complete term needs no caveat");
+});
+
+test("the report says 'No records' rather than a percentage of zero", () => {
+  // The UI half of the same rule the server enforces: marked_days of 0 must
+  // not become "0%".
+  assertContains("src/utils/studentReport.js", [
+    /if \(!marked\) return null/,
+    /if \(pct === null\) return "No records"/,
+  ]);
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /No attendance has been recorded for this student/);
+  // JSX wraps prose across lines, so match the words, not the spacing.
+  assert.match(dialog, /not a\s+percentage of zero/s);
+});
+
+test("the report explains that unmarked days are not absences", () => {
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /nobody marked are not counted as absences/s);
+});
+
+test("the report reads its data from the single server-side endpoint", () => {
+  // The marks API returns subject_id with no name and the students API returns
+  // class_id with no name. A client-side join would need every subject and
+  // class loaded per report, so the server does it in one read.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /reportsApi\.studentReport\(studentId\)/);
+  assert.doesNotMatch(dialog, /marksApi|marksService|api\/marks/);
+  assert.doesNotMatch(dialog, /listSubjects/, "no per-report subject lookup");
+});
+
+test("the popup's Download button renders the term that is on screen", () => {
+  // A PDF is a snapshot of what the admin is looking at, so the button has to
+  // hand the rendered term to the printer -- not invent its own.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /import \{ downloadStudentReport \} from "\.\.\/\.\.\/utils\/studentReportPdf"/);
+  assert.match(dialog, /onClick=\{\(\) => downloadStudentReport\(data, term\)\}/);
+  assert.match(dialog, />\s*Download PDF\s*<\/button>/);
+  // The term lives in the dialog so both the selector and the printer agree.
+  assert.match(dialog, /onTermChange=\{setTerm\}/);
+});
+
+test("Download and Close are visibly buttons, not ghost text", () => {
+  // Download sits on the report's head and is the action an admin came for, so
+  // it must not render as bare dark text next to the student's name. These
+  // styles are what the earlier invisible-button regression was about.
+  const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  assert.match(dialog, /className="btn gold"/, "Download is the app's add-style action");
+  const css = source("src/styles/global.css");
+  assert.match(css, /\.sr-head \.btn \{/);
+  assert.match(css, /\.sr-head \.btn\.ghost \{/, "Close has a solid fill of its own");
+});
+
+test("the report prints through a pure model, reachable by the tests", () => {
+  // The drawing code is thin; buildPdfModel decides what a PDF may and may not
+  // contain, and it returns the document as data so node tests can read it
+  // without a PDF parser.
+  const pdf = source("src/utils/studentReportPdf.js");
+  assert.match(pdf, /export function buildPdfModel/);
+  assert.match(pdf, /export function downloadStudentReport/);
+  assert.match(pdf, /from "jspdf"/);
+  assert.match(pdf, /from "jspdf-autotable"/);
+  assertContains("src/utils/studentReportPdf.js", [
+    /\.save\(studentReportFilename\(/,
+    /student-report-[a-z0-9-]+\.pdf/,
+  ]);
+});
