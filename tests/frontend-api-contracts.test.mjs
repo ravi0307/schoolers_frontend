@@ -1085,3 +1085,76 @@ test("the accounts grid keeps the person column visible while months scroll", ()
     /\.acct-table\s*\{[^}]*min-width/s,
   ]);
 });
+
+test("the accounts page asks for the six-month window, not an unbounded range", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  // The grid renders whatever months the API returns, so the window has to be
+  // requested explicitly. Without the argument the API default would apply,
+  // which happens to be 6 today but is not a guarantee the page makes.
+  const reads = [...page.matchAll(/accountsApi\.(salarySheet|feeSheet)\(([^)]*)\)/g)];
+  assert.ok(reads.length > 0, "the page must read the accounts API");
+  for (const [, fn, arg] of reads) {
+    assert.match(arg, /6/, `${fn} must ask for six months, got "${arg}"`);
+  }
+  // The write and delete calls take no window: they address one person and
+  // one month, so requiring a range of them would be wrong.
+  assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount \}\)/);
+});
+
+test("both accounts sheets are fetched on one page load", () => {
+  // A salary grid and a fee grid are one decision for the admin, so the page
+  // fetches both up front rather than making them navigate.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /salarySheet\(6\)/);
+  assert.match(page, /feeSheet\(6\)/);
+  assert.doesNotMatch(page, /setTab\(|activeTab/);
+});
+
+test("every rendered amount passes through the thousands formatter", () => {
+  // A raw amount would print 10000 while a total prints 10,000, and an
+  // accounts page that disagrees with itself about number formatting is one
+  // nobody trusts.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /function money\(value\)/);
+  assert.match(page, /replace\(\/\\B\(\?=\(\\d\{3\}\)\+\(\?!\\d\)\)\/g, ","\)/);
+  // A raw amount may be handed to a cell as a prop, but must never be printed
+  // directly: the only two places a number reaches the DOM are the cell and
+  // the total row, and both wrap it in money().
+  const printed = [...page.matchAll(/\{([^{}]*(?:amounts|total_paid|total_collected)[^{}]*)\}/g)]
+    .map((m) => m[1].trim())
+    .filter((expr) => expr.includes("amounts") && !expr.startsWith("money("));
+  for (const expr of printed) {
+    // row.amounts?.[m] is only ever passed as a prop, never as text.
+    const isProp = expr === "row.amounts?.[m]";
+    assert.ok(isProp, `amount printed without money(): {${expr}}`);
+  }
+  // The two aggregates the API returns are formatted, not printed raw.
+  assert.match(page, /money\(salarySheet\?\.total_paid\)/);
+  assert.match(page, /money\(feeSheet\?\.total_collected\)/);
+});
+
+test("the accounts totals row is labelled so it is not read as a person", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /<th scope="row" className="acct-sticky">Total<\/th>/);
+});
+
+test("editing and clearing are both reachable without hover", () => {
+  // Hover-revealed actions are unusable on touch, so the stylesheet also
+  // exposes them when there is no hover.
+  assertContains("src/styles/global.css", [
+    /@media\s*\(hover:\s*none\)\s*\{[^}]*\.acct-cell-actions\s*\{\s*opacity:\s*1/s,
+  ]);
+  // And the cell offers an empty-state target, so an unpaid month can be
+  // filled in without knowing the hover trick.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /className="acct-empty"/);
+  assert.match(page, /onClick=\{begin\}/);
+});
+
+test("clearing an entry asks the server, it does not just hide the cell", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /accountsApi\.clearSalary\(id, month\)/);
+  assert.match(page, /accountsApi\.clearFee\(id, month\)/);
+  // And it refetches, so the total cannot drift from what the server holds.
+  assert.match(page, /await Promise\.all\(\[salaries\.refetch\(\), fees\.refetch\(\)\]\)/);
+});
