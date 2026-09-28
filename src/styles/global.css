@@ -972,3 +972,123 @@ body {
    has a row of its own rather than sitting on the first one. */
 .acct-vertical { max-height: 340px; overflow-y: auto; }
 .acct-vertical .acct-table thead th { position: sticky; top: 0; z-index: 2; }
+/* ---- Reports: student list + report popup ---- */
+.sr-controls {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sr-blurb { color: var(--ink-soft); font-size: 12.5px; margin: 4px 0 0; max-width: 60ch; }
+.sr-search { flex: 1 1 220px; font: inherit; max-width: 340px; padding: 7px 10px; }
+.sr-count { color: var(--ink-soft); font-size: 12px; margin-bottom: 6px; }
+
+/* Scrolls rather than paginating: see the note in AdminReports.jsx. */
+.sr-list {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+.sr-row {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+.sr-row:last-child { border-bottom: 0; }
+.sr-row:hover { background: rgba(31, 92, 168, 0.06); }
+.sr-row-avatar, .sr-avatar {
+  align-items: center;
+  background: var(--ruled-blue);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+.sr-row-text { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.sr-row-name { font-size: 14px; font-weight: 600; }
+.sr-row-meta {
+  color: var(--ink-soft);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- popup ---- */
+.sr-box { max-width: 720px; padding: 0; width: 94%; }
+.sr-box:focus { outline: none; }
+.sr-head {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.sr-head-text { flex: 1 1 auto; min-width: 0; }
+.sr-name { font-size: 17px; font-weight: 700; }
+.sr-sub { color: var(--ink-soft); font-size: 12.5px; }
+.sr-body { max-height: 70vh; overflow-y: auto; padding: 18px 20px 20px; }
+.sr-section { border-top: 1px solid var(--line); padding-top: 14px; }
+.sr-section:first-of-type { border-top: 0; padding-top: 0; }
+.sr-h4 { font-size: 13px; letter-spacing: 0.04em; margin: 0 0 8px; text-transform: uppercase; }
+.sr-h5 { font-size: 12px; margin: 14px 0 6px; }
+.sr-sub-head { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.sr-range { color: var(--ink-soft); font-size: 12px; }
+.sr-term-select {
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 7px;
+}
+.sr-note { color: var(--ink-soft); font-size: 12px; line-height: 1.5; margin: 6px 0 0; }
+.sr-foot { color: var(--ink-soft); font-size: 11.5px; line-height: 1.5; margin: 16px 0 0; }
+
+.sr-details { display: grid; gap: 10px 18px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.sr-guardian {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-bottom: 8px;
+  padding: 10px 12px;
+}
+.sr-detail-label { color: var(--ink-soft); font-size: 11px; text-transform: uppercase; }
+.sr-detail-value { font-size: 13.5px; overflow-wrap: anywhere; }
+
+.sr-table { margin-top: 8px; }
+.sr-num { text-align: right; }
+.sr-average { font-weight: 700; }
+.sr-coverage { color: var(--ink-soft); display: block; font-size: 11px; font-weight: 400; }
+
+.sr-att-stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); margin-top: 8px; }
+.sr-stat { background: rgba(31, 92, 168, 0.05); border-radius: 10px; padding: 10px; text-align: center; }
+.sr-stat-n { display: block; font-size: 19px; font-weight: 700; }
+.sr-stat-l { color: var(--ink-soft); font-size: 11px; }
+/* Tones for the attendance headline. A display convention only -- the system
+   stores no attendance policy, and these are not the school's own thresholds. */
+.sr-tone-ok { color: var(--ok-green); }
+.sr-tone-info { color: var(--ruled-blue); }
+.sr-tone-warn { color: var(--red-pen); }
+.sr-tone-mute { color: var(--ink-soft); }
+
+.sr-days { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); list-style: none; margin: 0; padding: 0; }
+.sr-day { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.sr-day-date { font-size: 12.5px; }
