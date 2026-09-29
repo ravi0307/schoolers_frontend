@@ -1496,3 +1496,75 @@ test("the report prints through a pure model, reachable by the tests", () => {
     /student-report-[a-z0-9-]+\.pdf/,
   ]);
 });
+
+// ---- Per-staff report ----
+
+test("the reports API client reaches the server's staff report endpoint", () => {
+  assertContains("src/api/reports.js", [
+    /export const staffReport = \(staffId\) =>\s*client\.get\(`\/reports\/staff\/\$\{staffId\}`\)/,
+  ]);
+});
+
+test("the reports page lists staff next to students with its own search", () => {
+  const page = source("src/pages/admin/AdminReports.jsx");
+  assert.match(page, /peopleApi\.listStaff\(\)/, "the staff list must come from the staff API");
+  assert.match(page, /aria-label="Search staff"/);
+  assert.match(page, /StaffReportDialog/);
+  assert.match(page, /openStaffId/);
+  // The staff search is filtered by the util (page filters are untestable by import).
+  assert.match(page, /filterStaff\(allStaff, staffQuery\)/);
+});
+
+test("the staff report popup is a real dialog that closes on Escape", () => {
+  const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  assert.match(dialog, /role="dialog"/);
+  assert.match(dialog, /aria-modal="true"/);
+  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/);
+  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
+});
+
+test("the staff report shows details, salary and attendance", () => {
+  const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  assert.match(dialog, /<h4 className="sr-h4">Details<\/h4>/);
+  assert.match(dialog, /<h4 className="sr-h4">Salary<\/h4>/);
+  assert.match(dialog, /<h4 className="sr-h4">Attendance<\/h4>/);
+  // Salary is a set of window months, each with its paid-on date.
+  assert.match(dialog, /salaryRows\(salary\)/);
+  assert.match(dialog, /row\.record\.paid_on/);
+});
+
+test("an unpaid staff month is a dash, never a payment of zero", () => {
+  const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  assert.match(dialog, /unpaid in that window, never a\s+payment of zero/s);
+  assert.match(dialog, /salaryRows\(salary\)/);
+  const utils = source("src/utils/staffReport.js");
+  assert.match(utils, /record: byMonth\.get\(month\) \|\| null/);
+});
+
+test("no attendance is 'No records', never a percentage of zero", () => {
+  assertContains("src/utils/staffReport.js", [
+    /hasAttendance\(attendance\)/,
+  ]);
+  const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  assert.match(dialog, /No attendance has been recorded for this staff member/);
+});
+
+test("the staff popup's Download renders the same report object on screen", () => {
+  const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  assert.match(dialog, /import \{ downloadStaffReport \} from "\.\.\/\.\.\/utils\/staffReportPdf"/);
+  assert.match(dialog, /onClick=\{\(\) => downloadStaffReport\(data\)\}/);
+  assert.match(dialog, />\s*Download PDF\s*<\/button>/);
+});
+
+test("the staff PDF prints through a pure model like the student sheet", () => {
+  const pdf = source("src/utils/staffReportPdf.js");
+  assert.match(pdf, /export function buildPdfModel/);
+  assert.match(pdf, /export function downloadStaffReport/);
+  assert.match(pdf, /from "jspdf"/);
+  assert.match(pdf, /from "jspdf-autotable"/);
+  assertContains("src/utils/staffReportPdf.js", [
+    /\.save\(staffReportFilename\(/,
+    /staff-report-[a-z0-9-]+\.pdf/,
+  ]);
+});
