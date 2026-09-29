@@ -1151,17 +1151,18 @@ test("the accounts page asks for an explicit window, not an unbounded range", ()
   assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount, note \}\)/);
 });
 
-test("each selector labels the window its own grid shows", () => {
-  // The salary grid renders two months. A selector reading "Apr 2026 – Sep
-  // 2026" above it would promise six columns and quietly hide four, so the
-  // width is passed down and the range label is computed from it.
+test("each selector now uses dropdowns rather than a range label", () => {
+  // The range label has been replaced by two dropdowns (month + year) that let
+  // the admin jump to any month directly. The width of the window is still
+  // honoured by the grid, but the label that used to show "Apr 2026 – Sep 2026"
+  // is no longer rendered above the selector.
   assert.match(
     source("src/components/ui/MonthSelector.jsx"),
-    /formatMonthWindow\(anchor, months\)/
+    /<MonthYearPicker/
   );
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /anchor=\{salaryAnchor\}\s+onChange=\{setSalaryAnchor\}\s+busy=\{busy\}\s+label="salary period"\s+months=\{SALARY_MONTHS\}/);
-  assert.match(page, /anchor=\{feeAnchor\}\s+onChange=\{setFeeAnchor\}\s+busy=\{busy\}\s+label="fee period"\s+months=\{FEE_MONTHS\}/);
+  assert.match(page, /anchor=\{salaryAnchor\}\s+onChange=\{setSalaryAnchor\}\s+busy=\{busy\}\s+label="salary period"/);
+  assert.match(page, /anchor=\{feeAnchor\}\s+onChange=\{setFeeAnchor\}\s+busy=\{busy\}\s+label="fee period"/);
 });
 
 test("each grid pairs every month with an editable remark", () => {
@@ -1405,30 +1406,25 @@ test("the accounts API forwards the anchor so the server owns the window", () =>
   ]);
 });
 
-test("the month selector mirrors the week selector's affordances", () => {
-  // Same shape as WeekSelector so the two feel like one product: arrows to
-  // step, an input to jump, a shortcut back to now.
+test("the month selector uses dropdowns and a return shortcut", () => {
+  // The week selector steps week-by-week; the month selector now uses two
+  // dropdowns for month and year, with a "This month" button that returns the
+  // grid to the current month rather than stepping one month at a time.
   assertContains("src/components/ui/MonthSelector.jsx", [
-    /Previous month/,
-    /Next month/,
     /This month/,
     /aria-label=\{`Select \$\{label\}`\}/,
-    /formatMonthWindow\(anchor, months\)/,
+    /<MonthYearPicker/,
   ]);
 });
 
-test("a selector that holds no future months cannot page into them", () => {
-  // Nothing is recorded in the future, so by default the forward controls stop
-  // at now rather than paging an admin into six empty months. A grid that DOES
-  // hold figures out there -- the fee grid, since a deposit records the months
-  // after the one it starts in -- opts out with allowFuture, and that is a
-  // decision the fee page is tested on making.
+test("the selector has no forward stepping controls", () => {
+  // Forward stepping has been removed: the month is now chosen from dropdowns
+  // rather than by clicking arrow buttons, so there are no forward controls to
+  // guard. The "This month" button still returns the grid to the current month.
   const selector = source("src/components/ui/MonthSelector.jsx");
-  const forward = selector.slice(selector.indexOf("go(1)"), selector.indexOf("go(6)"));
-  assert.match(forward, /disabled=\{busy \|\| \(!allowFuture && isCurrent\)\}/);
-  const jump = selector.slice(selector.indexOf("go(6)"));
-  assert.match(jump, /disabled=\{busy \|\| \(!allowFuture && isCurrent\)\}/);
-  assert.match(selector, /allowFuture = false/, "the safe behaviour is the default");
+  assert.doesNotMatch(selector, /go\(1\)/, "the forward one-step control is gone");
+  assert.doesNotMatch(selector, /go\(6\)/, "the forward six-step control is gone");
+  assert.match(selector, /This month/, "the grid still has a way back to now");
   // Backwards stays open: history is the point. Checked on the two backward
   // buttons themselves, not the whole file, since isCurrent is legitimately
   // declared above them for the shortcut button.
@@ -1436,11 +1432,119 @@ test("a selector that holds no future months cannot page into them", () => {
   assert.doesNotMatch(backButtons, /disabled=\{[^}]*isCurrent/, "backwards must not be blocked at the current month");
 });
 
-test("the selector uses a month input, not a date input", () => {
-  // The window is whole calendar months; letting an admin pick a day of a
-  // month would only mean truncating it to something they did not intend.
-  assertContains("src/components/ui/MonthSelector.jsx", [/type="month"/]);
+// The month picker is shared: the accounts grids and the deposit dialog all pick
+// a month the same way, so a month cannot end up spelled two different ways in
+// two places. These read the shared component, and the callers are checked
+// separately to prove they use it rather than reaching for an input.
+
+const PICKER = "src/components/ui/MonthYearPicker.jsx";
+
+test("no accounts month control is typed, not chosen from a list", () => {
+  // A type="month" input renders its own month and year spinners, so how it
+  // looks is the browser's decision and differs by platform; on several of them
+  // it is a text box that will read a half-typed year as a real one. The
+  // dropdowns can only ever hold valid values, which is the point of the change.
+  for (const file of [
+    PICKER,
+    "src/components/ui/MonthSelector.jsx",
+    "src/components/accounts/FeeDepositDialog.jsx",
+  ]) {
+    assert.doesNotMatch(source(file), /type="month"/, `${file} still has a month input`);
+  }
+  assert.doesNotMatch(source(PICKER), /type="date"/, "the window is whole months, not days");
+  assert.match(source(PICKER), /<select[\s\S]*className="week-selector-pick"/);
+  // The week selector is a different control and keeps its date input.
   assertContains("src/components/ui/WeekSelector.jsx", [/type="date"/]);
+});
+
+test("the month dropdown offers the twelve months and the year dropdown a year list", () => {
+  // Both lists come from the shared helpers rather than being written out here,
+  // so a month cannot be spelled two different ways in two places.
+  const picker = source(PICKER);
+  assert.match(picker, /MONTH_OPTIONS\.map/);
+  assert.match(picker, /years\.map/);
+  assert.match(picker, /monthAnchorParts\(value\) \|\| monthAnchorParts\(stopAt\)/);
+});
+
+test("the dropdowns follow the value rather than local state", () => {
+  // The value is what the caller is showing, so a value that disagrees with it
+  // is a value claiming to look at a month that is not on screen. This is also
+  // why `useState` and the picked-value plumbing are gone: with two dropdowns
+  // there is no half-typed value to hold on to.
+  const picker = source(PICKER);
+  assert.doesNotMatch(picker, /useState/, "a controlled dropdown needs no local copy of the value");
+  assert.doesNotMatch(picker, /setPicked/);
+  assert.doesNotMatch(picker, /fromMonthInputValue/);
+});
+
+test("either dropdown moves the value, and both are resolved against the other", () => {
+  // Picking April in 2027 while the value is September 2026 is a jump of seven
+  // months, not of four -- so the year is not a modifier on the old value, it
+  // replaces it and the month is carried across.
+  const picker = source(PICKER);
+  assert.match(picker, /function onPickMonth\(month\)[\s\S]*anchorFromParts\(parts\.year, month\)/);
+  assert.match(picker, /function onPickYear\(year\)[\s\S]*anchorFromParts\(year, parts\.month\)/);
+  // A pick that does not make a month changes nothing rather than sending a
+  // malformed anchor to the server.
+  assert.match(picker, /const next = anchorFromParts\([^)]*\);\n\s*if \(next\) onChange\(next\);/);
+});
+
+test("a picker with a boundary greys the future out of both lists", () => {
+  // The arrows refuse to page forward past this month, so a dropdown that will
+  // happily jump there is not refusing anything. The boundary is a prop rather
+  // than the clock, because whether the future is reachable is the caller's
+  // decision -- the fee grid can read months a deposit has written ahead.
+  const picker = source(PICKER);
+  assert.match(picker, /const bounded = Boolean\(stopAt\)/);
+  assert.match(picker, /bounded && isAfterMonthAnchor\(anchorFromParts\(parts\.year, month\), stopAt\)/);
+  assert.match(picker, /bounded && isAfterMonthAnchor\(anchorFromParts\(year, 1\), stopAt\)/);
+  assert.match(picker, /disabled=\{monthUnavailable\(option\.value\)\}/);
+  assert.match(picker, /disabled=\{yearUnavailable\(year\)\}/);
+  // A year is tested on its FIRST month, not its last. January of next year is
+  // the only month that can put a whole year ahead of the boundary, and testing
+  // December instead would grey out the current year -- the year the caller is
+  // standing in and the one year that must stay selectable.
+  assert.doesNotMatch(picker, /anchorFromParts\(year, 12\)/, "the year is tested on January, or the current year greys itself out");
+  // Every month is still rendered -- greyed out via the disabled attribute
+  // rather than filtered out of the list, so it reads as a year and not a
+  // truncated one.
+  assert.match(picker, /<option\s+key=\{option\.value\}\s+value=\{option\.value\}\s+disabled=\{monthUnavailable\(option\.value\)\}\s*>\s*\{option\.label\}/);
+  assert.doesNotMatch(picker, /MONTH_OPTIONS\.filter/, "months are disabled, not removed");
+});
+
+test("both grids use the shared picker, and only the fee one lets it reach forward", () => {
+  // The fee grid reads months a deposit has written ahead, so it is given no
+  // boundary. The salary grid has nothing out there, so it is stopped at this
+  // month -- the same month the forward arrows stop at. If both sides ever take
+  // the same `stopAt`, the arrows and the dropdowns have quietly started
+  // disagreeing.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.match(selector, /<MonthYearPicker/);
+  assert.match(selector, /stopAt=\{allowFuture \? "" : current\}/);
+  assert.match(selector, /value=\{anchor\}/);
+  // The label the grid passes through reaches the accessible name, so the two
+  // grids' pickers stay distinguishable to a screen reader.
+  assert.match(selector, /monthLabel=\{`\$\{label\} month`\}/);
+  assert.match(selector, /yearLabel=\{`\$\{label\} year`\}/);
+  const accounts = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(accounts, /allowFuture/, "the fee selector opts in to the future");
+  assert.doesNotMatch(accounts, /label="salary period"[\s\S]{0,300}allowFuture/, "the salary selector does not");
+});
+
+test("the deposit dialog picks its start month with the same two dropdowns", () => {
+  // The dialog is the other place a month is chosen on this screen, and it is
+  // the one that was left holding a month input. It gets no boundary on purpose:
+  // a yearly plan written from this month reaches twelve months past it, so the
+  // admin has to be able to start a term before the month they happen to be
+  // looking at -- and forward from it, for a term already partly in the past.
+  const dialog = source("src/components/accounts/FeeDepositDialog.jsx");
+  assert.match(dialog, /import MonthYearPicker from "\.\.\/ui\/MonthYearPicker"/);
+  assert.match(dialog, /<MonthYearPicker[\s\S]*value=\{startMonth\}[\s\S]*onChange=\{setStartMonth\}/);
+  assert.doesNotMatch(dialog, /stopAt=/, "the deposit can be dated anywhere, so the picker is unbounded");
+  // Two controls means a fieldset, not a label: a label can only name one.
+  assert.match(dialog, /<fieldset className="fd-field">/);
+  assert.match(dialog, /<legend className="fd-label">Starting from<\/legend>/);
+  assert.doesNotMatch(dialog, /htmlFor="fd-start"/, "the old month input's label is gone with it");
 });
 
 // ---- Per-student report ----

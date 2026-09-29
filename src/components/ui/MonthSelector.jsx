@@ -1,22 +1,28 @@
-import { useState } from "react";
 import {
   DEFAULT_WINDOW_MONTHS,
   currentMonthAnchor,
   formatMonthWindow,
-  fromMonthInputValue,
   shiftMonthAnchor,
-  toMonthInputValue,
 } from "../../utils/accountsFlow";
+import MonthYearPicker from "./MonthYearPicker";
 
 /**
  * Month navigation for the accounts grids.
  *
- * Mirrors WeekSelector: arrows step the window, an input jumps straight to a
- * month, and a shortcut returns to the current one. The difference is what the
- * window is anchored on. A week selector moves to the *next* week and the
- * columns become that week; here the anchor is the last month shown, so moving
- * back one step keeps the months ending a month earlier rather than
+ * Mirrors WeekSelector: arrows step the window, a pair of dropdowns jumps
+ * straight to a month, and a shortcut returns to the current one. The difference
+ * is what the window is anchored on. A week selector moves to the *next* week
+ * and the columns become that week; here the anchor is the last month shown, so
+ * moving back one step keeps the months ending a month earlier rather than
  * skipping a month in the middle of the grid.
+ *
+ * The jump is two dropdowns rather than a month picker input. The native month
+ * control renders its own month and year spinners, and how that looks is the
+ * browser's decision rather than ours -- it is also inconsistent between
+ * platforms, and on several of them the field is a text box waiting for a
+ * half-typed year to be read as a real one. A pair of dropdowns can only ever
+ * hold valid values, which means the grid cannot be shifted onto a month that
+ * does not exist, and it picks up the page's own styling.
  *
  * Each grid gets its own instance, so an admin comparing September salaries
  * against March fees can hold the two windows apart. `months` is the width of
@@ -30,6 +36,9 @@ import {
  * the months after it, so those months hold figures an admin needs to read back
  * to check the deposit. The fee grid therefore pages forward, and the shortcut
  * back to the current month is what stops the grid being lost in the future.
+ *
+ * The dropdowns respect the same boundary, because a control that refuses to
+ * page forward but will happily jump there is not refusing anything.
  */
 export default function MonthSelector({
   anchor,
@@ -39,82 +48,29 @@ export default function MonthSelector({
   months = DEFAULT_WINDOW_MONTHS,
   allowFuture = false,
 }) {
-  const [picked, setPicked] = useState(() => toMonthInputValue(anchor));
-
   const current = currentMonthAnchor();
   const isCurrent = anchor === current;
 
   function go(delta) {
-    const next = shiftMonthAnchor(anchor, delta);
-    setPicked(toMonthInputValue(next));
-    onChange(next);
+    onChange(shiftMonthAnchor(anchor, delta));
   }
 
   function goToCurrent() {
-    setPicked(toMonthInputValue(current));
     onChange(current);
-  }
-
-  // A month input gives an admin a direct jump. Anything unparseable is
-  // ignored rather than sent, so a half-typed year cannot shift the grid.
-  function onPick(value) {
-    setPicked(value);
-    const usable = fromMonthInputValue(value);
-    if (usable) onChange(usable);
   }
 
   return (
     <div className="week-selector" role="group" aria-label={`Select ${label}`}>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(-6)}
+      <MonthYearPicker
+        value={anchor}
+        onChange={onChange}
         disabled={busy}
-        title="Six months earlier"
-        aria-label="Six months earlier"
-      >
-        &#171;
-      </button>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(-1)}
-        disabled={busy}
-        title="Previous month"
-        aria-label="Previous month"
-      >
-        &#8592;
-      </button>
-      <span className="week-selector-range">{formatMonthWindow(anchor, months)}</span>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(1)}
-        // A grid that holds no future months should not page into them. One
-        // that does -- the fee grid, once a deposit can write months ahead --
-        // has figures out there waiting to be read back.
-        disabled={busy || (!allowFuture && isCurrent)}
-        title="Next month"
-        aria-label="Next month"
-      >
-        &#8594;
-      </button>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(6)}
-        disabled={busy || (!allowFuture && isCurrent)}
-        title="Six months later"
-        aria-label="Six months later"
-      >
-        &#187;
-      </button>
-      <input
-        className="week-selector-date"
-        type="month"
-        value={picked}
-        onChange={(event) => onPick(event.target.value)}
-        aria-label={`Jump to ${label} month`}
+        // A grid that holds no future months gets a boundary, and the picker
+        // greies the future out of its lists to match the arrows above. A grid
+        // that can read months a deposit has written ahead gets none.
+        stopAt={allowFuture ? "" : current}
+        monthLabel={`${label} month`}
+        yearLabel={`${label} year`}
       />
       {/* A grid that pages forward needs a way back that does not mean counting
           months down one at a time. */}

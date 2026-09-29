@@ -13,6 +13,7 @@ import {
   replacementWarning,
 } from "../../utils/feeDeposit";
 import { toMonthInputValue } from "../../utils/accountsFlow";
+import MonthYearPicker from "../ui/MonthYearPicker";
 
 /**
  * Recording one fee payment for a period.
@@ -145,17 +146,20 @@ export default function FeeDepositDialog({ student, plans, anchor, busy, onClose
           </div>
 
           <div className="fd-row">
-            <label className="fd-field">
-              <span className="fd-label" htmlFor="fd-start">Starting from</span>
-              <input
-                id="fd-start"
-                className="field"
-                type="month"
+            <fieldset className="fd-field">
+              <legend className="fd-label">Starting from</legend>
+              {/* The same month and year dropdowns the grids use. A deposit
+                  writes months ahead by design -- a yearly plan from this month
+                  reaches twelve past it -- so this picker is given no boundary
+                  and lets the admin start it wherever the term began. */}
+              <MonthYearPicker
                 value={startMonth}
-                onChange={(e) => setStartMonth(e.target.value)}
+                onChange={setStartMonth}
                 disabled={busy || saving}
+                monthLabel="Starting month"
+                yearLabel="Starting year"
               />
-            </label>
+            </fieldset>
             <label className="fd-field">
               <span className="fd-label" htmlFor="fd-amount">Amount received</span>
               <input
