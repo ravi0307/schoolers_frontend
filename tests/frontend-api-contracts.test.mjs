@@ -1035,9 +1035,25 @@ test("the month window comes from the API rather than being recomputed per clien
   // renders whatever months come back.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.doesNotMatch(page, /monthWindowValues\(/, "the page must not build its own window");
-  assert.match(page, /salarySheet\(6, salaryAnchor\)/);
-  assert.match(page, /feeSheet\(6, feeAnchor\)/);
+  assert.match(page, /const SALARY_MONTHS = 2/);
+  assert.match(page, /const FEE_MONTHS = 6/);
+  assert.match(page, /salarySheet\(SALARY_MONTHS, salaryAnchor\)/);
+  assert.match(page, /feeSheet\(FEE_MONTHS, feeAnchor\)/);
   assert.match(page, /const months = sheet\?\.months \|\| \[\]/, "the grid must render the months the API returned");
+});
+
+test("one keystroke sends one write, not two", () => {
+  // Pressing Enter in a cell fires both the key handler and the blur that
+  // follows it, so `commit` runs twice for a single edit. Left unguarded the
+  // second call races the first: for a month with no row yet both try to
+  // INSERT, one loses to the unique constraint, and the admin is shown a 409
+  // for a payment that was recorded perfectly well. The guard is a ref, not
+  // state, because both calls land inside the same render.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.equal((page.match(/const saving = useRef\(false\)/g) || []).length, 2, "both cells must guard");
+  assert.equal((page.match(/if \(saving\.current\) return;/g) || []).length, 2, "both commits must check it");
+  assert.equal((page.match(/saving\.current = true;/g) || []).length, 2, "both commits must claim it");
+  assert.equal((page.match(/saving\.current = false;/g) || []).length, 2, "both must release it in a finally, so a failed save can be retried");
 });
 
 test("an unpaid month is shown as a dash, never as a zero", () => {
@@ -1113,19 +1129,82 @@ test("the accounts grid keeps the person column visible while months scroll", ()
   ]);
 });
 
-test("the accounts page asks for the six-month window, not an unbounded range", () => {
+test("the accounts page asks for an explicit window, not an unbounded range", () => {
   const page = source("src/pages/admin/AdminAccounts.jsx");
   // The grid renders whatever months the API returns, so the window has to be
   // requested explicitly. Without the argument the API default would apply,
   // which happens to be 6 today but is not a guarantee the page makes.
+  // Salaries ask for two months and fees for six, so each read has to name the
+  // width it wants rather than inherit the server default.
   const reads = [...page.matchAll(/accountsApi\.(salarySheet|feeSheet)\(([^)]*)\)/g)];
   assert.ok(reads.length > 0, "the page must read the accounts API");
   for (const [, fn, arg] of reads) {
-    assert.match(arg, /6/, `${fn} must ask for six months, got "${arg}"`);
+    assert.match(arg, /MONTHS/, `${fn} must name its window width, got "${arg}"`);
   }
+  assert.match(page, /const SALARY_MONTHS = 2/);
+  assert.match(page, /const FEE_MONTHS = 6/);
   // The write and delete calls take no window: they address one person and
   // one month, so requiring a range of them would be wrong.
   assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount \}\)/);
+});
+
+test("each selector labels the window its own grid shows", () => {
+  // The salary grid renders two months. A selector reading "Apr 2026 – Sep
+  // 2026" above it would promise six columns and quietly hide four, so the
+  // width is passed down and the range label is computed from it.
+  assert.match(
+    source("src/components/ui/MonthSelector.jsx"),
+    /formatMonthWindow\(anchor, months\)/
+  );
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /anchor=\{salaryAnchor\}\s+onChange=\{setSalaryAnchor\}\s+busy=\{busy\}\s+label="salary period"\s+months=\{SALARY_MONTHS\}/);
+  assert.match(page, /anchor=\{feeAnchor\}\s+onChange=\{setFeeAnchor\}\s+busy=\{busy\}\s+label="fee period"\s+months=\{FEE_MONTHS\}/);
+});
+
+test("the salary grid pairs each month with an editable remark", () => {
+  // A figure with no reason beside it is not actionable, and a remark that can
+  // only be written at the moment of payment cannot be corrected later. Both
+  // months get one: last month's is still in view to amend, this month's is
+  // open to write.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /<RemarkCell/);
+  assert.match(page, /withRemarks/);
+  // Only the salary grid carries remarks; the fee grid keeps one column per
+  // month, and a remark on a tuition fee would be a second thing to explain.
+  const feeGrid = page.slice(page.indexOf('nameHeader="Student"'));
+  assert.doesNotMatch(feeGrid, /withRemarks/, "the fee grid must not grow a remark column");
+  assert.doesNotMatch(feeGrid, /onSaveNote/, "the fee grid must not send a note");
+  // The remark shown is the one the server stored for that month.
+  assert.match(page, /note=\{row\.notes\?\.\[m\]\}/);
+  // And it is editable, not a read-only label.
+  assert.match(page, /onClick=\{begin\}/);
+  assert.match(page, /\{note \|\| "Add a remark"\}/);
+});
+
+test("a remark is saved onto the payment it belongs to, without restamping it", () => {
+  // The remark is stored on the salary row, so saving one re-sends the amount
+  // already on the server. It must come from the row the admin is looking at,
+  // never from the cell being edited, or a stale read would overwrite a
+  // correction. And the paid date is left out: a remark edit is not a second
+  // payment and must not rewrite the day the money actually moved.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\(id, m, amount, note\)\}/);
+  assert.match(page, /onSave=\{\(next\) => onSaveNote\(id, m, row\.amounts\?\.\[m\], next\)\}/);
+  assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount, note \}\)/);
+  assert.doesNotMatch(page, /recordSalary\(\{ staff_id: id, month, amount, note, paid_on/, "an edit must not resend a paid date");
+});
+
+test("an empty remark is a clearing, and an unpaid month has nothing to remark on", () => {
+  // Two ways a remark column could quietly lie. Blanking the box is a real
+  // answer ("nothing to add"), so it is saved rather than discarded; and a
+  // month with no payment has no remark cell to fill in, because there is no
+  // figure to explain.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /onSave\(trimmed \|\| null\)/);
+  assert.match(page, /if \(trimmed === \(note \|\| ""\)\.trim\(\)\)/, "an unchanged remark must not issue a write");
+  assert.match(page, /if \(value === null \|\| value === undefined\)/, "an unpaid month shows a dash, not an editor");
+  // A write on a failed save must leave the editor open so the text is not lost.
+  assert.match(page, /const ok = await onSave\(trimmed \|\| null\);\s*if \(ok\) setEditing\(false\);/);
 });
 
 test("both accounts sheets are on one page, with no tab to navigate", () => {
@@ -1146,13 +1225,14 @@ test("every rendered amount passes through the thousands formatter", () => {
   assert.match(page, /replace\(\/\\B\(\?=\(\\d\{3\}\)\+\(\?!\\d\)\)\/g, ","\)/);
   // A raw amount may be handed to a cell as a prop, but must never be printed
   // directly: the only two places a number reaches the DOM are the cell and
-  // the total row, and both wrap it in money().
+  // the total row, and both wrap it in money(). An amount inside a handler
+  // (onSaveNote(id, m, row.amounts?.[m], next)) is a write, not a label.
   const printed = [...page.matchAll(/\{([^{}]*(?:amounts|total_paid|total_collected)[^{}]*)\}/g)]
     .map((m) => m[1].trim())
     .filter((expr) => expr.includes("amounts") && !expr.startsWith("money("));
   for (const expr of printed) {
     // row.amounts?.[m] is only ever passed as a prop, never as text.
-    const isProp = expr === "row.amounts?.[m]";
+    const isProp = expr === "row.amounts?.[m]" || expr.includes("=>");
     assert.ok(isProp, `amount printed without money(): {${expr}}`);
   }
   // The two aggregates the API returns are formatted, not printed raw.
@@ -1259,8 +1339,8 @@ test("salary and fee grids page independently", () => {
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /const \[salaryAnchor, setSalaryAnchor\] = useState/);
   assert.match(page, /const \[feeAnchor, setFeeAnchor\] = useState/);
-  assert.match(page, /salarySheet\(6, salaryAnchor\)/);
-  assert.match(page, /feeSheet\(6, feeAnchor\)/);
+  assert.match(page, /salarySheet\(SALARY_MONTHS, salaryAnchor\)/);
+  assert.match(page, /feeSheet\(FEE_MONTHS, feeAnchor\)/);
   // Both default to the current month rather than being derived from each other.
   assert.equal(
     (page.match(/useState\(\(\) => currentMonthAnchor\(\)\)/g) || []).length,
@@ -1307,7 +1387,7 @@ test("the month selector mirrors the week selector's affordances", () => {
     /Next month/,
     /This month/,
     /aria-label=\{`Select \$\{label\}`\}/,
-    /formatMonthWindow\(anchor\)/,
+    /formatMonthWindow\(anchor, months\)/,
   ]);
 });
 
@@ -1323,7 +1403,7 @@ test("the selector cannot page past the current month", () => {
   // Backwards stays open: history is the point. Checked on the two backward
   // buttons themselves, not the whole file, since isCurrent is legitimately
   // declared above them for the shortcut button.
-  const backButtons = selector.slice(0, selector.indexOf("formatMonthWindow(anchor)"));
+  const backButtons = selector.slice(0, selector.indexOf("formatMonthWindow(anchor, months)"));
   assert.doesNotMatch(backButtons, /disabled=\{[^}]*isCurrent/, "backwards must not be blocked at the current month");
 });
 

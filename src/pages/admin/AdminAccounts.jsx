@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
@@ -17,7 +17,7 @@ import { apiErrorMessage } from "../../api/client";
 import { formatDay } from "../../utils/studentReport";
 
 /*
- * Six-month month grid for money.
+ * Month grid for money.
  *
  * Each grid carries its own month selector, so an admin can hold the salary
  * window at one period and the fee window at another without losing their
@@ -26,6 +26,14 @@ import { formatDay } from "../../utils/studentReport";
  * over the same range. An unpaid cell is rendered as a dash, not a zero: "nothing recorded"
  * and "recorded as zero" are different facts, and an admin chasing unpaid
  * money needs to see which is which.
+ *
+ * Salaries show the last two months only, each paired with a remark, because
+ * "45,000 in September" is not actionable on its own -- the question is always
+ * "why", and the answer is a sentence the admin types next to the figure. Two
+ * months is what makes that sentence useful: last month's remark is still in
+ * view to correct, and this month's is open to write. The remark is editable
+ * for a month already paid, so a correction never has to wait for the next
+ * payroll run.
  */
 
 const MONTH_LABELS = {
@@ -33,6 +41,10 @@ const MONTH_LABELS = {
   "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
 };
+
+/** Salaries sit in a two-month window; fees keep the wider six. */
+const SALARY_MONTHS = 2;
+const FEE_MONTHS = 6;
 
 function monthLabel(month) {
   const [year, mon] = month.split("-");
@@ -50,6 +62,7 @@ function money(value) {
 function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState("");
+  const saving = useRef(false);
 
   function begin() {
     setAmount(value === null || value === undefined ? "" : String(value));
@@ -63,8 +76,19 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
     if (!Number.isFinite(num) || num < 0) {
       return;
     }
-    const ok = await onSave(num);
-    if (ok) setEditing(false);
+    // Enter and the blur that follows it both fire for one edit. Without this
+    // guard the second call races the first, and for a month with no row yet
+    // both try to INSERT: one wins, the other loses to the unique constraint,
+    // and the admin is shown a 409 for a payment that was recorded fine. A ref,
+    // not state, because the two calls land in the same render.
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      const ok = await onSave(num);
+      if (ok) setEditing(false);
+    } finally {
+      saving.current = false;
+    }
   }
 
   if (!editing) {
@@ -130,12 +154,96 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
   );
 }
 
+function RemarkCell({ month, rowName, value, note, onSave, busy }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState("");
+  const saving = useRef(false);
+
+  function begin() {
+    setText(note || "");
+    setEditing(true);
+  }
+
+  async function commit() {
+    // A remark is a sentence, not a number: an empty one is a real answer
+    // ("nothing to add"), so unlike the amount cell it is saved even when
+    // blank. It only becomes an edit if the text actually changed.
+    const trimmed = text.trim();
+    if (trimmed === (note || "").trim()) {
+      setEditing(false);
+      return;
+    }
+    // Same double-fire as the amount cell: Enter, then the blur. A ref, so the
+    // second call sees the first as in flight rather than racing it.
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      const ok = await onSave(trimmed || null);
+      if (ok) setEditing(false);
+    } finally {
+      saving.current = false;
+    }
+  }
+
+  // A remark belongs to a payment. An unpaid month has nothing to explain, so
+  // the cell is inert rather than inviting a note against a figure that is not
+  // there.
+  if (value === null || value === undefined) {
+    return (
+      <td className="acct-note-cell">
+        <span className="acct-note-blank" title={`No ${monthLabel(month)} entry for ${rowName}, so there is nothing to remark on`}>
+          —
+        </span>
+      </td>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <td className="acct-note-cell">
+        <button
+          type="button"
+          className="acct-note"
+          onClick={begin}
+          title={note
+            ? `Edit the ${monthLabel(month)} remark for ${rowName}`
+            : `Add a remark about ${rowName}'s ${monthLabel(month)} payment`}
+        >
+          {note || "Add a remark"}
+        </button>
+      </td>
+    );
+  }
+
+  return (
+    <td className="acct-note-cell acct-cell-editing">
+      <input
+        autoFocus
+        type="text"
+        className="acct-input acct-input-note"
+        value={text}
+        maxLength={200}
+        placeholder="Remark"
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        onBlur={commit}
+        disabled={busy}
+        aria-label={`${monthLabel(month)} remark for ${rowName}`}
+      />
+    </td>
+  );
+}
+
 function SheetTable({
   sheet,
   idOf,
   nameOf,
   secondaryOf,
   onSave,
+  onSaveNote,
   onClear,
   busy,
   emptyText,
@@ -143,6 +251,7 @@ function SheetTable({
   nameHeader,
   label,
   singular,
+  withRemarks = false,
 }) {
   const months = sheet?.months || [];
   const allRows = sheet?.rows || [];
@@ -216,7 +325,13 @@ function SheetTable({
                 <tr>
                   <th className="acct-sticky">{nameHeader}</th>
                   {months.map((m) => (
-                    <th key={m} className="acct-month">{monthLabel(m)}</th>
+                    <Fragment key={m}>
+                      <th className={withRemarks ? "acct-month acct-month-lead" : "acct-month"}>
+                        {monthLabel(m)}
+                        {withRemarks && <span className="acct-col-sub">amount</span>}
+                      </th>
+                      {withRemarks && <th className="acct-note-head">remark</th>}
+                    </Fragment>
                   ))}
                 </tr>
               </thead>
@@ -235,16 +350,27 @@ function SheetTable({
                         </div>
                       </th>
                       {months.map((m) => (
-                        <RecordCell
-                          key={m}
-                          month={m}
-                          rowName={name}
-                          value={row.amounts?.[m]}
-                          paidOn={row.paid_on?.[m]}
-                          busy={busy}
-                          onSave={(amount) => onSave(id, m, amount)}
-                          onClear={() => onClear(id, m)}
-                        />
+                        <Fragment key={m}>
+                          <RecordCell
+                            month={m}
+                            rowName={name}
+                            value={row.amounts?.[m]}
+                            paidOn={row.paid_on?.[m]}
+                            busy={busy}
+                            onSave={(amount) => onSave(id, m, amount)}
+                            onClear={() => onClear(id, m)}
+                          />
+                          {withRemarks && (
+                            <RemarkCell
+                              month={m}
+                              rowName={name}
+                              value={row.amounts?.[m]}
+                              note={row.notes?.[m]}
+                              busy={busy}
+                              onSave={(next) => onSaveNote(id, m, row.amounts?.[m], next)}
+                            />
+                          )}
+                        </Fragment>
                       ))}
                     </tr>
                   );
@@ -263,8 +389,8 @@ export default function AdminAccounts() {
   // against March fees needs the two windows to move separately.
   const [salaryAnchor, setSalaryAnchor] = useState(() => currentMonthAnchor());
   const [feeAnchor, setFeeAnchor] = useState(() => currentMonthAnchor());
-  const salaries = useApi(() => accountsApi.salarySheet(6, salaryAnchor), [salaryAnchor]);
-  const fees = useApi(() => accountsApi.feeSheet(6, feeAnchor), [feeAnchor]);
+  const salaries = useApi(() => accountsApi.salarySheet(SALARY_MONTHS, salaryAnchor), [salaryAnchor]);
+  const fees = useApi(() => accountsApi.feeSheet(FEE_MONTHS, feeAnchor), [feeAnchor]);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
@@ -279,6 +405,26 @@ export default function AdminAccounts() {
       if (kind === "salary") salaries.refetch();
       else fees.refetch();
       toast(`${monthLabel(month)} recorded`);
+      return true;
+    } catch (err) {
+      toast(apiErrorMessage(err));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // A remark is stored on the payment, so saving one re-sends the amount that
+  // is already on the server rather than reading the cell back. The value
+  // comes from the row the admin is looking at, so the figure cannot drift
+  // while they type, and the paid date is left out -- editing a remark is not
+  // a second payment, and must not restamp the day it was made.
+  async function saveNote(id, month, amount, note) {
+    setBusy(true);
+    try {
+      await accountsApi.recordSalary({ staff_id: id, month, amount, note });
+      salaries.refetch();
+      toast(note ? `${monthLabel(month)} remark saved` : `${monthLabel(month)} remark cleared`);
       return true;
     } catch (err) {
       toast(apiErrorMessage(err));
@@ -316,7 +462,8 @@ export default function AdminAccounts() {
     <AdminShell>
       <div className="scr-title">Accounts</div>
       <div className="scr-sub">
-        Staff salaries and student fees over six months. Each table has its own
+        Staff salaries for the last two months, each with a remark you can add
+        or correct, and student fees over six months. Each table has its own
         period selector, so you can compare different months side by side.
         Click an empty cell to record a payment, or use ✎ to correct one.
       </div>
@@ -335,6 +482,7 @@ export default function AdminAccounts() {
                   onChange={setSalaryAnchor}
                   busy={busy}
                   label="salary period"
+                  months={SALARY_MONTHS}
                 />
               </div>
               <div className="scr-sub" style={{ marginBottom: 12 }}>
@@ -353,7 +501,9 @@ export default function AdminAccounts() {
                 nameOf={(r) => r.staff_name}
                 secondaryOf={(r) => r.designation}
                 busy={busy}
+                withRemarks
                 onSave={(id, m, amount) => save("salary", id, m, amount)}
+                onSaveNote={(id, m, amount, note) => saveNote(id, m, amount, note)}
                 onClear={(id, m) => clear("salary", id, m)}
                 emptyText="No active staff yet. Add staff under Set up to track salaries."
                 noMatchText="No staff match that search."
@@ -377,6 +527,7 @@ export default function AdminAccounts() {
                   onChange={setFeeAnchor}
                   busy={busy}
                   label="fee period"
+                  months={FEE_MONTHS}
                 />
               </div>
               <div className="scr-sub" style={{ marginBottom: 12 }}>
