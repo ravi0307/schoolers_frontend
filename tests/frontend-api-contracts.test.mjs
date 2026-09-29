@@ -1417,15 +1417,18 @@ test("the month selector mirrors the week selector's affordances", () => {
   ]);
 });
 
-test("the selector cannot page past the current month", () => {
-  // Nothing is recorded in the future, so the forward controls stop at now
-  // rather than paging an admin into six empty months.
+test("a selector that holds no future months cannot page into them", () => {
+  // Nothing is recorded in the future, so by default the forward controls stop
+  // at now rather than paging an admin into six empty months. A grid that DOES
+  // hold figures out there -- the fee grid, since a deposit records the months
+  // after the one it starts in -- opts out with allowFuture, and that is a
+  // decision the fee page is tested on making.
   const selector = source("src/components/ui/MonthSelector.jsx");
   const forward = selector.slice(selector.indexOf("go(1)"), selector.indexOf("go(6)"));
-  assert.match(forward, /disabled=\{busy \|\| isCurrent\}/);
+  assert.match(forward, /disabled=\{busy \|\| \(!allowFuture && isCurrent\)\}/);
   const jump = selector.slice(selector.indexOf("go(6)"));
-  assert.match(jump, /disabled=\{busy \|\| isCurrent\}/);
-  // Backwards stays open: history is the point.
+  assert.match(jump, /disabled=\{busy \|\| \(!allowFuture && isCurrent\)\}/);
+  assert.match(selector, /allowFuture = false/, "the safe behaviour is the default");
   // Backwards stays open: history is the point. Checked on the two backward
   // buttons themselves, not the whole file, since isCurrent is legitimately
   // declared above them for the shortcut button.

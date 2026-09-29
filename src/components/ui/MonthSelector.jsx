@@ -23,6 +23,13 @@ import {
  * the window the caller asked for, and it labels the range honestly: the salary
  * grid shows two months, and a selector reading "Apr 2026 – Sep 2026" above it
  * would promise columns that are not there.
+ *
+ * `allowFuture` decides whether the forward controls stop at this month. They
+ * used to stop there for both grids, on the reasoning that nothing is recorded
+ * beyond now. A fee deposit breaks that: recording a term in September writes
+ * the months after it, so those months hold figures an admin needs to read back
+ * to check the deposit. The fee grid therefore pages forward, and the shortcut
+ * back to the current month is what stops the grid being lost in the future.
  */
 export default function MonthSelector({
   anchor,
@@ -30,6 +37,7 @@ export default function MonthSelector({
   busy = false,
   label = "period",
   months = DEFAULT_WINDOW_MONTHS,
+  allowFuture = false,
 }) {
   const [picked, setPicked] = useState(() => toMonthInputValue(anchor));
 
@@ -82,9 +90,10 @@ export default function MonthSelector({
         className="btn ghost"
         type="button"
         onClick={() => go(1)}
-        // Nothing is recorded beyond the current month, so the forward controls
-        // are disabled there rather than paging into empty months.
-        disabled={busy || isCurrent}
+        // A grid that holds no future months should not page into them. One
+        // that does -- the fee grid, once a deposit can write months ahead --
+        // has figures out there waiting to be read back.
+        disabled={busy || (!allowFuture && isCurrent)}
         title="Next month"
         aria-label="Next month"
       >
@@ -94,7 +103,7 @@ export default function MonthSelector({
         className="btn ghost"
         type="button"
         onClick={() => go(6)}
-        disabled={busy || isCurrent}
+        disabled={busy || (!allowFuture && isCurrent)}
         title="Six months later"
         aria-label="Six months later"
       >
@@ -107,6 +116,8 @@ export default function MonthSelector({
         onChange={(event) => onPick(event.target.value)}
         aria-label={`Jump to ${label} month`}
       />
+      {/* A grid that pages forward needs a way back that does not mean counting
+          months down one at a time. */}
       {!isCurrent && (
         <button className="btn ghost" type="button" onClick={goToCurrent} disabled={busy}>
           This month

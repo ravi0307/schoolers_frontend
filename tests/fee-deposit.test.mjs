@@ -18,6 +18,12 @@ import {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const source = (rel) => readFileSync(join(root, rel), "utf8");
+const assertContains = (file, patterns) => {
+  const text = source(file);
+  for (const pattern of patterns) {
+    assert.match(text, pattern, `${file} is missing ${pattern}`);
+  }
+};
 
 // A fee deposit is the one place in the accounts grid where an amount becomes
 // several months at once. What is recorded has to add up to what was handed
@@ -228,14 +234,75 @@ test("a deposit is a per-student action on the row it belongs to", () => {
   // child?") in front of one the grid has already answered.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /rowAction=\{beginDeposit\}/);
-  assert.match(page, /rowActionLabel="Deposit for \{name\}"/);
   assert.match(page, /function beginDeposit\(\{ id, name, row \}\)/);
   assert.match(page, /studentId: id/);
-  const table = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(table, /onClick=\{\(\) => rowAction\(\{ row, id, name \}\)\}/);
+  assert.match(page, /onClick=\{\(\) => rowAction\(\{ row, id, name \}\)\}/);
   // And only the fee grid has it: a salary is not deposited for a term.
   const salaryGrid = page.slice(page.indexOf("nameHeader=\"Staff\""), page.indexOf("nameHeader=\"Student\""));
   assert.doesNotMatch(salaryGrid, /rowAction=/, "only the fee grid offers a deposit");
+});
+
+test("the deposit action sits at the far right, in a column of its own", () => {
+  // It acts on the whole row, not on any one month, so it is not a month
+  // column. Placed after the figures it reads as the separate action it is;
+  // under the name it read as part of who the student is.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  const body = page.slice(page.indexOf("<tbody>"), page.indexOf("</tbody>"));
+  const action = body.indexOf("acct-action-cell");
+  const lastMonth = body.lastIndexOf("RemarkCell");
+  assert.ok(action > -1, "the row needs its own action cell");
+  assert.ok(action > lastMonth, "the action must come after the month cells, not before them");
+  assert.doesNotMatch(body, /acct-person[\s\S]{0,200}acct-row-action/,
+    "the button must not sit inside the person cell");
+  // And it is labelled, so the button is not a floating control at the end of a
+  // row with nothing to say what it does.
+  assert.match(page, /\{rowAction && <th className="acct-action-head">\{rowActionLabel\}<\/th>\}/);
+  assert.match(page, /rowActionLabel="Deposit"/);
+  assert.match(page, /rowActionTitle="Record a deposit for \{name\}"/);
+  // The full name belongs in the tooltip, not in the button: a column of
+  // "Deposit for Aarav Sharma" would be unreadable at any width.
+  assert.doesNotMatch(page, /rowActionLabel="Deposit for \{name\}"/);
+  assertContains("src/styles/global.css", [
+    /\.acct-action-cell\s*\{[^}]*text-align:\s*right/s,
+    /\.acct-action-head\s*\{[^}]*text-align:\s*right/s,
+  ]);
+});
+
+test("the fee grid can page forward, because a deposit writes months ahead", () => {
+  // Recording a term in September fills the months after it, so those months
+  // hold figures the admin has to be able to read back to check the deposit.
+  // The salary grid has nothing out there and still stops at this month.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  // Matched inside the one element rather than across the file, so the prop has
+  // to be on the fee selector and not merely somewhere after it.
+  const selectors = [...page.matchAll(/<MonthSelector[\s\S]*?\/>/g)].map((m) => m[0]);
+  assert.equal(selectors.length, 2, "one selector per grid");
+  const fee = selectors.find((s) => s.includes("anchor={feeAnchor}"));
+  const salary = selectors.find((s) => s.includes("anchor={salaryAnchor}"));
+  assert.ok(fee && salary, "both grids have their own selector");
+  assert.match(fee, /allowFuture/,
+    "the fee grid must be allowed to show future months");
+  assert.doesNotMatch(salary, /allowFuture/,
+    "the salary grid still has nothing beyond this month to show");
+});
+
+test("forward paging stops only for a grid that holds no future months", () => {
+  // The disabling rule moved from "the anchor is this month" to "the anchor is
+  // this month AND the grid has no future months", so a grid that does is not
+  // trapped at the present.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.match(selector, /allowFuture = false/, "the default keeps the old behaviour");
+  const forward = [...selector.matchAll(/disabled=\{([^}]*isCurrent[^}]*)\}/g)];
+  assert.equal(forward.length, 2, "both forward controls are guarded");
+  for (const [, expr] of forward) {
+    assert.match(expr, /!allowFuture && isCurrent/,
+      `forward paging must be conditional on the grid, got "${expr}"`);
+  }
+  // The backward controls are never gated on the future, and a grid paged
+  // forward keeps a way back in one click.
+  assert.match(selector, /disabled=\{busy\}/);
+  assert.match(selector, /\{!isCurrent && \([\s\S]{0,120}goToCurrent/,
+    "a grid showing future months needs a way back to this month");
 });
 
 test("a finished deposit closes the dialog and refreshes the fee grid", () => {
