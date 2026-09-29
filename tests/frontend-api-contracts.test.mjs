@@ -1436,11 +1436,72 @@ test("a selector that holds no future months cannot page into them", () => {
   assert.doesNotMatch(backButtons, /disabled=\{[^}]*isCurrent/, "backwards must not be blocked at the current month");
 });
 
-test("the selector uses a month input, not a date input", () => {
-  // The window is whole calendar months; letting an admin pick a day of a
-  // month would only mean truncating it to something they did not intend.
-  assertContains("src/components/ui/MonthSelector.jsx", [/type="month"/]);
+test("the selector picks a month from dropdowns, not by typing or by day", () => {
+  // A type="month" input renders its own month and year spinners, so how it
+  // looks is the browser's decision and differs by platform; on several of them
+  // it is a text box that will read a half-typed year as a real one. The
+  // dropdowns can only ever hold valid values, which is the point of the change.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.doesNotMatch(selector, /type="month"/, "the month input is replaced by dropdowns");
+  assert.doesNotMatch(selector, /type="date"/, "the window is whole months, not days");
+  assert.match(selector, /<select[\s\S]*className="week-selector-pick"/);
+  // The week selector is a different control and keeps its date input.
   assertContains("src/components/ui/WeekSelector.jsx", [/type="date"/]);
+});
+
+test("the month dropdown offers the twelve months and the year dropdown a year list", () => {
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  // Both lists come from the shared helpers rather than being written out here,
+  // so a month cannot be spelled two different ways in two places.
+  assert.match(selector, /MONTH_OPTIONS\.map/);
+  assert.match(selector, /years\.map/);
+  assert.match(selector, /monthAnchorParts\(anchor\) \|\| monthAnchorParts\(current\)/);
+});
+
+test("the dropdowns follow the anchor rather than local state", () => {
+  // The anchor is what the grid is showing, so a value that disagrees with it
+  // is a value claiming to look at a month that is not on screen. This is also
+  // why `useState` and the picked-value plumbing are gone: with two dropdowns
+  // there is no half-typed value to hold on to.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.doesNotMatch(selector, /useState/, "a controlled dropdown needs no local copy of the value");
+  assert.doesNotMatch(selector, /setPicked/);
+  assert.doesNotMatch(selector, /fromMonthInputValue/);
+});
+
+test("either dropdown moves the window, and both are resolved against the other", () => {
+  // Picking April in 2027 while the grid shows September 2026 is a jump of seven
+  // months, not of four -- so the year is not a modifier on the old anchor, it
+  // replaces it and the month is carried across.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.match(selector, /function onPickMonth\(month\)[\s\S]*anchorFromParts\(parts\.year, month\)/);
+  assert.match(selector, /function onPickYear\(year\)[\s\S]*anchorFromParts\(year, parts\.month\)/);
+  // A pick that does not make a month changes nothing rather than sending a
+  // malformed anchor to the server.
+  assert.match(selector, /const next = anchorFromParts\([^)]*\);\n\s*if \(next\) onChange\(next\);/);
+});
+
+test("a grid that cannot show the future greys the future out of the dropdowns too", () => {
+  // The arrows refuse to page forward past this month, so a dropdown that will
+  // happily jump there is not refusing anything. Checked against the same
+  // `allowFuture` flag the forward controls read, and a year is only out of
+  // reach once every month in it has gone, so the current year stays listed.
+  const selector = source("src/components/ui/MonthSelector.jsx");
+  assert.match(selector, /monthUnavailable[\s\S]*?if \(allowFuture\) return false;/);
+  assert.match(selector, /yearUnavailable[\s\S]*?if \(allowFuture\) return false;/);
+  assert.match(selector, /disabled=\{monthUnavailable\(option\.value\)\}/);
+  assert.match(selector, /disabled=\{yearUnavailable\(year\)\}/);
+  // A year is tested on its FIRST month, not its last. January of next year is
+  // the only month that can put a whole year ahead of now, and testing December
+  // instead would grey out the current year -- the year the grid is standing in
+  // and the one year that must stay selectable.
+  assert.match(selector, /anchorFromParts\(year, 1\)/);
+  assert.doesNotMatch(selector, /anchorFromParts\(year, 12\)/, "the year is tested on January, or the current year greys itself out");
+  // Every month is still rendered -- greyed out via the disabled attribute
+  // rather than filtered out of the list, so it reads as a year and not a
+  // truncated one.
+  assert.match(selector, /<option\s+key=\{option\.value\}\s+value=\{option\.value\}\s+disabled=\{monthUnavailable\(option\.value\)\}\s*>\s*\{option\.label\}/);
+  assert.doesNotMatch(selector, /MONTH_OPTIONS\.filter/, "months are disabled, not removed");
 });
 
 // ---- Per-student report ----
