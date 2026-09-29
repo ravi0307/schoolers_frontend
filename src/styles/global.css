@@ -992,6 +992,82 @@ body {
   .acct-cell-actions { opacity: 1; }
 }
 
+/* The per-row entry point for a period payment. Quiet by default: it is a
+   route to the dialog, not the figure the grid is about, and the grid's own
+   numbers must stay the loudest thing in the row. */
+.acct-row-action {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 3px;
+  padding: 1px 5px;
+}
+.acct-row-action:hover:not(:disabled) { border-color: var(--line); color: var(--ink); }
+.acct-row-action:disabled { cursor: default; opacity: 0.45; }
+
+/* ---- Accounts: recording a fee deposit for a period ---- */
+.fd-box { max-width: 520px; padding: 0; width: 94%; }
+.fd-box:focus { outline: none; }
+.fd-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 18px; }
+.fd-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.fd-row .fd-field { flex: 1 1 160px; }
+.fd-field { display: flex; flex-direction: column; gap: 4px; }
+.fd-label { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+
+/* The four periods read as one choice, so they are one group of buttons
+   rather than four that look like four unrelated commands. */
+.fd-plans { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-plan {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  gap: 1px;
+  padding: 7px 11px;
+  text-align: left;
+}
+.fd-plan:hover:not(:disabled) { border-color: var(--pencil-yellow-dark); }
+.fd-plan-on { background: var(--pencil-yellow); border-color: var(--pencil-yellow-dark); }
+.fd-plan-label { font-size: 13px; font-weight: 600; }
+.fd-plan-months { color: var(--ink-soft); font-size: 11px; }
+.fd-plan:disabled { cursor: default; opacity: 0.6; }
+
+.fd-preview { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fd-preview-head { display: flex; flex-direction: column; gap: 1px; padding: 9px 12px; }
+.fd-preview-title { font-size: 13px; font-weight: 600; }
+.fd-preview-sub { color: var(--ink-soft); font-size: 11px; }
+.fd-table { font-size: 12px; }
+.fd-table th, .fd-table td { padding: 5px 12px; }
+.fd-num { text-align: right; }
+.fd-state { text-align: right; width: 1%; }
+.fd-row-replaced { background: var(--paper-light); }
+.fd-tag { font-size: 11px; white-space: nowrap; }
+.fd-tag-new { color: var(--ink-soft); }
+.fd-tag-replaced { color: var(--red-pen); font-weight: 600; }
+
+/* Loud on purpose. Replacing a month that already carries a payment is
+   destroying a record, and it has to be read before the confirm button is
+   pressed, not inferred afterwards from a total. */
+.fd-warning {
+  background: var(--red-pen-light);
+  border: 1px solid #e5b3ad;
+  border-radius: 8px;
+  color: #8f2b23;
+  font-size: 12px;
+  margin: 0;
+  padding: 8px 11px;
+}
+.fd-hint { color: var(--ink-soft); font-size: 12px; margin: 0; }
+.fd-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 /* ---- Accounts: filter, sort, and a fixed-height scrolling grid ---- */
 /* Six rows then scroll. The height is derived from the row box rather than
    hard-coded, so the sticky header keeps sitting on the first row instead of

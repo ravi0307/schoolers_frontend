@@ -5,7 +5,9 @@ import * as accountsApi from "../../api/accounts";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import MonthSelector from "../../components/ui/MonthSelector";
+import FeeDepositDialog from "../../components/accounts/FeeDepositDialog";
 import { currentMonthAnchor } from "../../utils/accountsFlow";
+import { depositResultText } from "../../utils/feeDeposit";
 import {
   STAFF_SORTS,
   VISIBLE_ROWS,
@@ -34,6 +36,13 @@ import { formatDay } from "../../utils/studentReport";
  * view to correct, and this month's is open to write. The remark is editable
  * for a month already paid, so a correction never has to wait for the next
  * payroll run.
+ *
+ * Fees carry the same two months and the same remarks, and add a deposit: a
+ * family hands over one amount for a term rather than a figure per month, so
+ * the deposit dialog asks for the amount and the period and previews the
+ * months the service will write. The preview names any month that already
+ * carries an entry, because a deposit landing on a paid month is a correction
+ * and not a surprise.
  */
 
 const MONTH_LABELS = {
@@ -42,9 +51,9 @@ const MONTH_LABELS = {
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
 };
 
-/** Salaries sit in a two-month window; fees keep the wider six. */
+/** Both grids sit in a two-month window: a payment and the remark on it. */
 const SALARY_MONTHS = 2;
-const FEE_MONTHS = 6;
+const FEE_MONTHS = 2;
 
 function monthLabel(month) {
   const [year, mon] = month.split("-");
@@ -252,6 +261,8 @@ function SheetTable({
   label,
   singular,
   withRemarks = false,
+  rowAction = null,
+  rowActionLabel = "",
 }) {
   const months = sheet?.months || [];
   const allRows = sheet?.rows || [];
@@ -348,6 +359,17 @@ function SheetTable({
                             <span className="acct-person-meta">{secondaryOf(row)}</span>
                           )}
                         </div>
+                        {rowAction && (
+                          <button
+                            type="button"
+                            className="acct-row-action"
+                            onClick={() => rowAction({ row, id, name })}
+                            disabled={busy}
+                            title={rowActionLabel.replace("{name}", name)}
+                          >
+                            {rowActionLabel.replace("{name}", name)}
+                          </button>
+                        )}
                       </th>
                       {months.map((m) => (
                         <Fragment key={m}>
@@ -357,7 +379,7 @@ function SheetTable({
                             value={row.amounts?.[m]}
                             paidOn={row.paid_on?.[m]}
                             busy={busy}
-                            onSave={(amount) => onSave(id, m, amount)}
+                            onSave={(amount) => onSave(id, m, amount, row.notes?.[m] ?? null)}
                             onClear={() => onClear(id, m)}
                           />
                           {withRemarks && (
@@ -391,16 +413,43 @@ export default function AdminAccounts() {
   const [feeAnchor, setFeeAnchor] = useState(() => currentMonthAnchor());
   const salaries = useApi(() => accountsApi.salarySheet(SALARY_MONTHS, salaryAnchor), [salaryAnchor]);
   const fees = useApi(() => accountsApi.feeSheet(FEE_MONTHS, feeAnchor), [feeAnchor]);
+  // The deposit periods come from the server, so a plan the dialog offers is
+  // by construction one the service can split with. They are also stable, so
+  // they are fetched once: the labels are not worth a refetch per grid page.
+  const plans = useApi(() => accountsApi.feePlans(), []);
+  const [depositFor, setDepositFor] = useState(null);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
-  async function save(kind, id, month, amount) {
+  // A deposit writes months beyond the two the grid shows, so the dialog is
+  // given the grid's own anchor as its starting point: the admin pages to the
+  // month they mean to start from, and the period runs forward from there.
+  function beginDeposit({ id, name, row }) {
+    setDepositFor({
+      studentId: id,
+      name,
+      secondary: [row?.class_name, row?.admission_no].filter(Boolean).join(" · "),
+    });
+  }
+
+  function depositSaved(plan) {
+    setDepositFor(null);
+    fees.refetch();
+    toast(depositResultText(plan));
+  }
+
+  // The amount is stored on the same row as the remark, so an amount edit
+  // re-sends the remark already on the server. Without it the server would
+  // take "no remark in this payload" as "no remark", and correcting a figure
+  // would quietly delete the sentence explaining it. The remark comes from the
+  // row in view, so it cannot drift while the admin types.
+  async function save(kind, id, month, amount, note = null) {
     setBusy(true);
     try {
       if (kind === "salary") {
-        await accountsApi.recordSalary({ staff_id: id, month, amount });
+        await accountsApi.recordSalary({ staff_id: id, month, amount, note });
       } else {
-        await accountsApi.recordFee({ student_id: id, month, amount });
+        await accountsApi.recordFee({ student_id: id, month, amount, note });
       }
       if (kind === "salary") salaries.refetch();
       else fees.refetch();
@@ -419,11 +468,16 @@ export default function AdminAccounts() {
   // comes from the row the admin is looking at, so the figure cannot drift
   // while they type, and the paid date is left out -- editing a remark is not
   // a second payment, and must not restamp the day it was made.
-  async function saveNote(id, month, amount, note) {
+  async function saveNote(kind, id, month, amount, note) {
     setBusy(true);
     try {
-      await accountsApi.recordSalary({ staff_id: id, month, amount, note });
-      salaries.refetch();
+      if (kind === "salary") {
+        await accountsApi.recordSalary({ staff_id: id, month, amount, note });
+        salaries.refetch();
+      } else {
+        await accountsApi.recordFee({ student_id: id, month, amount, note });
+        fees.refetch();
+      }
       toast(note ? `${monthLabel(month)} remark saved` : `${monthLabel(month)} remark cleared`);
       return true;
     } catch (err) {
@@ -462,10 +516,12 @@ export default function AdminAccounts() {
     <AdminShell>
       <div className="scr-title">Accounts</div>
       <div className="scr-sub">
-        Staff salaries for the last two months, each with a remark you can add
-        or correct, and student fees over six months. Each table has its own
-        period selector, so you can compare different months side by side.
-        Click an empty cell to record a payment, or use ✎ to correct one.
+        Staff salaries and student fees for the last two months, each with a
+        remark you can add or correct. Each table has its own period selector,
+        so you can compare different months side by side. Click an empty cell
+        to record a payment, or use ✎ to correct one. Where a family pays for
+        a term rather than month by month, use Deposit to record the whole
+        period in one go.
       </div>
 
       {salaries.error && <ErrorBanner message={salaries.error} />}
@@ -502,8 +558,8 @@ export default function AdminAccounts() {
                 secondaryOf={(r) => r.designation}
                 busy={busy}
                 withRemarks
-                onSave={(id, m, amount) => save("salary", id, m, amount)}
-                onSaveNote={(id, m, amount, note) => saveNote(id, m, amount, note)}
+                onSave={(id, m, amount, note) => save("salary", id, m, amount, note)}
+                onSaveNote={(id, m, amount, note) => saveNote("salary", id, m, amount, note)}
                 onClear={(id, m) => clear("salary", id, m)}
                 emptyText="No active staff yet. Add staff under Set up to track salaries."
                 noMatchText="No staff match that search."
@@ -546,12 +602,30 @@ export default function AdminAccounts() {
                 nameOf={(r) => r.student_name}
                 secondaryOf={(r) => [r.class_name, r.admission_no].filter(Boolean).join(" · ")}
                 busy={busy}
-                onSave={(id, m, amount) => save("fee", id, m, amount)}
+                withRemarks
+                onSave={(id, m, amount, note) => save("fee", id, m, amount, note)}
+                onSaveNote={(id, m, amount, note) => saveNote("fee", id, m, amount, note)}
                 onClear={(id, m) => clear("fee", id, m)}
+                rowAction={beginDeposit}
+                rowActionLabel="Deposit for {name}"
                 emptyText="No active students yet. Add students under Set up to track fees."
                 noMatchText="No students match that search."
               />
             </section>
+
+            {depositFor && plans.data && (
+              <FeeDepositDialog
+                student={depositFor}
+                plans={plans.data.plans}
+                anchor={feeAnchor}
+                busy={busy}
+                onClose={() => setDepositFor(null)}
+                onSaved={depositSaved}
+              />
+            )}
+            {depositFor && plans.error && (
+              <ErrorBanner message={`Could not load the deposit periods: ${plans.error}`} />
+            )}
         </>
       )}
     </AdminShell>
