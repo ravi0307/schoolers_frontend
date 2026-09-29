@@ -286,18 +286,14 @@ test("the fee grid can page forward, because a deposit writes months ahead", () 
     "the salary grid still has nothing beyond this month to show");
 });
 
-test("forward paging stops only for a grid that holds no future months", () => {
-  // The disabling rule moved from "the anchor is this month" to "the anchor is
-  // this month AND the grid has no future months", so a grid that does is not
-  // trapped at the present.
+test("forward controls have been replaced by dropdowns", () => {
+  // The forward one-step and six-step buttons have been removed from the month
+  // selector: the month is now chosen from dropdowns rather than by clicking
+  // arrows. The "This month" button still returns the grid to the current month.
   const selector = source("src/components/ui/MonthSelector.jsx");
   assert.match(selector, /allowFuture = false/, "the default keeps the old behaviour");
-  const forward = [...selector.matchAll(/disabled=\{([^}]*isCurrent[^}]*)\}/g)];
-  assert.equal(forward.length, 2, "both forward controls are guarded");
-  for (const [, expr] of forward) {
-    assert.match(expr, /!allowFuture && isCurrent/,
-      `forward paging must be conditional on the grid, got "${expr}"`);
-  }
+  assert.doesNotMatch(selector, /go\(1\)/, "the forward one-step control is gone");
+  assert.doesNotMatch(selector, /go\(6\)/, "the forward six-step control is gone");
   // The backward controls are never gated on the future, and a grid paged
   // forward keeps a way back in one click.
   assert.match(selector, /disabled=\{busy\}/);

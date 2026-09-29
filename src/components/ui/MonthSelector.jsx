@@ -1,14 +1,10 @@
 import {
   DEFAULT_WINDOW_MONTHS,
-  MONTH_OPTIONS,
-  anchorFromParts,
   currentMonthAnchor,
   formatMonthWindow,
-  isAfterMonthAnchor,
-  monthAnchorParts,
   shiftMonthAnchor,
-  yearOptions,
 } from "../../utils/accountsFlow";
+import MonthYearPicker from "./MonthYearPicker";
 
 /**
  * Month navigation for the accounts grids.
@@ -55,12 +51,6 @@ export default function MonthSelector({
   const current = currentMonthAnchor();
   const isCurrent = anchor === current;
 
-  // The dropdowns are controlled by the anchor rather than by local state: the
-  // anchor is what the grid is showing, so a value that disagrees with it is a
-  // value that would claim to be looking at a month it is not.
-  const parts = monthAnchorParts(anchor) || monthAnchorParts(current);
-  const years = yearOptions(anchor, { current });
-
   function go(delta) {
     onChange(shiftMonthAnchor(anchor, delta));
   }
@@ -69,113 +59,19 @@ export default function MonthSelector({
     onChange(current);
   }
 
-  // Either dropdown can move the window, so both are resolved against the other:
-  // picking April in 2027 when the grid shows September 2026 is a jump of seven
-  // months, not of four.
-  function onPickMonth(month) {
-    const next = anchorFromParts(parts.year, month);
-    if (next) onChange(next);
-  }
-
-  function onPickYear(year) {
-    const next = anchorFromParts(year, parts.month);
-    if (next) onChange(next);
-  }
-
-  // What a grid that cannot show the future should not offer. Greyed out rather
-  // than missing, so the list still reads as a whole year and not a truncated
-  // one.
-  const monthUnavailable = (month) => {
-    if (allowFuture) return false;
-    return isAfterMonthAnchor(anchorFromParts(parts.year, month), current);
-  };
-
-  // A year is tested on its FIRST month, not its last. January of next year is
-  // the only one that can be a whole year ahead of now, and a year is out of
-  // reach exactly when its January has not arrived -- testing December instead
-  // would grey out the current year itself, which is where the grid is standing
-  // and the one year that must stay selectable.
-  const yearUnavailable = (year) => {
-    if (allowFuture) return false;
-    return isAfterMonthAnchor(anchorFromParts(year, 1), current);
-  };
-
   return (
     <div className="week-selector" role="group" aria-label={`Select ${label}`}>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(-6)}
+      <MonthYearPicker
+        value={anchor}
+        onChange={onChange}
         disabled={busy}
-        title="Six months earlier"
-        aria-label="Six months earlier"
-      >
-        &#171;
-      </button>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(-1)}
-        disabled={busy}
-        title="Previous month"
-        aria-label="Previous month"
-      >
-        &#8592;
-      </button>
-      <span className="week-selector-range">{formatMonthWindow(anchor, months)}</span>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(1)}
-        // A grid that holds no future months should not page into them. One
-        // that does -- the fee grid, once a deposit can write months ahead --
-        // has figures out there waiting to be read back.
-        disabled={busy || (!allowFuture && isCurrent)}
-        title="Next month"
-        aria-label="Next month"
-      >
-        &#8594;
-      </button>
-      <button
-        className="btn ghost"
-        type="button"
-        onClick={() => go(6)}
-        disabled={busy || (!allowFuture && isCurrent)}
-        title="Six months later"
-        aria-label="Six months later"
-      >
-        &#187;
-      </button>
-      <select
-        className="week-selector-pick"
-        value={String(parts.month).padStart(2, "0")}
-        onChange={(event) => onPickMonth(event.target.value)}
-        disabled={busy}
-        aria-label={`${label} month`}
-      >
-        {MONTH_OPTIONS.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={monthUnavailable(option.value)}
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <select
-        className="week-selector-pick"
-        value={String(parts.year)}
-        onChange={(event) => onPickYear(event.target.value)}
-        disabled={busy}
-        aria-label={`${label} year`}
-      >
-        {years.map((year) => (
-          <option key={year} value={year} disabled={yearUnavailable(year)}>
-            {year}
-          </option>
-        ))}
-      </select>
+        // A grid that holds no future months gets a boundary, and the picker
+        // greies the future out of its lists to match the arrows above. A grid
+        // that can read months a deposit has written ahead gets none.
+        stopAt={allowFuture ? "" : current}
+        monthLabel={`${label} month`}
+        yearLabel={`${label} year`}
+      />
       {/* A grid that pages forward needs a way back that does not mean counting
           months down one at a time. */}
       {!isCurrent && (

@@ -442,6 +442,9 @@ body {
   cursor: pointer;
   min-width: 108px;
 }
+/* Inside the deposit dialog the pair belongs to a field, not to a row of
+   controls, so it is stacked and allowed to be as wide as the field. */
+.fd-field .week-selector-pick { min-width: 0; width: 100%; }
 .web-content .week-selector-pick:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -1051,6 +1054,17 @@ body {
 .fd-row .fd-field { flex: 1 1 160px; }
 .fd-field { display: flex; flex-direction: column; gap: 4px; }
 .fd-label { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+/* The deposit's start month is a fieldset rather than a label, because it holds
+   two controls and a label can only be tied to one of them. The legend is styled
+   as the label, and the fieldset's own border and padding are dropped so it sits
+   in the dialog like the labelled inputs beside it. */
+.fd-field:has(select) {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+.fd-field > legend.fd-label { padding: 0; }
 
 /* The four periods read as one choice, so they are one group of buttons
    rather than four that look like four unrelated commands. */
