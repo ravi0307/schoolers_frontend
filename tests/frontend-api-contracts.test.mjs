@@ -1024,19 +1024,22 @@ test("the accounts API module matches the backend accounts surface", () => {
     /client\.get\("\/accounts\/fees"/,
     /client\.post\("\/accounts\/salaries"/,
     /client\.post\("\/accounts\/fees"/,
+    /client\.get\("\/accounts\/fees\/plans"/,
+    /client\.post\("\/accounts\/fees\/deposit\/preview"/,
+    /client\.post\("\/accounts\/fees\/deposit"/,
     /client\.delete\(`\/accounts\/salaries\/\$\{staffId\}\/\$\{month\}`/,
     /client\.delete\(`\/accounts\/fees\/\$\{studentId\}\/\$\{month\}`/,
   ]);
 });
 
 test("the month window comes from the API rather than being recomputed per client", () => {
-  // One definition of "the last six months", owned by the server, so the
+  // One definition of "the months this grid shows", owned by the server, so the
   // columns and the totals can never disagree. The page sends an anchor and
   // renders whatever months come back.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.doesNotMatch(page, /monthWindowValues\(/, "the page must not build its own window");
   assert.match(page, /const SALARY_MONTHS = 2/);
-  assert.match(page, /const FEE_MONTHS = 6/);
+  assert.match(page, /const FEE_MONTHS = 2/);
   assert.match(page, /salarySheet\(SALARY_MONTHS, salaryAnchor\)/);
   assert.match(page, /feeSheet\(FEE_MONTHS, feeAnchor\)/);
   assert.match(page, /const months = sheet\?\.months \|\| \[\]/, "the grid must render the months the API returned");
@@ -1142,10 +1145,10 @@ test("the accounts page asks for an explicit window, not an unbounded range", ()
     assert.match(arg, /MONTHS/, `${fn} must name its window width, got "${arg}"`);
   }
   assert.match(page, /const SALARY_MONTHS = 2/);
-  assert.match(page, /const FEE_MONTHS = 6/);
+  assert.match(page, /const FEE_MONTHS = 2/);
   // The write and delete calls take no window: they address one person and
   // one month, so requiring a range of them would be wrong.
-  assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount \}\)/);
+  assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount, note \}\)/);
 });
 
 test("each selector labels the window its own grid shows", () => {
@@ -1161,19 +1164,25 @@ test("each selector labels the window its own grid shows", () => {
   assert.match(page, /anchor=\{feeAnchor\}\s+onChange=\{setFeeAnchor\}\s+busy=\{busy\}\s+label="fee period"\s+months=\{FEE_MONTHS\}/);
 });
 
-test("the salary grid pairs each month with an editable remark", () => {
+test("each grid pairs every month with an editable remark", () => {
   // A figure with no reason beside it is not actionable, and a remark that can
   // only be written at the moment of payment cannot be corrected later. Both
-  // months get one: last month's is still in view to amend, this month's is
-  // open to write.
+  // grids give each of their two months one: last month's is still in view to
+  // amend, this month's is open to write. Fees carry the same column as
+  // salaries, because a family that pays quarterly needs the same sentence
+  // beside the same figure.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /<RemarkCell/);
-  assert.match(page, /withRemarks/);
-  // Only the salary grid carries remarks; the fee grid keeps one column per
-  // month, and a remark on a tuition fee would be a second thing to explain.
-  const feeGrid = page.slice(page.indexOf('nameHeader="Student"'));
-  assert.doesNotMatch(feeGrid, /withRemarks/, "the fee grid must not grow a remark column");
-  assert.doesNotMatch(feeGrid, /onSaveNote/, "the fee grid must not send a note");
+  // Both grids ask for remarks, each with its own save path. Counted at the two
+  // call sites rather than in the file, because the shared table reads the prop
+  // several times itself.
+  const grids = [...page.matchAll(/<SheetTable[\s\S]*?\/>/g)].map((m) => m[0]);
+  assert.equal(grids.length, 2, "one table per grid");
+  for (const grid of grids) {
+    assert.match(grid, /withRemarks/, "every grid pairs a month with its remark");
+  }
+  assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\("salary", id, m, amount, note\)\}/);
+  assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\("fee", id, m, amount, note\)\}/);
   // The remark shown is the one the server stored for that month.
   assert.match(page, /note=\{row\.notes\?\.\[m\]\}/);
   // And it is editable, not a read-only label.
@@ -1181,17 +1190,34 @@ test("the salary grid pairs each month with an editable remark", () => {
   assert.match(page, /\{note \|\| "Add a remark"\}/);
 });
 
+test("editing a figure keeps the remark standing beside it", () => {
+  // The remark lives on the same row as the amount, so an amount edit that
+  // omits it reads as "no remark" and silently deletes the sentence
+  // explaining the figure. The amount save therefore carries the remark the
+  // grid is showing, for both grids.
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(
+    page,
+    /onSave=\{\(amount\) => onSave\(id, m, amount, row\.notes\?\.\[m\] \?\? null\)\}/,
+    "an amount edit must re-send the remark already on the row",
+  );
+  assert.match(page, /onSave=\{\(id, m, amount, note\) => save\("fee", id, m, amount, note\)\}/);
+  assert.match(page, /onSave=\{\(id, m, amount, note\) => save\("salary", id, m, amount, note\)\}/);
+  assert.match(page, /async function save\(kind, id, month, amount, note = null\)/);
+  assert.match(page, /await accountsApi\.recordFee\(\{ student_id: id, month, amount, note \}\)/);
+});
+
 test("a remark is saved onto the payment it belongs to, without restamping it", () => {
-  // The remark is stored on the salary row, so saving one re-sends the amount
+  // The remark is stored on the payment, so saving one re-sends the amount
   // already on the server. It must come from the row the admin is looking at,
   // never from the cell being edited, or a stale read would overwrite a
   // correction. And the paid date is left out: a remark edit is not a second
   // payment and must not rewrite the day the money actually moved.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\(id, m, amount, note\)\}/);
   assert.match(page, /onSave=\{\(next\) => onSaveNote\(id, m, row\.amounts\?\.\[m\], next\)\}/);
   assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount, note \}\)/);
   assert.doesNotMatch(page, /recordSalary\(\{ staff_id: id, month, amount, note, paid_on/, "an edit must not resend a paid date");
+  assert.doesNotMatch(page, /recordFee\(\{ student_id: id, month, amount, note, paid_on/, "an edit must not resend a paid date");
 });
 
 test("an empty remark is a clearing, and an unpaid month has nothing to remark on", () => {
