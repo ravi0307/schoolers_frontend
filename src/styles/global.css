@@ -943,6 +943,50 @@ body {
 }
 .acct-cell-editing { background: var(--paper); }
 .acct-input { font-size: 13px; max-width: 110px; padding: 4px 6px; text-align: right; }
+
+/* The remark beside a salary figure. It is prose, not a number, so it reads
+   left-aligned and is allowed to be wide: the reason a payment looks the way
+   it does is a sentence, and truncating it hides the answer. */
+.acct-col-sub {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+.acct-month-lead { border-right: 1px solid var(--line); }
+.acct-note-head {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-align: left !important;
+  text-transform: uppercase;
+}
+.acct-note-cell { min-width: 190px; text-align: left !important; }
+.acct-note {
+  background: none;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 240px;
+  overflow: hidden;
+  padding: 2px 6px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.acct-note:hover { background: var(--paper-light); border-color: var(--line); }
+.acct-note-blank { color: var(--ink-soft); font-size: 13px; }
+.acct-input-note { max-width: 240px; text-align: left; width: 100%; }
 /* Touch has no hover, so keep the cell actions permanently visible there. */
 @media (hover: none) {
   .acct-cell-actions { opacity: 1; }

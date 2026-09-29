@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  DEFAULT_WINDOW_MONTHS,
   currentMonthAnchor,
   formatMonthWindow,
   fromMonthInputValue,
@@ -14,13 +15,22 @@ import {
  * month, and a shortcut returns to the current one. The difference is what the
  * window is anchored on. A week selector moves to the *next* week and the
  * columns become that week; here the anchor is the last month shown, so moving
- * back one step keeps the six months ending a month earlier rather than
+ * back one step keeps the months ending a month earlier rather than
  * skipping a month in the middle of the grid.
  *
  * Each grid gets its own instance, so an admin comparing September salaries
- * against March fees can hold the two windows apart.
+ * against March fees can hold the two windows apart. `months` is the width of
+ * the window the caller asked for, and it labels the range honestly: the salary
+ * grid shows two months, and a selector reading "Apr 2026 – Sep 2026" above it
+ * would promise columns that are not there.
  */
-export default function MonthSelector({ anchor, onChange, busy = false, label = "period" }) {
+export default function MonthSelector({
+  anchor,
+  onChange,
+  busy = false,
+  label = "period",
+  months = DEFAULT_WINDOW_MONTHS,
+}) {
   const [picked, setPicked] = useState(() => toMonthInputValue(anchor));
 
   const current = currentMonthAnchor();
@@ -67,7 +77,7 @@ export default function MonthSelector({ anchor, onChange, busy = false, label = 
       >
         &#8592;
       </button>
-      <span className="week-selector-range">{formatMonthWindow(anchor)}</span>
+      <span className="week-selector-range">{formatMonthWindow(anchor, months)}</span>
       <button
         className="btn ghost"
         type="button"
