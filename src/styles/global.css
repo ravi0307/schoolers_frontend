@@ -427,6 +427,28 @@ body {
   background: var(--paper);
   color: var(--ink);
 }
+/* The month and year dropdowns that replace the month input. They take the
+   same surface as the input they stand in for, sized to their widest option
+   rather than the currently chosen one so the row does not jump around as the
+   admin changes month. */
+.web-content .week-selector-pick {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ruled-blue);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  min-width: 108px;
+}
+.web-content .week-selector-pick:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.web-content .week-selector-pick option:disabled {
+  color: var(--ink-soft);
+}
 .web-content .selected-timetable-label {
   display: flex;
   align-items: center;

@@ -84,3 +84,58 @@ export function toMonthInputValue(anchor) {
 export function fromMonthInputValue(value) {
   return isValidMonthAnchor(value) ? value : "";
 }
+
+/** An anchor split into numbers, or null when it is not one. */
+export function monthAnchorParts(anchor) {
+  if (!isValidMonthAnchor(anchor)) return null;
+  const { year, month } = toParts(anchor);
+  return { year, month };
+}
+
+/** An anchor rebuilt from a year and a month, or "" when they do not make one. */
+export function anchorFromParts(year, month) {
+  const y = Number(year);
+  const m = Number(month);
+  if (!Number.isInteger(y) || !Number.isInteger(m)) return "";
+  if (m < 1 || m > 12) return "";
+  if (y < 1000 || y > 9999) return "";
+  return toAnchor(y, m);
+}
+
+/** True when `anchor` is later than `other`. Both must be well-formed. */
+export function isAfterMonthAnchor(anchor, other) {
+  if (!isValidMonthAnchor(anchor) || !isValidMonthAnchor(other)) return false;
+  return toParts(anchor).year * 12 + toParts(anchor).month
+    > toParts(other).year * 12 + toParts(other).month;
+}
+
+/**
+ * The months a picker should offer, as full names.
+ *
+ * Full names rather than the three-letter forms the grid headers use: a closed
+ * list has room for them, and "September" beside "2026" is unambiguous where
+ * "Sep" beside a year column might be read as a date.
+ */
+export const MONTH_OPTIONS = [
+  ["01", "January"], ["02", "February"], ["03", "March"], ["04", "April"],
+  ["05", "May"], ["06", "June"], ["07", "July"], ["08", "August"],
+  ["09", "September"], ["10", "October"], ["11", "November"], ["12", "December"],
+].map(([value, label]) => ({ value, label }));
+
+/**
+ * The years a picker should offer, oldest first.
+ *
+ * Both the year on screen and the current year are always included, whichever
+ * way they sit: an admin who has paged forward still needs their own year
+ * listed, and the current year is what the range label is measured against.
+ * The span is generous rather than tight, because the cost of offering a year
+ * that holds nothing is one wasted row, and the cost of not offering one that
+ * does is a figure the admin cannot reach.
+ */
+export function yearOptions(anchor, { back = 4, forward = 2, current = currentMonthAnchor() } = {}) {
+  const shown = isValidMonthAnchor(anchor) ? toParts(anchor).year : 0;
+  const thisYear = toParts(current).year;
+  const first = Math.min(shown, thisYear - back);
+  const last = Math.max(shown, thisYear + forward);
+  return Array.from({ length: last - first + 1 }, (_, i) => first + i);
+}
