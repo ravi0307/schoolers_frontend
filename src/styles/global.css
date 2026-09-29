@@ -1094,6 +1094,7 @@ body {
 
 .sr-table { margin-top: 8px; }
 .sr-num { text-align: right; }
+.sr-dash { color: var(--ink-soft); }
 .sr-average { font-weight: 700; }
 .sr-coverage { color: var(--ink-soft); display: block; font-size: 11px; font-weight: 400; }
 
