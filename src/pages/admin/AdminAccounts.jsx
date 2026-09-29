@@ -263,6 +263,7 @@ function SheetTable({
   withRemarks = false,
   rowAction = null,
   rowActionLabel = "",
+  rowActionTitle = "",
 }) {
   const months = sheet?.months || [];
   const allRows = sheet?.rows || [];
@@ -344,6 +345,9 @@ function SheetTable({
                       {withRemarks && <th className="acct-note-head">remark</th>}
                     </Fragment>
                   ))}
+                  {/* A header for the action column, so the button below it is
+                      labelled rather than floating at the end of the row. */}
+                  {rowAction && <th className="acct-action-head">{rowActionLabel}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -359,17 +363,6 @@ function SheetTable({
                             <span className="acct-person-meta">{secondaryOf(row)}</span>
                           )}
                         </div>
-                        {rowAction && (
-                          <button
-                            type="button"
-                            className="acct-row-action"
-                            onClick={() => rowAction({ row, id, name })}
-                            disabled={busy}
-                            title={rowActionLabel.replace("{name}", name)}
-                          >
-                            {rowActionLabel.replace("{name}", name)}
-                          </button>
-                        )}
                       </th>
                       {months.map((m) => (
                         <Fragment key={m}>
@@ -394,6 +387,23 @@ function SheetTable({
                           )}
                         </Fragment>
                       ))}
+                      {/* The row's own action sits at the far right, after the
+                          figures. It acts on the whole row rather than on any
+                          one month, so it reads as what it is: a separate
+                          action, not another column of the grid. */}
+                      {rowAction && (
+                        <td className="acct-action-cell">
+                          <button
+                            type="button"
+                            className="acct-row-action"
+                            onClick={() => rowAction({ row, id, name })}
+                            disabled={busy}
+                            title={rowActionTitle.replace("{name}", name)}
+                          >
+                            {rowActionLabel}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -584,6 +594,10 @@ export default function AdminAccounts() {
                   busy={busy}
                   label="fee period"
                   months={FEE_MONTHS}
+                  // A deposit records the months after the one it starts in, so
+                  // the fee grid holds figures beyond this month and has to be
+                  // readable out there.
+                  allowFuture
                 />
               </div>
               <div className="scr-sub" style={{ marginBottom: 12 }}>
@@ -607,7 +621,8 @@ export default function AdminAccounts() {
                 onSaveNote={(id, m, amount, note) => saveNote("fee", id, m, amount, note)}
                 onClear={(id, m) => clear("fee", id, m)}
                 rowAction={beginDeposit}
-                rowActionLabel="Deposit for {name}"
+                rowActionLabel="Deposit"
+                rowActionTitle="Record a deposit for {name}"
                 emptyText="No active students yet. Add students under Set up to track fees."
                 noMatchText="No students match that search."
               />
