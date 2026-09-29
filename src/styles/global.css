@@ -992,22 +992,33 @@ body {
   .acct-cell-actions { opacity: 1; }
 }
 
-/* The per-row entry point for a period payment. Quiet by default: it is a
-   route to the dialog, not the figure the grid is about, and the grid's own
-   numbers must stay the loudest thing in the row. */
+/* The per-row entry point for a period payment, in its own column at the far
+   right. It acts on the whole row rather than on any one month, so it is
+   separated from the figures instead of sitting under the name, where it read
+   as part of the person's identity. Quiet by default: it is a route to the
+   dialog, not the figure the grid is about. */
+.acct-action-cell { text-align: right; }
+.acct-action-head {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
+}
 .acct-row-action {
-  background: none;
-  border: 1px solid transparent;
+  background: var(--paper);
+  border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  margin-top: 3px;
-  padding: 1px 5px;
+  padding: 3px 10px;
+  white-space: nowrap;
 }
-.acct-row-action:hover:not(:disabled) { border-color: var(--line); color: var(--ink); }
+.acct-row-action:hover:not(:disabled) { border-color: var(--pencil-yellow-dark); color: var(--ink); }
 .acct-row-action:disabled { cursor: default; opacity: 0.45; }
 
 /* ---- Accounts: recording a fee deposit for a period ---- */
