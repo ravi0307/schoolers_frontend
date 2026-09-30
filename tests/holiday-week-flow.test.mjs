@@ -217,7 +217,10 @@ test("admin holidays page is a two-column Occasion/Date table with add/update/re
     /Add holiday/,
     /Update/,
     /Remove/,
-    /formatHolidayDate\(holiday\.holiday_date\)/,
+    // Rows are grouped into spans, so the table renders a span label rather
+    // than one raw API date.
+    /groupHolidayRows\(holidays\)/,
+    /formatHolidaySpan\(row\.start, row\.end\)/,
   ]);
   // The old recurring-weekday form must be gone.
   for (const forbidden of [
@@ -235,7 +238,34 @@ test("holiday edits are sent as a partial update, not the whole row", () => {
   // server's duplicate-date check, so only changed fields may be sent.
   const page = source("src/pages/admin/AdminHolidays.jsx");
   assert.match(page, /if \(occasion !== current\.occasion\) payload\.occasion = occasion/);
-  assert.match(page, /if \(draft\.holiday_date !== current\.holiday_date\)/);
+  assert.match(page, /if \(draft\.holiday_date !== current\.start\)/);
+  assert.match(page, /if \(draft\.end_date && draft\.end_date !== current\.end\)/);
+});
+
+test("the holidays form offers an optional last date alongside the first", () => {
+  const page = source("src/pages/admin/AdminHolidays.jsx");
+  assertContains("src/pages/admin/AdminHolidays.jsx", [
+    /First date/,
+    /Last date \(optional\)/,
+    /type="date"/,
+    /end_date/,
+  ]);
+  // The end field must not allow a day before the start, and the draft must
+  // start empty so a one-day holiday needs no second field.
+  assert.match(page, /end_date: ""/);
+  assert.match(page, /if \(end_date && end_date < holiday_date\)/);
+});
+
+test("a holiday span reports its length so the admin can see what is covered", () => {
+  const page = source("src/pages/admin/AdminHolidays.jsx");
+  assertContains("src/pages/admin/AdminHolidays.jsx", [
+    /rangeLength\(draft\.holiday_date, draft\.end_date\)/,
+    /formatHolidayLength\(addLength\)/,
+    /formatHolidayLength\(row\.days\)/,
+  ]);
+  // Removing a multi-day break deletes every day of it, so the confirmation has
+  // to say how many, or one click silently closes five school days.
+  assert.match(page, /Remove all \$\{formatHolidayLength\(confirming\.days\)\}/);
 });
 
 test("admin holidays page is routed and linked", () => {

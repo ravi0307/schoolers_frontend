@@ -5,26 +5,37 @@ import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
 import { apiErrorMessage } from "../../api/client";
-import { formatHolidayDate } from "../../utils/timetableFlow";
+import {
+  formatHolidayLength,
+  formatHolidaySpan,
+  groupHolidayRows,
+  rangeLength,
+} from "../../utils/holidayRange";
 
 /**
  * Manage the school's holiday calendar.
  *
- * Each row is one named holiday on one calendar date, so "Diwali on 8 Nov" is a
- * fact about a specific day rather than a recurring weekly flag. That is why a
- * holiday added here reddens exactly one column of the timetable, and only in
- * the week that contains its date.
+ * A holiday is one occasion across one day or a span of consecutive days. The
+ * API stores a span as one row per day, so "Diwali, 8-11 Nov" arrives as four
+ * rows; they are grouped back together here into the single entry the admin
+ * typed. Every day of a span reddens its own column of the timetable.
  *
- * Rows are created, edited and removed individually. Editing happens in place
- * rather than in a dialog because the change is two fields wide, and seeing the
- * row being edited keeps it obvious which holiday is being changed.
+ * Editing happens in place rather than in a dialog because the change is a few
+ * fields wide, and seeing the row being edited keeps it obvious which holiday is
+ * being changed. Update and Remove act on the whole span: removing one day of a
+ * break and leaving the rest behind would read as a bug.
  */
 
-const EMPTY_DRAFT = { occasion: "", holiday_date: "" };
+const EMPTY_DRAFT = { occasion: "", holiday_date: "", end_date: "" };
 
-function validate({ occasion, holiday_date }) {
+function validate({ occasion, holiday_date, end_date }) {
   if (!occasion.trim()) return "Enter the occasion name";
-  if (!holiday_date) return "Choose a date";
+  if (!holiday_date) return "Choose the first date";
+  // An end date earlier than the start is refused here rather than sent on,
+  // so the admin is told at the field they are looking at.
+  if (end_date && end_date < holiday_date) {
+    return "The last date cannot be before the first";
+  }
   return null;
 }
 
@@ -39,8 +50,9 @@ export default function AdminHolidays() {
   const [confirming, setConfirming] = useState(null);
   const toast = useToast();
 
-  const rows = holidays || [];
+  const rows = groupHolidayRows(holidays);
   const addError = validate(draft);
+  const addLength = rangeLength(draft.holiday_date, draft.end_date);
 
   async function run(action, successMessage) {
     setBusy(true);
@@ -63,6 +75,9 @@ export default function AdminHolidays() {
     const payload = {
       occasion: draft.occasion.trim(),
       holiday_date: draft.holiday_date,
+      // Omitted entirely for a single day, so the server takes its ordinary
+      // one-day path rather than being handed a same-day "range".
+      ...(draft.end_date ? { end_date: draft.end_date } : {}),
     };
     const ok = await run(
       () => academicsApi.createHoliday(payload),
@@ -73,7 +88,7 @@ export default function AdminHolidays() {
 
   async function saveEdit(event) {
     event.preventDefault();
-    const current = rows.find((h) => h.holiday_id === editingId);
+    const current = rows.find((row) => row.anchor_id === editingId);
     if (!current || busy) return;
 
     const occasion = draft.occasion.trim();
@@ -82,14 +97,16 @@ export default function AdminHolidays() {
       toast(problem);
       return;
     }
-    // Only send what actually changed: a PATCH is a partial update, and sending
-    // an unchanged date back would collide with this row's own date on the
-    // server's duplicate check.
+    // Only send what actually changed. A PATCH is a partial update, and the
+    // server treats an absent date as "keep it", which is what a rename-only
+    // edit needs.
     const payload = {};
     if (occasion !== current.occasion) payload.occasion = occasion;
-    if (draft.holiday_date !== current.holiday_date) {
-      payload.holiday_date = draft.holiday_date;
-    }
+    if (draft.holiday_date !== current.start) payload.holiday_date = draft.holiday_date;
+    // A one-day holiday sends no end date at all, so editing a single day does
+    // not restate it as a one-element span.
+    if (draft.end_date && draft.end_date !== current.end) payload.end_date = draft.end_date;
+
     if (!Object.keys(payload).length) {
       setEditingId(null);
       setDraft(EMPTY_DRAFT);
@@ -97,7 +114,7 @@ export default function AdminHolidays() {
     }
 
     const ok = await run(
-      () => academicsApi.updateHoliday(current.holiday_id, payload),
+      () => academicsApi.updateHoliday(current.anchor_id, payload),
       `${occasion} updated`
     );
     if (ok) {
@@ -106,9 +123,15 @@ export default function AdminHolidays() {
     }
   }
 
-  function startEdit(holiday) {
-    setEditingId(holiday.holiday_id);
-    setDraft({ occasion: holiday.occasion, holiday_date: holiday.holiday_date });
+  function startEdit(row) {
+    setEditingId(row.anchor_id);
+    setDraft({
+      occasion: row.occasion,
+      holiday_date: row.start,
+      // A single-day entry shows a blank end date rather than the same date
+      // twice, which is what "this is just one day" looks like.
+      end_date: row.days > 1 ? row.end : "",
+    });
   }
 
   function cancelEdit() {
@@ -117,16 +140,16 @@ export default function AdminHolidays() {
   }
 
   async function removeHoliday() {
-    const holiday = confirming;
-    if (!holiday || busy) return;
+    const row = confirming;
+    if (!row || busy) return;
     const ok = await run(
-      () => academicsApi.deleteHoliday(holiday.holiday_id),
-      `${holiday.occasion} removed`
+      () => academicsApi.deleteHoliday(row.anchor_id),
+      `${row.occasion} removed`
     );
     if (ok) {
       setConfirming(null);
       // If the removed row was being edited, drop the in-progress edit too.
-      if (editingId === holiday.holiday_id) cancelEdit();
+      if (editingId === row.anchor_id) cancelEdit();
     }
   }
 
@@ -134,8 +157,9 @@ export default function AdminHolidays() {
     <AdminShell>
       <div className="scr-title">Holidays</div>
       <div className="scr-sub">
-        List the occasions your school is closed. Each holiday is one specific
-        date, and appears in red on the timetable for that week only.
+        List the occasions your school is closed. A holiday covers one date or a
+        span of consecutive dates, and every day it covers appears in red on the
+        timetable.
       </div>
 
       {loading && <Spinner />}
@@ -157,12 +181,22 @@ export default function AdminHolidays() {
                 />
               </div>
               <div className="field">
-                <label htmlFor="holiday-date">Date</label>
+                <label htmlFor="holiday-date">First date</label>
                 <input
                   id="holiday-date"
                   type="date"
                   value={draft.holiday_date}
                   onChange={(e) => setDraft((d) => ({ ...d, holiday_date: e.target.value }))}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="holiday-end-date">Last date (optional)</label>
+                <input
+                  id="holiday-end-date"
+                  type="date"
+                  value={draft.end_date}
+                  min={draft.holiday_date || undefined}
+                  onChange={(e) => setDraft((d) => ({ ...d, end_date: e.target.value }))}
                 />
               </div>
               <button
@@ -173,6 +207,13 @@ export default function AdminHolidays() {
                 {busy ? "Saving..." : "Add holiday"}
               </button>
             </div>
+            {/* Tells the admin the span is wider than the two fields suggest,
+                which matters most for a term break picked by accident. */}
+            {draft.holiday_date && draft.end_date && addLength > 1 && !addError && (
+              <div className="holiday-span-note">
+                Covers {formatHolidayLength(addLength)} - {formatHolidaySpan(draft.holiday_date, draft.end_date)}.
+              </div>
+            )}
           </form>
 
           <div className="card table-card">
@@ -187,9 +228,9 @@ export default function AdminHolidays() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((holiday) =>
-                      editingId === holiday.holiday_id ? (
-                        <tr key={holiday.holiday_id} className="holiday-editing">
+                    {rows.map((row) =>
+                      editingId === row.anchor_id ? (
+                        <tr key={row.anchor_id} className="holiday-editing">
                           <td>
                             <input
                               className="holiday-edit-input"
@@ -203,15 +244,27 @@ export default function AdminHolidays() {
                             />
                           </td>
                           <td>
-                            <input
-                              className="holiday-edit-input"
-                              aria-label="Date"
-                              type="date"
-                              value={draft.holiday_date}
-                              onChange={(e) =>
-                                setDraft((d) => ({ ...d, holiday_date: e.target.value }))
-                              }
-                            />
+                            <div className="holiday-edit-dates">
+                              <input
+                                className="holiday-edit-input"
+                                aria-label="First date"
+                                type="date"
+                                value={draft.holiday_date}
+                                onChange={(e) =>
+                                  setDraft((d) => ({ ...d, holiday_date: e.target.value }))
+                                }
+                              />
+                              <input
+                                className="holiday-edit-input"
+                                aria-label="Last date"
+                                type="date"
+                                value={draft.end_date}
+                                min={draft.holiday_date || undefined}
+                                onChange={(e) =>
+                                  setDraft((d) => ({ ...d, end_date: e.target.value }))
+                                }
+                              />
+                            </div>
                           </td>
                           <td>
                             <div className="table-actions">
@@ -233,21 +286,28 @@ export default function AdminHolidays() {
                           </td>
                         </tr>
                       ) : (
-                        <tr key={holiday.holiday_id}>
-                          <td>{holiday.occasion}</td>
-                          <td>{formatHolidayDate(holiday.holiday_date)}</td>
+                        <tr key={row.anchor_id}>
+                          <td>{row.occasion}</td>
+                          <td>
+                            {formatHolidaySpan(row.start, row.end)}
+                            {row.days > 1 && (
+                              <span className="holiday-days-badge">
+                                {formatHolidayLength(row.days)}
+                              </span>
+                            )}
+                          </td>
                           <td>
                             <div className="table-actions">
                               <button
                                 className="btn ghost sm"
-                                onClick={() => startEdit(holiday)}
+                                onClick={() => startEdit(row)}
                                 disabled={busy}
                               >
                                 Update
                               </button>
                               <button
                                 className="btn danger sm"
-                                onClick={() => setConfirming(holiday)}
+                                onClick={() => setConfirming(row)}
                                 disabled={busy}
                               >
                                 Remove
@@ -275,7 +335,9 @@ export default function AdminHolidays() {
         title="Remove holiday"
         message={
           confirming
-            ? `Remove ${confirming.occasion} on ${formatHolidayDate(confirming.holiday_date)}? The timetable for that week will no longer mark it as a holiday.`
+            ? confirming.days > 1
+              ? `Remove all ${formatHolidayLength(confirming.days)} of ${confirming.occasion} (${formatHolidaySpan(confirming.start, confirming.end)})? The timetable will no longer mark those dates as a holiday.`
+              : `Remove ${confirming.occasion} on ${formatHolidaySpan(confirming.start, confirming.end)}? The timetable will no longer mark it as a holiday.`
             : ""
         }
         confirmLabel="Remove"
