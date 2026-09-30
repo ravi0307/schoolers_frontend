@@ -561,8 +561,9 @@ test("gallery uploads media to the school and renders photos and videos", () => 
     /<img/,
     /uploadGalleryMedia/,
     /deleteGalleryMedia/,
-    /\.filter\(\(item\) => item\.file_url\)/,
   ]);
+  // Fileless media are dropped by the helper that builds the cards.
+  assert.match(source("src/utils/galleryAlbums.js"), /if \(!item\?\.file_url\) return/);
 });
 
 test("admin, teacher, and parent portals each expose the gallery route", () => {
@@ -645,12 +646,18 @@ test("gallery multi-upload saves each selected file in sequence with progress an
   ]);
 });
 
-test("gallery tiles render videos with controls and images lazily, then paginate", () => {
+test("gallery drops fileless media, then renders thumbnails that open in the viewer", () => {
+  // Albums and the file_url filter moved into a tested helper; the grid is now
+  // a set of thumbnails, and playback/enlargement happens in the viewer.
+  assertContains("src/utils/galleryAlbums.js", [
+    /if \(!item\?\.file_url\) return/,
+    /groups\.set\(key, \[\]\)/,
+    /groupItems\.length >= 2/,
+  ]);
   assertContains("src/components/gallery/GalleryView.jsx", [
-    /const items = \(data \|\| \[\]\)\.filter\(\(item\) => item\.file_url\)/,
+    /buildGalleryCards\(data\)/,
     /media_kind === "video"/,
     /<video/,
-    /controls/,
     /preload="metadata"/,
     /<img/,
     /loading="lazy"/,
@@ -661,6 +668,11 @@ test("gallery tiles render videos with controls and images lazily, then paginate
     /it\.posted_by/,
     /formatDateTime\(it\.created_at\)/,
     /toLocaleString\(\)/,
+  ]);
+  // controls belong to the viewer now, so a tile stays a clean click target.
+  assertContains("src/components/gallery/MediaLightbox.jsx", [
+    /<video/,
+    /controls/,
   ]);
 });
 

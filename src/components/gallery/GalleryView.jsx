@@ -2,6 +2,8 @@ import { useRef, useState, useMemo } from "react";
 import { useApi } from "../../hooks/useApi";
 import * as galleryApi from "../../api/gallery";
 import { resolveMediaUrl } from "../../api/client";
+import { buildGalleryCards, mediaIdsOf } from "../../utils/galleryAlbums";
+import MediaLightbox from "./MediaLightbox";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../ui/Primitives";
 import Pagination, { usePagination } from "../ui/Pagination";
 import { useToast } from "../../context/ToastContext";
@@ -27,33 +29,18 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
   const fileInputRef = useRef(null);
   const [expandedAlbum, setExpandedAlbum] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [removing, setRemoving] = useState(false);
+  // Which set of media the full-size viewer is paging through, and which one it
+  // is showing. Held together so opening a different album resets to its first
+  // photo instead of carrying an index across.
+  const [viewer, setViewer] = useState(null);
 
-  const items = (data || []).filter((item) => item.file_url);
-  const cards = useMemo(() => {
-    const groups = {};
-    items.forEach((item) => {
-      const key = item.title || `Untitled ${item.media_id}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(item);
-    });
-    const result = [];
-    Object.entries(groups).forEach(([grpTitle, groupItems]) => {
-      groupItems.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      if (groupItems.length >= 2) {
-        result.push({
-          kind: "album",
-          key: `album-${grpTitle}`,
-          title: grpTitle,
-          items: groupItems,
-          createdAt: groupItems[0].created_at,
-        });
-      } else {
-        result.push({ kind: "single", key: `single-${groupItems[0].media_id}`, item: groupItems[0] });
-      }
-    });
-    return result;
-  }, [items]);
+  const cards = useMemo(() => buildGalleryCards(data), [data]);
   const pager = usePagination(cards);
+
+  function openViewer(items, index) {
+    setViewer({ items, index });
+  }
 
   function pickFiles(event) {
     const chosen = Array.from(event.target.files || []);
@@ -116,20 +103,42 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
     }
   }
 
-  async function handleRemove(item) {
+  function handleRemove(item) {
     const kind = item.items ? "album" : "media";
     setPendingDelete({ kind, item });
   }
 
   async function confirmRemove() {
-    if (!pendingDelete) return;
-    try {
-      await galleryApi.deleteGalleryMedia(pendingDelete.item.media_id);
-      toast("Removed from the gallery");
-    } catch (err) {
-      toast(err?.response?.data?.detail || err?.message || "Could not remove the item");
+    if (!pendingDelete || removing) return;
+    // An album card has no media_id of its own, so this used to send
+    // /media/undefined and remove nothing at all.
+    const ids = mediaIdsOf(pendingDelete.item);
+    if (ids.length === 0) {
+      setPendingDelete(null);
+      return;
     }
+    const isAlbum = pendingDelete.kind === "album";
+    setRemoving(true);
+    let failed = 0;
+    // Sequentially, so one failure does not abandon the rest of an album.
+    for (const id of ids) {
+      try {
+        await galleryApi.deleteGalleryMedia(id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setRemoving(false);
     setPendingDelete(null);
+    // The viewer may be showing media that has just been deleted.
+    setViewer(null);
+    if (failed === 0) {
+      toast(isAlbum ? `Removed ${ids.length} item${ids.length === 1 ? "" : "s"} from the gallery` : "Removed from the gallery");
+    } else if (failed < ids.length) {
+      toast(`${ids.length - failed} removed, ${failed} could not be removed`);
+    } else {
+      toast("Could not remove from the gallery");
+    }
     refetch();
   }
 
@@ -191,7 +200,19 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                           <button type="button" className="gallery-tile-remove" title={`Remove album "${card.title}"`} onClick={() => handleRemove(card)}>✕</button>
                         )}
                       </div>
-                      <div className="gallery-album-head" onClick={() => setExpandedAlbum(isExpanded ? null : card.key)}>
+                      <div
+                        className="gallery-album-head"
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isExpanded}
+                        onClick={() => setExpandedAlbum(isExpanded ? null : card.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setExpandedAlbum(isExpanded ? null : card.key);
+                          }
+                        }}
+                      >
                         <div className="album-thumbs">
                           {card.items.slice(0, 4).map((it) => (
                             <img
@@ -211,18 +232,30 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                           </span>
                         </div>
                       </div>
-                      {isExpanded && canDelete && (
+                      {/* Visible to every role. This used to require canDelete,
+                          which left parents and teachers clicking an album with
+                          nothing happening, because only admins may delete. */}
+                      {isExpanded && (
                         <div className="album-detail">
-                          {card.items.map((it) => (
+                          {card.items.map((it, itemIndex) => (
                             <div key={it.media_id} className="album-item">
-                              {it.media_kind === "video" ? (
-                                <video className="album-media" src={resolveMediaUrl(it.file_url)} controls preload="metadata" />
-                              ) : (
-                                <img className="album-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
-                              )}
+                              <button
+                                type="button"
+                                className="album-open"
+                                onClick={() => openViewer(card.items, itemIndex)}
+                                aria-label={`Open ${it.title || "photo"} full size`}
+                              >
+                                {it.media_kind === "video" ? (
+                                  <video className="album-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
+                                ) : (
+                                  <img className="album-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
+                                )}
+                              </button>
                               <div className="album-item-info">
                                 <span>{formatDateTime(it.created_at)}</span>
-                                <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                                {canDelete && (
+                                  <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -237,11 +270,18 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                     {canDelete && (
                       <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
                     )}
-                    {it.media_kind === "video" ? (
-                      <video className="gallery-media" src={resolveMediaUrl(it.file_url)} controls preload="metadata" />
-                    ) : (
-                      <img className="gallery-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
-                    )}
+                    <button
+                      type="button"
+                      className="album-open"
+                      onClick={() => openViewer([it], 0)}
+                      aria-label={`Open ${it.title || "media"} full size`}
+                    >
+                      {it.media_kind === "video" ? (
+                        <video className="gallery-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
+                      ) : (
+                        <img className="gallery-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
+                      )}
+                    </button>
                     <div className="gallery-tile-meta">
                       <b>{it.title}</b>
                       <span>
@@ -258,6 +298,12 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
         ) : (
           <Empty>{empty}</Empty>
         ))}
+      <MediaLightbox
+        items={viewer?.items}
+        index={viewer?.index ?? 0}
+        onClose={() => setViewer(null)}
+        onNavigate={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+      />
       <ConfirmDialog
         open={!!pendingDelete}
         title={
@@ -270,7 +316,7 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
             ? `This will remove ${pendingDelete?.item?.items?.length || 0} photos/videos from the gallery. Their history (marks, timetable entries) stays intact but they won't appear in the gallery.`
             : `This will remove the media from the gallery. Its history (marks, timetable entries) stays intact but it won't appear in the gallery.`
         }
-        confirmLabel="Remove"
+        confirmLabel={removing ? "Removing…" : "Remove"}
         onConfirm={confirmRemove}
         onCancel={() => setPendingDelete(null)}
       />
