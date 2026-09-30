@@ -9,6 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
+import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
 
 function formatDate(value) {
   if (!value) return "";
@@ -294,14 +295,9 @@ export default function AdminBroadcast() {
       });
   }, [audienceFilter, classNames, data, search, sortOrder]);
 
-  const myName = senderNameForUser(user);
-  const postedBroadcasts = useMemo(
-    () => filteredBroadcasts.filter((item) => senderNameOf(item) === myName),
-    [filteredBroadcasts, myName]
-  );
-  const receivedBroadcasts = useMemo(
-    () => filteredBroadcasts.filter((item) => senderNameOf(item) !== myName),
-    [filteredBroadcasts, myName]
+  const { posted: postedBroadcasts, received: receivedBroadcasts } = useMemo(
+    () => splitBroadcastsByAuthor(filteredBroadcasts, user),
+    [filteredBroadcasts, user]
   );
   const postedPager = usePagination(postedBroadcasts);
   const receivedPager = usePagination(receivedBroadcasts);
@@ -392,20 +388,6 @@ export default function AdminBroadcast() {
     setExpandedBroadcastId(null);
   }
 
-  function senderNameForRole(role) {
-    return {
-      admin: "Admin",
-      teacher: "Teacher",
-      pilot: "Pilot",
-      parent: "Parent",
-      master: "Master Admin",
-    }[role] || "School Admin";
-  }
-
-  function senderNameForUser(currentUser) {
-    return currentUser?.name || currentUser?.fullName || currentUser?.username || senderNameForRole(currentUser?.role);
-  }
-
   async function submit(event) {
     event.preventDefault();
     if (!richTextToPlainText(message).trim()) {
@@ -427,8 +409,6 @@ export default function AdminBroadcast() {
         await communicationApi.createBroadcast({
           scope,
           class_id: scope === "class" ? Number(classId) : null,
-          role_name: senderNameForRole(user?.role),
-          sender_name: senderNameForUser(user),
           message: sanitizedMessage,
         });
         toast("Broadcast sent");
