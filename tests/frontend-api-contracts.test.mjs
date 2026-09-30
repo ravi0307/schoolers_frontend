@@ -266,9 +266,17 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
       /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
       /postedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, true\)\)/,
       /receivedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, false\)\)/,
-      /senderNameOf\(item\) === myName/,
+      // Ownership is decided by the author's user id in the shared helper, not
+      // by comparing the sender's display name against the signed-in user's.
+      /splitBroadcastsByAuthor\(filteredBroadcasts, user\)/,
       /\{editable &&/,
     ]);
+    // The name comparison that put every message in Received is gone, and with
+    // it the local sender-name helper it needed.
+    const text = source(file);
+    assert.doesNotMatch(text, /senderNameOf\(item\) === myName/,
+      `${file} still decides ownership by display name`);
+    assert.doesNotMatch(text, /senderNameForUser/);
   }
 });
 
