@@ -5,6 +5,7 @@ import ParentShell from "../components/layout/ParentShell";
 import TeacherShell from "../components/layout/TeacherShell";
 import PilotShell from "../components/layout/PilotShell";
 import MasterShell from "../components/layout/MasterShell";
+import StaffSelfSummary from "../components/profile/StaffSelfSummary";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useApi } from "../hooks/useApi";
@@ -58,6 +59,15 @@ const HOME_BY_ROLE = {
 function BareShell({ children }) {
   return <div className="web-content">{children}</div>;
 }
+
+/**
+ * Roles with a staff row, and therefore an attendance register and a payslip.
+ *
+ * A parent and a master admin have no staff record: a parent's own attendance
+ * would be a child's, and the master is above every school rather than in one.
+ * They are excluded here so the summary never mounts for them.
+ */
+const STAFF_LINKED_ROLES = new Set(["admin", "teacher", "staff", "pilot"]);
 
 function validate({ currentPassword, newPassword, confirmPassword }) {
   if (!currentPassword) return "Enter your current password";
@@ -214,6 +224,8 @@ export default function UserProfile() {
           </div>
 
           <PasswordForm />
+
+          {STAFF_LINKED_ROLES.has(role) && <StaffSelfSummary />}
 
           <button
             className="btn ghost"

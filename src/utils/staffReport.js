@@ -81,6 +81,83 @@ export function hasAttendance(attendance) {
 }
 
 /**
+ * "2026-09" shifted by whole months, e.g. -1 -> "2026-08", -6 -> "2026-03".
+ * Used to move the salary window a page at a time without asking the server
+ * what "the previous window" means. Returns null for anything that is not a
+ * month, so a malformed anchor cannot become a request.
+ */
+export function shiftMonth(month, delta) {
+  const match = /^(\d{4})-(\d{2})$/.exec(String(month ?? ""));
+  if (!match) return null;
+  // A single month index so December rolls into the next year, and going back
+  // far enough borrows from the year before.
+  const index = Number(match[1]) * 12 + (Number(match[2]) - 1) + Number(delta || 0);
+  const year = Math.floor(index / 12);
+  const mon = (index % 12) + 1;
+  return `${String(year).padStart(4, "0")}-${String(mon).padStart(2, "0")}`;
+}
+
+/** The month the browser is in, as "YYYY-MM" -- the newest anchor worth showing. */
+export function currentMonth(now = new Date()) {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * The salary_end that pages the window one full page back or forward.
+ *
+ * "Older" steps off the earliest month on screen, so the months just browsed
+ * stay visible as the top of the next page rather than disappearing.
+ *
+ * "Newer" is clamped to `now`: a window that has fallen behind (left open
+ * across a term, say) can still be walked forward to this month, but a page can
+ * never end in a month that has not happened yet -- three future rows with a
+ * dash in each would read as months already unpaid.
+ */
+export function salaryPageAnchor(salary, direction, now = currentMonth()) {
+  const window = salary?.window || [];
+  const size = Number(salary?.window_size || window.length || 0);
+  if (!window.length || !size) return null;
+  const older = direction === "older";
+  const edge = older ? window[0] : window[window.length - 1];
+  const anchor = shiftMonth(edge, older ? -size : size);
+  if (!older && anchor && now && anchor > now) return now;
+  return anchor;
+}
+
+/**
+ * Whether a "newer" page exists: true while stepping forward would actually
+ * change the window. Once it already ends at `now`, the control is dead.
+ */
+export function salaryCanPageNewer(salary, now = currentMonth()) {
+  const window = salary?.window || [];
+  if (!window.length) return false;
+  return salaryPageAnchor(salary, "newer", now) !== window[window.length - 1];
+}
+
+/**
+ * The marked days on screen.
+ *
+ * The own-record endpoint returns the whole register as `days`; the admin
+ * report returns a 30-day tail as `recent`. Reading both here keeps the
+ * profile page from silently rendering nothing if a payload ever uses the
+ * admin's name for the same list.
+ */
+export function attendanceDays(attendance) {
+  return attendance?.days ?? attendance?.recent ?? [];
+}
+
+/** "Sep 2026" when a month is on screen, "All time" when nothing is filtered. */
+export function attendanceScopeLabel(attendance) {
+  return attendance?.month ? monthLabel(attendance.month) : "All time";
+}
+
+/** The admin's remark on a payment, or null when there was none. */
+export function salaryNote(record) {
+  const note = record?.note;
+  return note && String(note).trim() ? String(note).trim() : null;
+}
+
+/**
  * The tone for a staff attendance day's status pill. Staff days carry four
  * statuses, so present-on-leave/half-day map to info rather than the student
  * report's warn-for-everything.
