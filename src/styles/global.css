@@ -210,7 +210,23 @@ body {
 .card.white { background: var(--paper-light); }
 
 /* Profile: identity header, then a label/value list, then the password form. */
-.profile-details-wrap { max-width: 620px; }
+/* Wide enough for the salary table; the cards below stay narrower so the
+   identity block and details do not stretch into a sparse band. */
+.profile-details-wrap { max-width: 720px; }
+.profile-identity, .profile-details { max-width: 620px; }
+/* The attendance/salary summary card sits under the details and is the one
+   block that uses the full width. */
+.profile-summary { margin-top: 18px; }
+.profile-summary .section-label { margin-top: 0; }
+.profile-filter {
+  align-items: center; display: flex; flex-wrap: wrap; gap: 10px;
+  margin: 10px 0 4px;
+}
+.profile-filter label { font-size: 12px; color: var(--ink-soft); }
+.profile-filter input[type="month"] { width: 160px; }
+.profile-pager { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.profile-salary-note { color: var(--ink-soft); font-size: 12px; }
+.profile-rule { border: none; border-top: 1px solid var(--line); margin: 20px 0 6px; }
 .profile-identity { display: flex; align-items: center; gap: 14px; }
 .profile-avatar {
   width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden;
