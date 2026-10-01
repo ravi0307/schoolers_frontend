@@ -22,9 +22,20 @@ function buildNavEntries(navItems) {
   return entries;
 }
 
+// Each role's profile lives under its own portal prefix, so the link is
+// derived from the session rather than passed down by every shell.
+const PROFILE_PATH = {
+  parent: "/parent/profile",
+  teacher: "/teacher/profile",
+  admin: "/admin/profile",
+  pilot: "/pilot/profile",
+  master: "/master/profile",
+};
+
 export default function WebLayout({ navItems, portalLabel, children }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const profilePath = PROFILE_PATH[user?.role] || "/";
 
   // School branding sits above the portal label for every role scoped to a
   // school (admin, teacher, parent, pilot). Master has no school of its own,
@@ -34,6 +45,12 @@ export default function WebLayout({ navItems, portalLabel, children }) {
   // server has no /api proxy, so it must be resolved against the API origin
   // or the <img> receives the SPA's index.html and silently fails to decode.
   const schoolLogo = resolveMediaUrl(user?.schoolLogoUrl);
+  // Greeting the user by first name. The full name arrives from /auth/me as
+  // display_name (the login response carries none) and falls back to the
+  // username, so this never renders blank on a fresh session.
+  const firstName = (user?.displayName || user?.name || user?.username || "")
+    .trim()
+    .split(/\s+/)[0];
   const initials = schoolName
     ? schoolName
         .split(/\s+/)
@@ -72,6 +89,9 @@ export default function WebLayout({ navItems, portalLabel, children }) {
             <b>Schoolers</b>
           )}
         </div>
+        {/* Directly under the school name: the greeting is about the person, so
+            it reads as part of the identity block rather than a nav label. */}
+        {firstName && <div className="sidebar-welcome">Welcome {firstName}</div>}
         <div className="portal-label">{portalLabel}</div>
         </div>
         <nav>
@@ -91,6 +111,14 @@ export default function WebLayout({ navItems, portalLabel, children }) {
             )
           )}
         </nav>
+        {/* Sits outside <nav> so it stays pinned above Sign Out rather than
+            joining the role's nav list, which is a fixed portal order. */}
+        <NavLink
+          to={profilePath}
+          className={({ isActive }) => (isActive ? "profile-link active" : "profile-link")}
+        >
+          <span>👤</span> My Profile
+        </NavLink>
         <button
           className="signout"
           onClick={() => {

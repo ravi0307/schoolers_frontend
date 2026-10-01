@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 import Login from "./pages/Login";
 import PublicWebsite from "./pages/PublicWebsite";
+import UserProfile from "./pages/UserProfile";
 
 import ParentHome from "./pages/parent/ParentHome";
 import ParentPickDrop from "./pages/parent/ParentPickDrop";
@@ -85,6 +86,7 @@ export default function App() {
                       <Route path="leave" element={<ParentLeave />} />
                       <Route path="barter" element={<ParentBarter />} />
                       <Route path="gallery" element={<ParentGallery />} />
+                      <Route path="profile" element={<UserProfile />} />
                       <Route path="*" element={<Navigate to="/parent/home" replace />} />
                     </Routes>
                   </ParentProvider>
@@ -105,6 +107,7 @@ export default function App() {
                       <Route path="timetable" element={<TeacherTimetable />} />
                       <Route path="broadcast" element={<TeacherBroadcast />} />
                       <Route path="gallery" element={<TeacherGallery />} />
+                      <Route path="profile" element={<UserProfile />} />
                       <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
                     </Routes>
                   </TeacherProvider>
@@ -133,6 +136,7 @@ export default function App() {
                     <Route path="notifications" element={<AdminNotifications />} />
                     <Route path="accounts" element={<AdminAccounts />} />
                     <Route path="reports" element={<AdminReports />} />
+                    <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                   </Routes>
                 </ProtectedRoute>
@@ -148,6 +152,7 @@ export default function App() {
                     <Route path="pickdrop" element={<PilotPickDrop />} />
                     <Route path="broadcast" element={<PilotBroadcast />} />
                     <Route path="leave" element={<PilotLeave />} />
+                    <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/pilot/pickdrop" replace />} />
                   </Routes>
                 </ProtectedRoute>
@@ -163,6 +168,7 @@ export default function App() {
                     <Route path="schools" element={<MasterSchools />} />
                     <Route path="schools/:schoolId" element={<MasterSchoolDetail />} />
                     <Route path="system-health" element={<MasterSystemHealth />} />
+                    <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/master/schools" replace />} />
                   </Routes>
                 </ProtectedRoute>
