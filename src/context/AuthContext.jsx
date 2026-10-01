@@ -9,12 +9,14 @@ export function AuthProvider({ children }) {
     return raw ? JSON.parse(raw) : null;
   });
 
-  // The school name and logo come from /auth/me rather than the login
-  // response, and only once per session. It has to be a separate call
-  // because the sidebar needs the branding for every role, but
+  // The school name, logo and the user's own display name come from /auth/me
+  // rather than the login response, and only once per session. It has to be a
+  // separate call because the sidebar needs the branding for every role, but
   // GET /schools is master-only and GET /schools/{id} is master/admin-only.
-  // A failure here must not log anyone out — the cached user still works,
-  // the header just falls back to the portal label.
+  // The login response carries no name at all, since a display name lives on
+  // the linked staff/parent row that the auth service resolves server-side.
+  // A failure here must not log anyone out — the cached user still works, the
+  // header just falls back to the portal label.
   useEffect(() => {
     if (!user?.userId) return;
     let cancelled = false;
@@ -26,11 +28,21 @@ export function AuthProvider({ children }) {
           if (!prev) return prev;
           if (
             prev.schoolName === me.school_name &&
-            prev.schoolLogoUrl === me.school_logo_url
+            prev.schoolLogoUrl === me.school_logo_url &&
+            prev.displayName === me.display_name &&
+            prev.username === me.username &&
+            prev.email === me.email
           ) {
             return prev;
           }
-          const next = { ...prev, schoolName: me.school_name, schoolLogoUrl: me.school_logo_url };
+          const next = {
+            ...prev,
+            schoolName: me.school_name,
+            schoolLogoUrl: me.school_logo_url,
+            displayName: me.display_name,
+            username: me.username,
+            email: me.email,
+          };
           localStorage.setItem("schoolers_user", JSON.stringify(next));
           return next;
         });
@@ -53,7 +65,9 @@ export function AuthProvider({ children }) {
       schoolId: data.school_id,
       linkedPersonId: data.linked_person_id,
       username: data.username || username,
-      name: data.name || data.full_name || data.sender_name,
+      displayName: data.display_name || data.name || data.full_name || data.sender_name,
+      name: data.display_name || data.name || data.full_name || data.sender_name,
+      email: data.email,
     };
     localStorage.setItem("schoolers_user", JSON.stringify(userObj));
     setUser(userObj);

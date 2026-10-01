@@ -22,6 +22,9 @@ test("every frontend API module is wired to its required backend surface", () =>
     /\/auth\/me/,
     /\/auth\/forgot-password/,
     /\/auth\/forgot-password\/reset/,
+    /\/auth\/change-password/,
+    /current_password/,
+    /new_password/,
     /otp/,
   ]);
   assertContains("src/api/academics.js", [/\/classes/, /\/subjects/, /\/periods/, /\/holidays/]);
@@ -1799,5 +1802,158 @@ test("the staff PDF prints through a pure model like the student sheet", () => {
   assertContains("src/utils/staffReportPdf.js", [
     /\.save\(staffReportFilename\(/,
     /staff-report-[a-z0-9-]+\.pdf/,
+  ]);
+});
+
+test("the profile page shows the caller's own details read-only", () => {
+  // Details are shown, not edited: a name lives on the linked staff/parent
+  // row that whoever administers that record owns, and editing it here would
+  // fork two sources of truth. Only the password is editable.
+  assertContains("src/pages/UserProfile.jsx", [
+    /authApi\.me\(\)/,
+    /display_name/,
+    /data\?\.username/,
+    /data\?\.email/,
+    /data\?\.school_name/,
+  ]);
+  const page = source("src/pages/UserProfile.jsx");
+  // Every detail is rendered through DetailRow, and no input is bound to one.
+  // Matching only <input> matters: a DetailRow's `value` prop is read-only
+  // markup, so a naive search would flag it as an editable field.
+  for (const field of ["username", "email", "display_name", "school_name"]) {
+    assert.doesNotMatch(
+      page,
+      new RegExp(`<input[^>]*value=\\{[^}]*${field}`),
+      `${field} must not be an editable input`
+    );
+  }
+});
+
+test("the profile page changes only the password, and demands the current one", () => {
+  assertContains("src/pages/UserProfile.jsx", [
+    /authApi\.changePassword\(form\.currentPassword, form\.newPassword\)/,
+    /type="password"/,
+    /autoComplete="current-password"/,
+    /newPassword\.length < 8/,
+    /newPassword !== confirmPassword/,
+  ]);
+});
+
+test("every role has a profile route under its own portal", () => {
+  const app = source("src/App.jsx");
+  for (const [role, prefix] of [
+    ["parent", "parent"],
+    ["teacher", "teacher"],
+    ["admin", "admin"],
+    ["pilot", "pilot"],
+    ["master", "master"],
+  ]) {
+    assert.match(app, new RegExp(`path="profile" element=\\{<UserProfile />\\}`), `${role} is missing a profile route`);
+    assert.match(app, new RegExp(`path="/${prefix}/\\*"`), `${role} has no portal route to hang it on`);
+  }
+});
+
+test("the profile link sits above Sign Out in both layouts", () => {
+  // Above, not instead: signing out is the last thing in the sidebar, so a
+  // profile entry placed after it would be stranded below the fold.
+  for (const layout of [
+    "src/components/layout/WebLayout.jsx",
+    "src/components/layout/MobileLayout.jsx",
+  ]) {
+    const text = source(layout);
+    // The wide sidebar renders the words as a text node after an icon span; the
+    // phone topbar is icon-only and carries the label as accessible text. Match
+    // whichever this layout uses.
+    const profileAt = Math.max(
+      ...[/My Profile/.exec(text), /aria-label="My Profile"/.exec(text)].map(
+        (m) => (m ? m.index : -1)
+      )
+    );
+    // Compare rendered positions, not the first textual hit: a comment
+    // mentioning Sign Out would otherwise decide the order.
+    const signOutAt = /^\s*Sign Out\s*$/m.exec(text)?.index ?? -1;
+    assert.ok(profileAt !== -1 && signOutAt !== -1, `${layout} is missing a footer control`);
+    assert.ok(
+      profileAt < signOutAt,
+      `${layout} puts the profile link after Sign Out`
+    );
+  }
+});
+
+test("the profile link is derived from the session role, not hardcoded", () => {
+  // One link has to reach five different portals, so the path comes from the
+  // signed-in role. Hardcoding one prefix would send four roles to a 404.
+  for (const layout of [
+    "src/components/layout/WebLayout.jsx",
+    "src/components/layout/MobileLayout.jsx",
+  ]) {
+    assertContains(layout, [
+      /parent: "\/parent\/profile"/,
+      /teacher: "\/teacher\/profile"/,
+      /admin: "\/admin\/profile"/,
+      /pilot: "\/pilot\/profile"/,
+      /master: "\/master\/profile"/,
+    ]);
+  }
+});
+
+test("the profile page renders inside the signed-in role's own shell", () => {
+  // Reusing the role's shell keeps its nav and school branding rather than
+  // dropping the user onto an unbranded page.
+  assertContains("src/pages/UserProfile.jsx", [
+    /SHELLS/,
+    /parent: ParentShell/,
+    /teacher: TeacherShell/,
+    /admin: AdminShell/,
+    /pilot: PilotShell/,
+    /master: MasterShell/,
+    /<Shell>/,
+  ]);
+});
+
+test("the sidebar greets the signed-in user by first name", () => {
+  // Under the school name, above the portal label: the greeting belongs to the
+  // person, so it must not be pushed below the nav or sit above the branding.
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.match(layout, /Welcome \{firstName\}/);
+  const schoolAt = /className="school-name"/.exec(layout).index;
+  const welcomeAt = /className="sidebar-welcome"/.exec(layout).index;
+  const portalAt = /className="portal-label"/.exec(layout).index;
+  assert.ok(schoolAt < welcomeAt, "the greeting must sit under the school name");
+  assert.ok(welcomeAt < portalAt, "the greeting must sit above the portal label");
+});
+
+test("the greeting takes the first name only, never the whole string", () => {
+  // "Ravi Tejaswi" must greet as "Ravi", not print the full name in the narrow
+  // sidebar column.
+  assertContains("src/components/layout/WebLayout.jsx", [
+    /\.split\(\/\\s\+\/\)\[0\]/,
+  ]);
+});
+
+test("the greeting falls back to the username rather than rendering blank", () => {
+  // display_name arrives from /auth/me, which runs after first paint, and a
+  // failed call must still leave a greeting rather than an empty gap.
+  assertContains("src/components/layout/WebLayout.jsx", [
+    /user\?\.displayName \|\| user\?\.name \|\| user\?\.username/,
+    /\{firstName &&/,
+  ]);
+});
+
+test("the session caches display_name from /auth/me", () => {
+  // The sidebar needs the name on every portal, so it has to survive in the
+  // cached session rather than each layout fetching it.
+  assertContains("src/context/AuthContext.jsx", [
+    /displayName: me\.display_name/,
+    /prev\.displayName === me\.display_name/,
+  ]);
+});
+
+test("the cached session keeps username and email alongside the branding", () => {
+  // All three come from the same /auth/me call, so they are cached together
+  // and the effect's equality check has to consider all of them.
+  assertContains("src/context/AuthContext.jsx", [
+    /email: me\.email/,
+    /username: me\.username/,
   ]);
 });
