@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
+import * as attendanceApi from "../../api/attendance";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
+
+const today = new Date().toISOString().slice(0, 10);
 
 function getStaffValue(person, keys) {
   for (const key of keys) {
@@ -42,6 +45,15 @@ function normalizeStaffPerson(person) {
 export default function AdminStaff() {
   const { data, loading, error, refetch } = useApi(() => peopleApi.listStaff(), []);
   const toast = useToast();
+
+  // Staff attendance for today. Two separate maps on purpose:
+  //   statuses = what the toggle shows (defaults to Present, unsaved)
+  //   saved    = which staff actually have a row today, so we can tell the
+  //              admin which defaults are real records and which are not.
+  const [statuses, setStatuses] = useState({});
+  const [saved, setSaved] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [markingAll, setMarkingAll] = useState(false);
 
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -194,10 +206,88 @@ export default function AdminStaff() {
     setExpandedId((current) => (current === id ? null : id));
   }
 
+  // Seed today's toggles once the staff list and today's rows are both known.
+  // Staff with no row today are shown Present but stay out of `saved`, because
+  // the default is an assumption, not a record.
+  useEffect(() => {
+    if (!data) return;
+    let cancelled = false;
+    attendanceApi
+      .getStaffAttendance(today)
+      .then((rows) => {
+        if (cancelled) return;
+        const seeded = {};
+        const recorded = {};
+        (rows || []).forEach((r) => {
+          seeded[r.staff_id] = r.status;
+          recorded[r.staff_id] = r.status;
+        });
+        data.forEach((person) => {
+          const id = person.staff_id || person.id;
+          if (!seeded[id]) seeded[id] = "Present";
+        });
+        setStatuses(seeded);
+        setSaved(recorded);
+      })
+      .catch((err) => toast(apiErrorMessage(err)));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const savedCount = useMemo(() => Object.keys(saved).length, [saved]);
+  const absentCount = useMemo(
+    () => Object.entries(statuses).filter(([, s]) => s !== "Present").length,
+    [statuses]
+  );
+
+  // Optimistic: flip immediately, then persist. Reverts the flip if the
+  // request fails, so the toggle can never drift from the saved record.
+  async function toggleAttendance(staffId) {
+    const next = statuses[staffId] === "Present" ? "Absent" : "Present";
+    const previous = statuses[staffId];
+    setStatuses((cur) => ({ ...cur, [staffId]: next }));
+    setSavingId(staffId);
+    try {
+      await attendanceApi.markStaffAttendance(today, [{ staff_id: staffId, status: next }]);
+      setSaved((cur) => ({ ...cur, [staffId]: next }));
+    } catch (err) {
+      setStatuses((cur) => ({ ...cur, [staffId]: previous }));
+      toast(apiErrorMessage(err));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  // Writes an explicit Present row for everyone, so the day has a real record
+  // per staff member instead of relying on the unsaved Present default.
+  async function markAllPresent() {
+    if (!data) return;
+    const entries = data.map((person) => ({
+      staff_id: person.staff_id || person.id,
+      status: "Present",
+    }));
+    setMarkingAll(true);
+    try {
+      await attendanceApi.markStaffAttendance(today, entries);
+      setStatuses((cur) => ({ ...cur, ...Object.fromEntries(entries.map((e) => [e.staff_id, "Present"])) }));
+      setSaved((cur) => ({ ...cur, ...Object.fromEntries(entries.map((e) => [e.staff_id, "Present"])) }));
+      toast(`Attendance saved — ${entries.length} present`);
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setMarkingAll(false);
+    }
+  }
+
   return (
     <AdminShell>
       <div className="scr-title">Staff Directory</div>
-      <div className="scr-sub">{data ? `${data.length} staff members` : ""}</div>
+      <div className="scr-sub">
+        {data ? `${data.length} staff members` : ""}
+        {data && data.length > 0 ? ` · ${today}` : ""}
+      </div>
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
@@ -214,6 +304,32 @@ export default function AdminStaff() {
               />
             </div>
           </div>
+
+          {data && data.length > 0 && (
+            <div className="card" style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Attendance · {today}
+                </strong>
+                <span className="pill ok">Present {data.length - absentCount}</span>
+                <span className={`pill ${absentCount ? "warn" : "ok"}`}>Absent {absentCount}</span>
+                <span className="pill">
+                  {savedCount}/{data.length} recorded
+                </span>
+                <button
+                  className="btn primary sm"
+                  style={{ marginLeft: "auto" }}
+                  onClick={markAllPresent}
+                  disabled={markingAll}
+                >
+                  {markingAll ? "Saving..." : "Mark all present"}
+                </button>
+              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+                Everyone starts marked present. Toggling a staff member saves that day straight away.
+              </div>
+            </div>
+          )}
 
           <div className="card">
             {filteredData.length ? (
@@ -245,6 +361,23 @@ export default function AdminStaff() {
                       </div>
 
                       <div className="cta-row" style={{ gap: 8, marginLeft: "auto" }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className={`btn sm ${statuses[staffId] === "Present" ? "primary" : "ghost"}`}
+                          onClick={() => toggleAttendance(staffId)}
+                          disabled={savingId === staffId}
+                          title={
+                            statuses[staffId] === "Present"
+                              ? `Marked present for ${today}. Click to mark absent.`
+                              : `Marked absent for ${today}. Click to mark present.`
+                          }
+                          aria-pressed={statuses[staffId] === "Present"}
+                        >
+                          {savingId === staffId
+                            ? "..."
+                            : statuses[staffId] === "Present"
+                              ? `● Present`
+                              : `○ Absent`}
+                        </button>
                         <button className="btn ghost sm" onClick={() => startEdit(person)}>Edit</button>
                         <button className="btn ghost sm" onClick={() => remove(staffId)}>Remove</button>
                       </div>

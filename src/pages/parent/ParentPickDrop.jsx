@@ -13,6 +13,8 @@ const STATUS_META = {
 };
 
 const POLL_MS = 20000;
+// Stable empty reference so the journey memo does not re-run every render.
+const NO_STOPS = [];
 
 function toMinutes(hhmm) {
   if (!hhmm) return null;
@@ -44,10 +46,9 @@ export default function ParentPickDrop() {
   const snapshot = data && selectedChild ? data.find((row) => row.student_id === selectedChild.student_id) : null;
   const assigned = snapshot && snapshot.status !== "not_assigned";
 
-  const { data: stops } = useApi(
-    () => (assigned && snapshot.route_id ? transportApi.listStops(snapshot.route_id) : Promise.resolve([])),
-    [assigned && snapshot?.route_id]
-  );
+  // The stop schedule rides along on the snapshot, so there is no second
+  // request. A route with no stops configured yields an empty list.
+  const stops = snapshot?.stops || NO_STOPS;
 
   const journey = useMemo(() => {
     if (!stops || !stops.length) return null;

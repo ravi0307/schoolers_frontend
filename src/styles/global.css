@@ -56,14 +56,52 @@ body {
   height: 100vh; position: sticky; top: 0; padding: 22px 14px;
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sidebar .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 24px; }
+.sidebar .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
 .sidebar .brand b { font-size: 17px; }
+
+/* Pinned school header. The sidebar is its own scroll container, so without
+   this the name and logo scroll away once the nav is longer than the viewport
+   (the admin nav is). `top: -22px` cancels the sidebar padding-top so it pins
+   flush to the top, and the negative side margins bleed it to the sidebar
+   edges so nav links scroll underneath rather than past a floating block. */
+.sidebar-head {
+  position: sticky; top: -22px; z-index: 3;
+  background: var(--chalk-green);
+  margin: -22px -14px 18px; padding: 22px 14px 12px;
+}
+.sidebar .portal-label { font-size: 10px; letter-spacing: .14em; color: var(--pencil-yellow); }
+.school-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.school-logo {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  object-fit: contain; background: #fff; padding: 3px;
+}
+.school-monogram {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  background: var(--pencil-yellow); color: var(--chalk-green-dark);
+  display: grid; place-items: center; font-size: 13px; font-weight: 800;
+}
+/* `display: grid` above would otherwise beat the `hidden` attribute. */
+.school-monogram[hidden] { display: none; }
+.school-name {
+  font-size: 14.5px; font-weight: 700; line-height: 1.2;
+  color: var(--paper-light); overflow-wrap: anywhere;
+}
 .sidebar nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .sidebar nav a {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;
   color: #CBDACF; text-decoration: none; font-size: 13.5px; font-weight: 500;
 }
 .sidebar nav a.active { background: var(--pencil-yellow); color: var(--chalk-green-dark); font-weight: 700; }
+/* Optional section heading. Portals with a flat nav never render one. */
+.sidebar nav .sidebar-group {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(203, 218, 207, 0.72);
+  padding: 16px 12px 6px;
+}
+.sidebar nav .sidebar-group:first-child { padding-top: 0; }
 .sidebar .signout {
   margin-top: auto; background: none; border: 1px solid rgba(255,255,255,.18);
   color: #CBDACF; padding: 10px 12px; border-radius: 9px; cursor: pointer;
@@ -282,6 +320,28 @@ body {
   color: var(--chalk-green-dark);
   font-size: 10px;
   text-transform: uppercase;
+  white-space: normal;
+  min-width: 74px;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-day {
+  display: block;
+  font-weight: 800;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-date {
+  display: block;
+  font-weight: 500;
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.timetable-weekly-summary-card .timetable-preview-table .timetable-preview-holiday {
+  display: block;
+  font-weight: 800;
+  font-size: 9px;
+  color: #b3261e;
+  text-transform: none;
+  line-height: 1.2;
 }
 .timetable-weekly-summary-card .timetable-preview-table .time-col-header {
   width: 60px;
@@ -300,6 +360,200 @@ body {
   color: var(--ruled-blue);
 }
 .selected-timetable-label { font-size: 16px; font-weight: 800; color: var(--chalk-green); margin: 6px 0 14px; }
+
+/* Week navigation. Sits inline with the page title on Manage Timetable, and
+   still has its own margins when rendered standalone on the teacher timetable. */
+.scr-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.scr-title-text { min-width: 0; }
+.scr-title-row .scr-title,
+.scr-title-row .scr-sub { margin-bottom: 0; }
+.scr-title-row .week-selector { margin: 0; }
+.week-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+}
+
+/* The selector sits directly on the light page background, not on the dark
+   sidebar, so the shared `.btn.ghost` light-on-dark styling rendered the arrows
+   near-white on near-white and made them invisible. These buttons need explicit
+   light-surface styling. */
+.web-content .week-selector .btn.ghost {
+  color: var(--chalk-green-dark);
+  border-color: var(--ruled-blue);
+  background: var(--paper-light);
+  font-size: 15px;
+  font-weight: 800;
+  min-width: 34px;
+  padding: 6px 10px;
+}
+.web-content .week-selector .btn.ghost:hover:not(:disabled) {
+  background: var(--ruled-blue-light);
+  color: var(--chalk-green-dark);
+}
+.web-content .week-selector .btn.ghost:disabled { opacity: 0.45; }
+
+/* The selected week is the control's primary state, so it gets a chip rather
+   than bare text sandwiched between two arrows. */
+.web-content .week-selector-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 10px;
+  background: var(--ruled-blue-light);
+  color: var(--chalk-green-dark);
+  font-size: 16px;
+  font-weight: 800;
+  min-width: 210px;
+  text-align: center;
+  white-space: nowrap;
+}
+.week-selector-date {
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ruled-blue);
+  background: var(--paper);
+  color: var(--ink);
+}
+/* The month and year dropdowns that replace the month input. They take the
+   same surface as the input they stand in for, sized to their widest option
+   rather than the currently chosen one so the row does not jump around as the
+   admin changes month. */
+.web-content .week-selector-pick {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ruled-blue);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  min-width: 108px;
+}
+/* Inside the deposit dialog the pair belongs to a field, not to a row of
+   controls, so it is stacked and allowed to be as wide as the field. */
+.fd-field .week-selector-pick { min-width: 0; width: 100%; }
+.web-content .week-selector-pick:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.web-content .week-selector-pick option:disabled {
+  color: var(--ink-soft);
+}
+.web-content .selected-timetable-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* A holiday column is flagged in red across the header and the cells. */
+.timetable-week-head th.timetable-day-holiday,
+.data-table th.timetable-day-holiday {
+  background: var(--red-pen-light);
+  color: var(--red-pen);
+}
+.timetable-day-name { display: block; font-weight: 800; }
+.timetable-day-date { display: block; font-size: 11px; font-weight: 600; opacity: 0.8; }
+.timetable-day-flag {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--red-pen);
+}
+.timetable-week-caption { text-align: left; }
+/* Body corner cell that lines the day columns up with the header caption. */
+.timetable-week-corner { background: var(--paper); }
+.timetable-week-range {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.data-table td.timetable-day-holiday { background: var(--red-pen-light); }
+.timetable-day-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--red-pen);
+}
+
+/* The per-class summary cards use their own table styles, whose rules are more
+   specific than the .data-table ones above — match them here so a holiday
+   column is red in the cards too, including cells that are also .active-cell. */
+.timetable-weekly-summary-card .timetable-preview-table th.timetable-day-holiday,
+.timetable-weekly-summary-card .timetable-preview-table td.timetable-day-holiday,
+.timetable-weekly-summary-card .timetable-preview-table td.active-cell.timetable-day-holiday {
+  background: var(--red-pen-light);
+  color: var(--red-pen);
+}
+
+/* Holiday calendar on the admin Holidays page: an add row plus the list table. */
+.holiday-form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.holiday-form-row .field { flex: 1 1 200px; margin-bottom: 0; }
+.holiday-form-row .btn { margin-bottom: 1px; }
+
+.holiday-table th:first-child,
+.holiday-table td:first-child { min-width: 180px; }
+.holiday-table td:nth-child(2) { white-space: nowrap; }
+.holiday-actions-head { width: 1%; white-space: nowrap; }
+
+/* How many school days a span covers, so a multi-day break is obviously wider
+   than a single entry and cannot be removed by accident. */
+.holiday-days-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ruled-blue-light);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Confirms the span the two date fields add up to before it is saved. */
+.holiday-span-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* A row being edited inline, so the change is visibly attached to its holiday. */
+.holiday-table tr.holiday-editing { background: var(--ruled-blue-light); }
+.holiday-edit-input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--paper-light);
+}
+/* The two ends of a span sit side by side so their extent is visible at a glance. */
+.holiday-edit-dates { display: flex; gap: 6px; }
+.holiday-edit-dates .holiday-edit-input { min-width: 0; }
+
 .section-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }
@@ -649,6 +903,116 @@ body {
   height: 22px;
   font-size: 10px;
 }
+/* The click target that opens the full-size viewer. It has to be a real
+   <button> so keyboard and screen readers can reach it, but it must not look
+   like one -- it is just the photo. */
+.album-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  line-height: 0;
+}
+.album-open:focus-visible {
+  outline: 2px solid var(--ruled-blue);
+  outline-offset: -2px;
+}
+.album-head-row + .gallery-album-head,
+.gallery-album-head {
+  cursor: pointer;
+}
+
+/* ---- Full-size media viewer ---- */
+.media-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 64px;
+  background: rgba(1, 28, 64, 0.82);
+  backdrop-filter: blur(3px);
+}
+.media-viewer-figure {
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+/* contain, so a very tall phone photo shrinks to fit instead of being cropped
+   or overflowing the overlay. */
+.media-viewer-media {
+  max-width: 100%;
+  max-height: calc(100vh - 140px);
+  object-fit: contain;
+  border-radius: 10px;
+  background: #01141f;
+  box-shadow: var(--shadow);
+}
+.media-viewer-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #eaf4f7;
+  font-size: 13px;
+  max-width: 100%;
+}
+.media-viewer-caption b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-viewer-caption span {
+  flex: none;
+  color: var(--pencil-yellow);
+  font-weight: 600;
+}
+.media-viewer-close,
+.media-viewer-nav {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(234, 244, 247, 0.35);
+  background: rgba(11, 35, 56, 0.6);
+  color: #eaf4f7;
+  cursor: pointer;
+}
+.media-viewer-close {
+  top: 16px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+.media-viewer-nav {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 64px;
+  border-radius: 10px;
+  font-size: 26px;
+  line-height: 1;
+}
+.media-viewer-nav.prev { left: 12px; }
+.media-viewer-nav.next { right: 12px; }
+.media-viewer-close:hover,
+.media-viewer-nav:hover {
+  background: rgba(38, 101, 140, 0.85);
+}
+.media-viewer-close:focus-visible,
+.media-viewer-nav:focus-visible {
+  outline: 2px solid var(--pencil-yellow);
+  outline-offset: 2px;
+}
 .error-text { font-size: 12px; color: var(--red-pen); font-weight: 600; }
 
 /* ---- Confirm dialog ---- */
@@ -691,3 +1055,360 @@ body {
   background: var(--red-pen);
   color: #fff;
 }
+
+/* ---- Admin accounts: month grid ---- */
+/* One row per person, one column per month. The name column sticks while the
+   months scroll, so an admin comparing figures across a wide school always
+   knows whose row they are reading. */
+.acct-table { min-width: 720px; }
+.acct-table th, .acct-table td { white-space: nowrap; }
+.acct-sticky {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--paper-light);
+  min-width: 190px;
+}
+.acct-table tbody .acct-sticky { font-weight: 600; }
+.acct-month { text-align: right !important; }
+.acct-cell { text-align: right !important; font-variant-numeric: tabular-nums; }
+.acct-person { display: flex; flex-direction: column; gap: 1px; }
+.acct-person-name { font-weight: 600; }
+.acct-person-meta { color: var(--ink-soft); font-size: 11px; font-weight: 400; }
+/* An empty cell is a dash, not a zero: "nothing recorded" and "recorded as
+   zero" are different facts, and unpaid money is the thing being chased. */
+.acct-empty {
+  background: none; border: 1px dashed var(--line); border-radius: 6px;
+  color: var(--ink-soft); cursor: pointer; font-size: 13px;
+  min-width: 34px; padding: 2px 6px;
+}
+.acct-empty:hover { border-color: var(--ink-soft); color: var(--ink); }
+.acct-amount { align-items: center; display: inline-flex; gap: 6px; justify-content: flex-end; }
+.acct-value { font-variant-numeric: tabular-nums; }
+.acct-cell-actions { display: flex; gap: 2px; opacity: 0; }
+.acct-amount:hover .acct-cell-actions, .acct-amount:focus-within .acct-cell-actions { opacity: 1; }
+.acct-cell-actions button {
+  background: none; border: none; color: var(--ink-soft); cursor: pointer;
+  font-size: 12px; line-height: 1; padding: 2px 3px;
+}
+.acct-cell-actions button:hover { color: var(--ink); }
+/* The date a figure was paid, under the amount: "how much" plus "when". */
+.acct-paid {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  margin-top: 3px;
+}
+.acct-cell-editing { background: var(--paper); }
+.acct-input { font-size: 13px; max-width: 110px; padding: 4px 6px; text-align: right; }
+
+/* The remark beside a salary figure. It is prose, not a number, so it reads
+   left-aligned and is allowed to be wide: the reason a payment looks the way
+   it does is a sentence, and truncating it hides the answer. */
+.acct-col-sub {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+.acct-month-lead { border-right: 1px solid var(--line); }
+.acct-note-head {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-align: left !important;
+  text-transform: uppercase;
+}
+.acct-note-cell { min-width: 190px; text-align: left !important; }
+.acct-note {
+  background: none;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 240px;
+  overflow: hidden;
+  padding: 2px 6px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.acct-note:hover { background: var(--paper-light); border-color: var(--line); }
+.acct-note-blank { color: var(--ink-soft); font-size: 13px; }
+.acct-input-note { max-width: 240px; text-align: left; width: 100%; }
+/* Touch has no hover, so keep the cell actions permanently visible there. */
+@media (hover: none) {
+  .acct-cell-actions { opacity: 1; }
+}
+
+/* The per-row entry point for a period payment, in its own column at the far
+   right. It acts on the whole row rather than on any one month, so it is
+   separated from the figures instead of sitting under the name, where it read
+   as part of the person's identity. Quiet by default: it is a route to the
+   dialog, not the figure the grid is about. */
+.acct-action-cell { text-align: right; }
+.acct-action-head {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
+}
+.acct-row-action {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.acct-row-action:hover:not(:disabled) { border-color: var(--pencil-yellow-dark); color: var(--ink); }
+.acct-row-action:disabled { cursor: default; opacity: 0.45; }
+
+/* ---- Accounts: recording a fee deposit for a period ---- */
+.fd-box { max-width: 520px; padding: 0; width: 94%; }
+.fd-box:focus { outline: none; }
+.fd-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 18px; }
+.fd-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.fd-row .fd-field { flex: 1 1 160px; }
+.fd-field { display: flex; flex-direction: column; gap: 4px; }
+.fd-label { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+/* The deposit's start month is a fieldset rather than a label, because it holds
+   two controls and a label can only be tied to one of them. The legend is styled
+   as the label, and the fieldset's own border and padding are dropped so it sits
+   in the dialog like the labelled inputs beside it. */
+.fd-field:has(select) {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+.fd-field > legend.fd-label { padding: 0; }
+
+/* The four periods read as one choice, so they are one group of buttons
+   rather than four that look like four unrelated commands. */
+.fd-plans { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-plan {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  gap: 1px;
+  padding: 7px 11px;
+  text-align: left;
+}
+.fd-plan:hover:not(:disabled) { border-color: var(--pencil-yellow-dark); }
+.fd-plan-on { background: var(--pencil-yellow); border-color: var(--pencil-yellow-dark); }
+.fd-plan-label { font-size: 13px; font-weight: 600; }
+.fd-plan-months { color: var(--ink-soft); font-size: 11px; }
+.fd-plan:disabled { cursor: default; opacity: 0.6; }
+
+.fd-preview { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fd-preview-head { display: flex; flex-direction: column; gap: 1px; padding: 9px 12px; }
+.fd-preview-title { font-size: 13px; font-weight: 600; }
+.fd-preview-sub { color: var(--ink-soft); font-size: 11px; }
+.fd-table { font-size: 12px; }
+.fd-table th, .fd-table td { padding: 5px 12px; }
+.fd-num { text-align: right; }
+.fd-state { text-align: right; width: 1%; }
+.fd-row-replaced { background: var(--paper-light); }
+.fd-tag { font-size: 11px; white-space: nowrap; }
+.fd-tag-new { color: var(--ink-soft); }
+.fd-tag-replaced { color: var(--red-pen); font-weight: 600; }
+
+/* Loud on purpose. Replacing a month that already carries a payment is
+   destroying a record, and it has to be read before the confirm button is
+   pressed, not inferred afterwards from a total. */
+.fd-warning {
+  background: var(--red-pen-light);
+  border: 1px solid #e5b3ad;
+  border-radius: 8px;
+  color: #8f2b23;
+  font-size: 12px;
+  margin: 0;
+  padding: 8px 11px;
+}
+.fd-hint { color: var(--ink-soft); font-size: 12px; margin: 0; }
+.fd-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ---- Accounts: filter, sort, and a fixed-height scrolling grid ---- */
+/* Six rows then scroll. The height is derived from the row box rather than
+   hard-coded, so the sticky header keeps sitting on the first row instead of
+   overlapping it. */
+.acct-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-bottom: 10px;
+}
+.acct-search {
+  flex: 1 1 190px;
+  font: inherit;
+  max-width: 320px;
+  min-width: 150px;
+  padding: 7px 10px;
+}
+.acct-sort {
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 8px;
+}
+.acct-count, .acct-scroll-hint { color: var(--ink-soft); font-size: 12px; }
+.acct-scroll-hint { font-style: italic; }
+
+/* max-height is a fallback; the JS sets the exact box so the sticky header
+   has a row of its own rather than sitting on the first one. */
+.acct-vertical { max-height: 340px; overflow-y: auto; }
+.acct-vertical .acct-table thead th { position: sticky; top: 0; z-index: 2; }
+/* ---- Reports: student list + report popup ---- */
+.sr-controls {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sr-blurb { color: var(--ink-soft); font-size: 12.5px; margin: 4px 0 0; max-width: 60ch; }
+.sr-search { flex: 1 1 220px; font: inherit; max-width: 340px; padding: 7px 10px; }
+.sr-count { color: var(--ink-soft); font-size: 12px; margin-bottom: 6px; }
+
+/* Scrolls rather than paginating: see the note in AdminReports.jsx. */
+.sr-list {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+.sr-row {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+.sr-row:last-child { border-bottom: 0; }
+.sr-row:hover { background: rgba(31, 92, 168, 0.06); }
+.sr-row-avatar, .sr-avatar {
+  align-items: center;
+  background: var(--ruled-blue);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+.sr-row-text { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.sr-row-name { font-size: 14px; font-weight: 600; }
+.sr-row-meta {
+  color: var(--ink-soft);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- popup ---- */
+.sr-box { max-width: 720px; padding: 0; width: 94%; }
+.sr-box:focus { outline: none; }
+.sr-head {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.sr-head-text { flex: 1 1 auto; min-width: 0; }
+.sr-name { font-size: 17px; font-weight: 700; }
+.sr-sub { color: var(--ink-soft); font-size: 12.5px; }
+/* The two things an open report offers must not look like plain text beside
+   the name: Download is the report's own primary action, and Close is solidly
+   a button on purpose, so a reader cannot mistake the sheet for a static
+   message. Gold + a quiet slate is the app's add/cancel pair. */
+.sr-head .btn { font-weight: 700; white-space: nowrap; }
+.sr-head .btn.ghost {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+  color: var(--paper-light);
+}
+.sr-body { max-height: 70vh; overflow-y: auto; padding: 18px 20px 20px; }
+.sr-section { border-top: 1px solid var(--line); padding-top: 14px; }
+.sr-section:first-of-type { border-top: 0; padding-top: 0; }
+.sr-h4 { font-size: 13px; letter-spacing: 0.04em; margin: 0 0 8px; text-transform: uppercase; }
+.sr-h5 { font-size: 12px; margin: 14px 0 6px; }
+.sr-sub-head { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.sr-range { color: var(--ink-soft); font-size: 12px; }
+.sr-term-select {
+  border: 1.5px solid var(--ruled-blue);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 7px;
+}
+.sr-note { color: var(--ink-soft); font-size: 12px; line-height: 1.5; margin: 6px 0 0; }
+.sr-foot { color: var(--ink-soft); font-size: 11.5px; line-height: 1.5; margin: 16px 0 0; }
+
+.sr-details { display: grid; gap: 10px 18px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.sr-guardian {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-bottom: 8px;
+  padding: 10px 12px;
+}
+.sr-detail-label { color: var(--ink-soft); font-size: 11px; text-transform: uppercase; }
+.sr-detail-value { font-size: 13.5px; overflow-wrap: anywhere; }
+
+.sr-table { margin-top: 8px; }
+.sr-num { text-align: right; }
+.sr-dash { color: var(--ink-soft); }
+.sr-average { font-weight: 700; }
+.sr-coverage { color: var(--ink-soft); display: block; font-size: 11px; font-weight: 400; }
+
+.sr-att-stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); margin-top: 8px; }
+.sr-stat { background: rgba(31, 92, 168, 0.05); border-radius: 10px; padding: 10px; text-align: center; }
+.sr-stat-n { display: block; font-size: 19px; font-weight: 700; }
+.sr-stat-l { color: var(--ink-soft); font-size: 11px; }
+/* Tones for the attendance headline. A display convention only -- the system
+   stores no attendance policy, and these are not the school's own thresholds. */
+.sr-tone-ok { color: var(--ok-green); }
+.sr-tone-info { color: var(--ruled-blue); }
+.sr-tone-warn { color: var(--red-pen); }
+.sr-tone-mute { color: var(--ink-soft); }
+
+.sr-days { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); list-style: none; margin: 0; padding: 0; }
+.sr-day { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.sr-day-date { font-size: 12.5px; }

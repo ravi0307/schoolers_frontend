@@ -234,6 +234,29 @@ export default function ParentHome() {
 
   const pickdropRow = pickdrop && selectedChild ? pickdrop.find((r) => r.student_id === selectedChild.student_id) : null;
 
+  // "Route 1 / Picked up" alone tells a parent nothing about where or when, so
+  // pair the status with the next boarding stop and its time. The stop schedule
+  // rides along on the snapshot, so this needs no extra request.
+  const pickdropStopText = (row) => {
+    const stops = row?.stops || [];
+    if (!stops.length) return "";
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const minutes = (hhmm) => {
+      if (!hhmm) return null;
+      const [h, m] = hhmm.split(":").map(Number);
+      return Number.isNaN(h) || Number.isNaN(m) ? null : h * 60 + m;
+    };
+    // Stops are in boarding order; the first one still ahead of the clock is next.
+    const next = stops.find((s) => {
+      const t = minutes(s.pickup_time);
+      return t == null || t > nowMin;
+    });
+    const stop = next || stops[stops.length - 1];
+    const when = next ? `next ${stop.pickup_time || "—"}` : `last pickup ${stop.pickup_time || "—"}`;
+    return `${stop.stop_name} · ${when}`;
+  };
+
   const attendanceHistory = [...(attendance || [])]
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
     .slice(0, 100)
@@ -264,11 +287,14 @@ export default function ParentHome() {
   const pickdropHistory = (pickdrop || [])
     .filter((r) => r.student_id !== selectedChild?.student_id)
     .slice(0, 100)
-    .map((r) => ({
-      label: r.student_name,
-      value: PICKDROP_LABEL[r.status] || r.status,
-      tone: r.status === "picked" ? "ok" : r.status === "dropped" ? "mute" : r.status === "pending" ? "warn" : "mute",
-    }));
+    .map((r) => {
+      const where = pickdropStopText(r);
+      return {
+        label: r.student_name,
+        value: `${PICKDROP_LABEL[r.status] || r.status}${where ? ` · ${where}` : ""}`,
+        tone: r.status === "picked" ? "ok" : r.status === "dropped" ? "mute" : r.status === "pending" ? "warn" : "mute",
+      };
+    });
 
   const attendanceText = attLoading
     ? LOADING
@@ -287,7 +313,11 @@ export default function ParentHome() {
     ? LOADING
     : !pickdropRow
       ? "Not linked to a route"
-      : PICKDROP_LABEL[pickdropRow.status] || pickdropRow.status;
+      : pickdropRow.status === "not_assigned"
+        ? "Not linked to a route"
+        : [PICKDROP_LABEL[pickdropRow.status] || pickdropRow.status, pickdropStopText(pickdropRow)]
+            .filter(Boolean)
+            .join(" · ");
 
   const quickLinks = [
     {

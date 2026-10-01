@@ -26,6 +26,7 @@ import TeacherGallery from "./pages/teacher/TeacherGallery";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
 import AdminTimetable from "./pages/admin/AdminTimetable";
+import AdminHolidays from "./pages/admin/AdminHolidays";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminSubjects from "./pages/admin/AdminSubjects";
 import AdminBroadcast from "./pages/admin/AdminBroadcast";
@@ -35,6 +36,8 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
 import AdminWebsite from "./pages/admin/AdminWebsite";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminAccounts from "./pages/admin/AdminAccounts";
+import AdminReports from "./pages/admin/AdminReports";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -118,6 +121,7 @@ export default function App() {
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="classes" element={<AdminClasses />} />
                     <Route path="timetable" element={<AdminTimetable />} />
+                    <Route path="holidays" element={<AdminHolidays />} />
                     <Route path="subjects" element={<AdminSubjects />} />
                     <Route path="gallery" element={<AdminGallery />} />
                     <Route path="broadcast" element={<AdminBroadcast />} />
@@ -127,6 +131,8 @@ export default function App() {
                     <Route path="leave" element={<AdminLeave />} />
                     <Route path="website" element={<AdminWebsite />} />
                     <Route path="notifications" element={<AdminNotifications />} />
+                    <Route path="accounts" element={<AdminAccounts />} />
+                    <Route path="reports" element={<AdminReports />} />
                     <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                   </Routes>
                 </ProtectedRoute>
