@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
+import styles from "./AdminSubjects.module.css";
 
 export default function AdminSubjects() {
   const { data, loading, error, refetch } = useApi(() => academicsApi.listSubjects(), []);
@@ -89,13 +90,13 @@ export default function AdminSubjects() {
         <div className="card">
           {active.length ? (
             pager.pageItems.map((s) => (
-              <div key={s.subject_id} style={{ borderBottom: "1px solid #e5e7eb" }}>
+              <div key={s.subject_id} className={styles.subjectEntry}>
                 <div className="listitem">
                   <div className="avatar g">{s.name[0]}</div>
-                  <div className="meta" style={{ flex: 1 }}>
+                  <div className={`meta ${styles.subjectMeta}`}>
                     <b>{s.name}</b>
                   </div>
-                  <div className="cta-row" style={{ gap: 8 }}>
+                  <div className={`cta-row ${styles.actionRow}`}>
                     <button className="btn ghost sm" onClick={() => { setEditingId(s.subject_id); setEditName(s.name); }}>Edit</button>
                     <button
                       className="btn ghost sm"
@@ -106,12 +107,12 @@ export default function AdminSubjects() {
                   </div>
                 </div>
                 {editingId === s.subject_id && (
-                  <div className="card white" style={{ margin: "8px 0 10px" }}>
-                    <div className="field" style={{ marginBottom: 0 }}>
+                  <div className={`card white ${styles.editCard}`}>
+                    <div className={`field ${styles.fieldCompact}`}>
                       <label>Subject name</label>
                       <input value={editName} onChange={(e) => setEditName(e.target.value)} />
                     </div>
-                    <div className="cta-row" style={{ marginTop: 10 }}>
+                    <div className={`cta-row ${styles.editActions}`}>
                       <button className="btn primary sm" onClick={() => update(s.subject_id)}>Save</button>
                       <button className="btn ghost sm" onClick={() => { setEditingId(null); setEditName(""); }}>Cancel</button>
                     </div>
@@ -127,15 +128,15 @@ export default function AdminSubjects() {
       )}
 
       {!loading && !error && inactive.length > 0 && (
-        <div className="card" style={{ marginTop: 10 }}>
+        <div className={`card ${styles.inactivePanel}`}>
           <div className="section-label">Inactive subjects</div>
           {inactive.map((s) => (
             <div key={s.subject_id} className="listitem">
               <div className="avatar m">{s.name[0]}</div>
-              <div className="meta" style={{ flex: 1 }}>
+              <div className={`meta ${styles.subjectMeta}`}>
                 <b>{s.name}</b>
               </div>
-              <div className="cta-row" style={{ gap: 8 }}>
+              <div className={`cta-row ${styles.actionRow}`}>
                 <button
                   className="btn primary sm"
                   onClick={() => activate(s.subject_id, s.name)}
@@ -149,7 +150,7 @@ export default function AdminSubjects() {
       )}
 
       {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Subject name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mathematics" />
@@ -162,7 +163,7 @@ export default function AdminSubjects() {
           </div>
         </form>
       ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Subject</button>
+        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Subject</button>
       )}
     </AdminShell>
   );
