@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
@@ -10,13 +10,13 @@ import { currentMonthAnchor } from "../../utils/accountsFlow";
 import { depositResultText } from "../../utils/feeDeposit";
 import {
   STAFF_SORTS,
-  VISIBLE_ROWS,
   filterAndSortRows,
   peopleCountLabel,
   scrollHintText,
 } from "../../utils/accountsTable";
 import { apiErrorMessage } from "../../api/client";
 import { formatDay } from "../../utils/studentReport";
+import styles from "./AdminAccounts.module.css";
 
 /*
  * Month grid for money.
@@ -273,24 +273,9 @@ function SheetTable({
   const rows = filterAndSortRows({ rows: allRows, months, query, sort, nameOf, secondaryOf });
   const scrollNote = scrollHintText(rows.length);
 
-  // Pin the scroll box to six rows. Measuring the real row height keeps the
-  // sticky header sitting above the first row instead of on top of it, which
-  // a hard-coded pixel height would get wrong at any other font size.
   const scrollRef = useRef(null);
-  useLayoutEffect(() => {
-    const box = scrollRef.current;
-    if (!box) return;
-    const head = box.querySelector("thead tr");
-    const row = box.querySelector("tbody tr");
-    if (!head || !row) return;
-    const headHeight = head.getBoundingClientRect().height;
-    const rowHeight = row.getBoundingClientRect().height;
-    if (!rowHeight) return;
-    box.style.maxHeight = `${Math.round(headHeight + rowHeight * VISIBLE_ROWS)}px`;
-  }, [rows.length, months.length, sort, query]);
 
-  // A filter change can leave the list scrolled past its new end, which reads
-  // as an empty grid. Send it back to the top.
+  // A filter change can leave the list scrolled past its new end.
   useEffect(() => {
     const box = scrollRef.current;
     if (box) box.scrollTop = 0;
@@ -524,6 +509,7 @@ export default function AdminAccounts() {
 
   return (
     <AdminShell>
+      <main className={styles.accounts}>
       <div className="scr-title">Accounts</div>
       <div className="scr-sub">
         Staff salaries and student fees for the last two months, each with a
@@ -542,7 +528,7 @@ export default function AdminAccounts() {
         <>
             <section className="card white">
               <div className="scr-title-row">
-                <div className="section-label" style={{ marginTop: 0 }}>Staff salaries</div>
+                <div className={`section-label ${styles.sectionLabel}`}>Staff salaries</div>
                 <MonthSelector
                   anchor={salaryAnchor}
                   onChange={setSalaryAnchor}
@@ -551,7 +537,7 @@ export default function AdminAccounts() {
                   months={SALARY_MONTHS}
                 />
               </div>
-              <div className="scr-sub" style={{ marginBottom: 12 }}>
+              <div className={`scr-sub ${styles.sheetSummary}`}>
                 <span>
                   {salarySheet?.rows?.length || 0} staff ·{" "}
                   {money(salarySheet?.total_paid)} paid ·{" "}
@@ -587,7 +573,7 @@ export default function AdminAccounts() {
         <>
           <section className="card white">
               <div className="scr-title-row">
-                <div className="section-label" style={{ marginTop: 0 }}>Student fees</div>
+                <div className={`section-label ${styles.sectionLabel}`}>Student fees</div>
                 <MonthSelector
                   anchor={feeAnchor}
                   onChange={setFeeAnchor}
@@ -600,7 +586,7 @@ export default function AdminAccounts() {
                   allowFuture
                 />
               </div>
-              <div className="scr-sub" style={{ marginBottom: 12 }}>
+              <div className={`scr-sub ${styles.sheetSummary}`}>
                 <span>
                   {feeSheet?.rows?.length || 0} students ·{" "}
                   {money(feeSheet?.total_collected)} collected ·{" "}
@@ -643,6 +629,7 @@ export default function AdminAccounts() {
             )}
         </>
       )}
+      </main>
     </AdminShell>
   );
 }

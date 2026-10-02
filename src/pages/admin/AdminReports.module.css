@@ -1,0 +1,7 @@
+.sectionLabel {
+  margin-top: 0;
+}
+
+.staffPanel {
+  margin-top: var(--space-8);
+}

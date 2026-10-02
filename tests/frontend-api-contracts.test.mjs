@@ -341,7 +341,6 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
     assertContains(file, [
       /Posted \(Outgoing\)/,
       /Received \(Incoming\)/,
-      /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
       /postedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, true\)\)/,
       /receivedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, false\)\)/,
       // Ownership is decided by the author's user id in the shared helper, not
@@ -356,6 +355,13 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
       `${file} still decides ownership by display name`);
     assert.doesNotMatch(text, /senderNameForUser/);
   }
+  assertContains("src/pages/admin/AdminBroadcast.module.css", [
+    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+    /@media \(max-width: 48rem\)/,
+  ]);
+  assertContains("src/pages/teacher/TeacherBroadcast.jsx", [
+    /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+  ]);
 });
 
 test("teacher and parent homes render the broadcast feed", () => {
@@ -945,7 +951,7 @@ test("admin sidebar is ordered by dependency, not alphabetically", () => {
   );
 });
 
-test("admin 'Set up' group keeps its prerequisite sequence", () => {
+test("admin setup links keep their prerequisite sequence", () => {
   const labels = [...source(ADMIN_SHELL).matchAll(/to:\s*"([^"]+)".*?label:\s*"([^"]+)"/g)].map(
     ([, to, label]) => ({ to, label })
   );
@@ -964,23 +970,14 @@ test("every admin sidebar link resolves to a real route", () => {
   }
 });
 
-test("admin sidebar keeps its five groups in order", () => {
-  const groups = [...source(ADMIN_SHELL).matchAll(/group:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(
-    [...new Set(groups)],
-    ["Overview", "Day to day", "Set up", "Accounts and Reporting", "Public"]
-  );
-});
-
-test("grouped nav support in WebLayout is optional and off by default", () => {
+test("admin sidebar keeps its dependency order without non-clickable group headings", () => {
+  const shell = source(ADMIN_SHELL);
   const layout = source("src/components/layout/WebLayout.jsx");
-  assertContains("src/components/layout/WebLayout.jsx", [/sidebar-group/, /item\.group/]);
-  // A flat nav must render zero headings rather than empty ones.
-  assert.match(
-    layout,
-    /item\.group\s*&&/,
-    "group heading must be conditional so flat portals render nothing"
-  );
+  assert.deepEqual(navOrder(ADMIN_SHELL), ADMIN_NAV);
+  assert.doesNotMatch(shell, /group:\s*"/);
+  assert.match(layout, /navItems\.filter\(\(item\) => item\.to\)\.map/);
+  assert.doesNotMatch(layout, /sidebar-group|item\.group/);
+  assert.doesNotMatch(source("src/styles/layout.css"), /sidebar-group/);
 });
 
 test("parent, teacher, pilot and master sidebars stay flat", () => {
@@ -1182,16 +1179,13 @@ test("a recorded amount must be a non-negative number before it is sent", () => 
   assert.match(page, /num < 0/);
 });
 
-test("accounts and reporting are one nav group below Set up, above Public", () => {
+test("Accounts and Reporting remain clickable admin navigation links", () => {
   const shell = source("src/components/layout/AdminShell.jsx");
-  const setUp = shell.indexOf('group: "Set up"');
-  const accounts = shell.indexOf('group: "Accounts and Reporting"');
-  const publicGroup = shell.indexOf('group: "Public"');
-  assert.ok(setUp !== -1 && accounts !== -1 && publicGroup !== -1);
-  assert.ok(setUp < accounts, "Accounts must come after Set up");
-  assert.ok(accounts < publicGroup, "Public must stay last");
-  assert.match(shell, /to: "\/admin\/accounts"/);
-  assert.match(shell, /to: "\/admin\/reports"/);
+  const accounts = shell.indexOf('to: "/admin/accounts"');
+  const reports = shell.indexOf('to: "/admin/reports"');
+  assert.ok(accounts !== -1 && reports !== -1);
+  assert.ok(accounts < reports, "Accounts must stay before Reporting");
+  assert.doesNotMatch(shell, /group:\s*"/);
 });
 
 test("both new admin pages are routed and reachable", () => {
@@ -1225,15 +1219,15 @@ test("a paid amount shows the date it was paid, formatted not raw", () => {
   const valueAt = page.indexOf('className="acct-value"');
   assert.ok(actionsAt !== -1 && valueAt !== -1, "the paid cell must have actions and a value");
   assert.ok(actionsAt < valueAt, "actions must sit before the figure, keeping the right edge aligned");
-  assertContains("src/styles/global.css", [
-    /\.acct-paid\s*\{[^}]*color:\s*var\(--ink-soft\)/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-paid\)\s*\{[^}]*color:\s*var\(--color-text-muted\)/s,
   ]);
 });
 
 test("the accounts grid keeps the person column visible while months scroll", () => {
-  assertContains("src/styles/global.css", [
-    /\.acct-sticky\s*\{[^}]*position:\s*sticky/s,
-    /\.acct-table\s*\{[^}]*min-width/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-sticky\)\s*\{[^}]*position:\s*sticky/s,
+    /:global\(\.acct-table\)\s*\{[^}]*min-width/s,
   ]);
 });
 
@@ -1398,7 +1392,7 @@ test("each accounts grid can search and sort its own people", () => {
   assert.match(page, /noMatchText="No students match that search\."/);
 });
 
-test("the accounts grids scroll vertically at eight rows with a sticky header", () => {
+test("the accounts grids scroll vertically with a sticky header", () => {
   // A school of hundreds of staff or students would otherwise bury the person
   // the admin is looking for under a full-page table.
   const utils = source("src/utils/accountsTable.js");
@@ -1406,20 +1400,18 @@ test("the accounts grids scroll vertically at eight rows with a sticky header", 
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /className="table-scroll acct-vertical"/);
   assert.match(page, /scrollHintText\(rows\.length\)/, "the grid says how many rows are below the fold");
-  assertContains("src/styles/global.css", [
-    /\.acct-vertical\s*\{[^}]*overflow-y:\s*auto/s,
-    /\.acct-vertical \.acct-table thead th\s*\{[^}]*position:\s*sticky/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-vertical\)\s*\{[^}]*overflow:\s*auto/s,
+    /:global\(\.acct-vertical \.acct-table thead th\)\s*\{[^}]*position:\s*sticky/s,
   ]);
 });
 
-test("the scroll box is sized from the measured row height, not a hard-coded one", () => {
-  // A hard-coded pixel height silently breaks the sticky header: it either
-  // covers the first row or wastes the last one. Measuring keeps both honest
-  // at any font size or zoom.
+test("the scroll box has a responsive tokenized height without inline styles", () => {
+  // Keep the viewport bounded without setting layout styles imperatively.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /useLayoutEffect\(/, "the box must be sized before paint, not after a visible jump");
-  assert.match(page, /headHeight \+ rowHeight \* VISIBLE_ROWS/);
-  assert.match(page, /if \(!rowHeight\) return/, "an unmeasured row must not collapse the box to the header");
+  const module = source("src/pages/admin/AdminAccounts.module.css");
+  assert.doesNotMatch(page, /style\.[a-zA-Z]+\s*=/);
+  assert.match(module, /max-height:\s*24rem/);
   // And a narrowed grid must not stay scrolled past its own new end.
   assert.match(page, /box\.scrollTop = 0/);
 });
@@ -1443,8 +1435,8 @@ test("the count note only does arithmetic once the grid is narrowed", () => {
 test("editing and clearing are both reachable without hover", () => {
   // Hover-revealed actions are unusable on touch, so the stylesheet also
   // exposes them when there is no hover.
-  assertContains("src/styles/global.css", [
-    /@media\s*\(hover:\s*none\)\s*\{[^}]*\.acct-cell-actions\s*\{\s*opacity:\s*1/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /@media\s*\(hover:\s*none\)\s*\{[^}]*:global\(\.acct-cell-actions\)\s*\{\s*opacity:\s*1/s,
   ]);
   // And the cell offers an empty-state target, so an unpaid month can be
   // filled in without knowing the hover trick.
@@ -1703,11 +1695,16 @@ test("searching the student list matches name, admission number and class", () =
 
 test("the report popup is a real dialog that closes on Escape", () => {
   const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  const accessibility = source("src/components/reports/useReportDialogAccessibility.js");
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/, "Escape must close the report");
+  assert.match(dialog, /import \{ useEffect, useState \} from "react"/, "the report term selector effect must be imported");
+  assert.match(dialog, /useEffect\(\(\) => \{/);
+  assert.match(dialog, /useReportDialogAccessibility\(onClose\)/);
+  assert.match(accessibility, /event\.key === "Escape"[\s\S]*?closeRef\.current\(\)/, "Escape must close the report");
   // Clicking the backdrop closes; clicking inside must not.
-  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /className="confirm-overlay" onMouseDown=/);
+  assert.match(dialog, /event\.target === event\.currentTarget/);
   assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
 });
 
@@ -1835,10 +1832,13 @@ test("the reports page lists staff next to students with its own search", () => 
 
 test("the staff report popup is a real dialog that closes on Escape", () => {
   const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  const accessibility = source("src/components/reports/useReportDialogAccessibility.js");
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/);
-  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /useReportDialogAccessibility\(onClose\)/);
+  assert.match(accessibility, /event\.key === "Escape"[\s\S]*?closeRef\.current\(\)/);
+  assert.match(dialog, /className="confirm-overlay" onMouseDown=/);
+  assert.match(dialog, /event\.target === event\.currentTarget/);
   assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
 });
 

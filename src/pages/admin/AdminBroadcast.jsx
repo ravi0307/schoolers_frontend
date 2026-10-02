@@ -11,6 +11,7 @@ import { apiErrorMessage } from "../../api/client";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import { richTextToPlainText, sanitizeRichText } from "../../components/ui/richText";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
+import styles from "./AdminBroadcast.module.css";
 
 function formatDate(value) {
   if (!value) return "";
@@ -102,24 +103,18 @@ export default function AdminBroadcast() {
     return (
       <div
         key={item.broadcast_id}
-        className="listitem"
+        className={`listitem ${styles.broadcastRow}`}
         onClick={() => setExpandedBroadcastId(isExpanded ? null : item.broadcast_id)}
-        style={{
-          cursor: "pointer",
-          flexWrap: "wrap",
-          alignItems: "flex-start",
-          overflow: "hidden",
-        }}
       >
         <div className="avatar y">📣</div>
-        <div className="meta" style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
-          <b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className={`meta ${styles.broadcastMeta}`}>
+          <b className={styles.sender}>
             {senderNameOf(item)}
           </b>
-          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.message}>
             {richTextToPlainText(item.message)}
           </span>
-          <span style={{ display: "block", marginTop: 4, color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.broadcastSummary}>
             {roleNameOf(item)} · {audience} · {createdAt ? formatDate(createdAt) : "Date unavailable"}
           </span>
         </div>
@@ -137,17 +132,7 @@ export default function AdminBroadcast() {
         )}
         {isExpanded && (
           <div
-            style={{
-              flexBasis: "100%",
-              marginTop: 10,
-              padding: "10px 12px",
-              borderRadius: 8,
-              background: "#eef7fa",
-              color: "#0f172a",
-              whiteSpace: "pre-wrap",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
+            className={styles.expandedMessage}
             onClick={(event) => event.stopPropagation()}
             dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.message) }}
           />
@@ -221,7 +206,7 @@ export default function AdminBroadcast() {
       )}
 
       {formOpen && (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 14 }}>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           {!editingBroadcastId && (
             <div className="grid2">
             <div className="field">
@@ -262,7 +247,7 @@ export default function AdminBroadcast() {
 
       {!loading && !error && (
         <>
-        <div className="card white" style={{ marginTop: 14 }}>
+        <div className={`card white ${styles.filterCard}`}>
           <div className="grid2">
             <div className="field">
               <label>Search broadcasts</label>
@@ -292,22 +277,19 @@ export default function AdminBroadcast() {
             </select>
           </div>
         </div>
-        <div
-          className="grid2"
-          style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, alignItems: "start", marginTop: 18 }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div className="section-label" style={{ marginTop: 0 }}>Posted (Outgoing)</div>
-            <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+        <div className={styles.broadcastColumns}>
+          <div className={styles.broadcastColumn}>
+            <div className={`section-label ${styles.columnHeading}`}>Posted (Outgoing)</div>
+            <div className={`card ${styles.broadcastList}`}>
               {postedBroadcasts.length
                 ? postedPager.pageItems.map((item) => renderBroadcastRow(item, true))
                 : <Empty>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</Empty>}
               <Pagination {...postedPager} />
             </div>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div className="section-label" style={{ marginTop: 0 }}>Received (Incoming)</div>
-            <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+          <div className={styles.broadcastColumn}>
+            <div className={`section-label ${styles.columnHeading}`}>Received (Incoming)</div>
+            <div className={`card ${styles.broadcastList}`}>
               {receivedBroadcasts.length
                 ? receivedPager.pageItems.map((item) => renderBroadcastRow(item, false))
                 : <Empty>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</Empty>}

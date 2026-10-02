@@ -8,6 +8,9 @@ import * as peopleApi from "../../api/people";
 import { listClasses } from "../../api/academics";
 import { classNameFor, filterStudents } from "../../utils/studentReport";
 import { filterStaff } from "../../utils/staffReport";
+import styles from "./AdminReports.module.css";
+
+const EMPTY_LIST = [];
 
 /**
  * Reporting.
@@ -61,7 +64,7 @@ export default function AdminReports() {
   const [staffQuery, setStaffQuery] = useState("");
   const [openStaffId, setOpenStaffId] = useState(null);
 
-  const all = students.data || [];
+  const all = students.data || EMPTY_LIST;
   const classesById = useMemo(
     () => Object.fromEntries((classes.data || []).map((c) => [c.class_id, c.name])),
     [classes.data]
@@ -71,7 +74,7 @@ export default function AdminReports() {
     [all, query, classesById]
   );
 
-  const allStaff = staff.data || [];
+  const allStaff = staff.data || EMPTY_LIST;
   const matchedStaff = useMemo(
     () => filterStaff(allStaff, staffQuery),
     [allStaff, staffQuery]
@@ -97,7 +100,7 @@ export default function AdminReports() {
       <section className="card white">
         <div className="sr-controls">
           <div>
-            <div className="section-label" style={{ marginTop: 0 }}>Student report</div>
+            <div className={`section-label ${styles.sectionLabel}`}>Student report</div>
             <p className="sr-blurb">
               A student's details, marks and attendance. Scores are shown per
               subject per term; there is no exam or grade band in the system, so
@@ -157,10 +160,10 @@ export default function AdminReports() {
         <StudentReportDialog studentId={openId} onClose={() => setOpenId(null)} />
       )}
 
-      <section className="card white" style={{ marginTop: 26 }}>
+      <section className={`card white ${styles.staffPanel}`}>
         <div className="sr-controls">
           <div>
-            <div className="section-label" style={{ marginTop: 0 }}>Staff report</div>
+            <div className={`section-label ${styles.sectionLabel}`}>Staff report</div>
             <p className="sr-blurb">
               A staff member's details, salary and attendance. Salary is shown
               per month over the same window the accounts grid renders, each

@@ -1,0 +1,45 @@
+.subjectEntry {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.subjectMeta {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.actionRow {
+  gap: var(--space-2);
+}
+
+.editCard,
+.formCard {
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.fieldCompact {
+  margin-bottom: 0;
+}
+
+.editActions {
+  margin-top: var(--space-3);
+}
+
+.inactivePanel {
+  margin-top: var(--space-3);
+}
+
+.formCard {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 42rem) {
+  .subjectEntry :global(.listitem) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .actionRow {
+    flex-wrap: wrap;
+  }
+}

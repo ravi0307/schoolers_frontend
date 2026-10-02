@@ -9,6 +9,7 @@ import * as academicsApi from "../../api/academics";
 import * as leaveApi from "../../api/leave";
 import * as transportApi from "../../api/transport";
 import { Spinner, ErrorBanner } from "../../components/ui/Primitives";
+import styles from "./AdminDashboard.module.css";
 
 const ICONS = {
   students: (
@@ -61,52 +62,34 @@ const ICONS = {
   ),
 };
 
-const TONE_COLOR = {
-  ok: "var(--ok-green)",
-  warn: "var(--red-pen)",
-  mute: "var(--ink-soft)",
+const TONE_CLASS = {
+  ok: styles.toneOk,
+  warn: styles.toneWarn,
+  mute: styles.toneMute,
 };
 
 function QuickCard({ icon, title, summary, rows, onNavigate }) {
   return (
-    <button className="card" onClick={onNavigate} style={{ textAlign: "left", cursor: "pointer" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <b style={{ fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ display: "inline-flex", color: "var(--chalk-green-mid)", width: 14, height: 14 }}>
+    <button className={`card ${styles.quickCard}`} onClick={onNavigate}>
+      <div className={styles.quickHeader}>
+        <b className={styles.quickTitle}>
+          <span className={styles.quickIcon}>
             {icon}
           </span>
           {title}
         </b>
-        <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
+        <span className={styles.openLabel}>Open →</span>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
+      <div className={styles.summary}>{summary}</div>
       {rows && rows.length > 0 && (
-        <div
-          style={{
-            marginTop: 8,
-            borderTop: "1px solid var(--line)",
-            paddingTop: 4,
-            maxHeight: 150,
-            overflowY: "auto",
-          }}
-        >
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "var(--ink-soft)", marginBottom: 2 }}>Recent</div>
+        <div className={styles.recent}>
+          <div className={styles.recentHeading}>Recent</div>
           {rows.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 8,
-                padding: "3px 0",
-                fontSize: 11,
-                borderBottom: i < rows.length - 1 ? "1px dotted var(--line)" : undefined,
-              }}
-            >
-              <span style={{ color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div key={i} className={styles.recentRow}>
+              <span className={styles.recentLabel}>
                 {row.label}
               </span>
-              <span style={{ fontWeight: 600, whiteSpace: "nowrap", color: TONE_COLOR[row.tone] || "var(--ink)" }}>
+              <span className={`${styles.recentValue} ${TONE_CLASS[row.tone] || ""}`}>
                 {row.value}
               </span>
             </div>

@@ -143,19 +143,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.sidebar nav .sidebar-group {
-  overflow-wrap: anywhere;
-  padding: var(--space-4) var(--space-3) var(--space-2);
-  color: var(--color-text-muted-on-dark);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
-  text-overflow: clip;
-  text-transform: uppercase;
-  white-space: normal;
-}
-
-.sidebar nav .sidebar-group:first-child { padding-top: 0; }
 .sidebar .profile-link { margin-top: auto; }
 
 .sidebar .signout {
@@ -174,6 +161,9 @@
   overflow: auto;
   padding: var(--content-padding);
   background: var(--color-background);
+  color: var(--color-text-on-dark);
+  --surface-text-muted: var(--color-text-muted-on-dark);
+  --ink-soft: var(--surface-text-muted);
 }
 
 .web-content .scr-title { color: var(--color-text-on-dark); }
@@ -186,9 +176,12 @@
 .web-content .kpi {
   background: var(--color-surface);
   color: var(--color-text);
+  --surface-text-muted: var(--color-text-muted);
+  --ink-soft: var(--surface-text-muted);
 }
 .web-content .card .section-label { color: var(--color-text-muted); }
 .web-content .card .empty { color: var(--color-text-muted); }
+.web-content .card .selected-timetable-label { color: var(--color-text-muted); }
 .web-content .card .card,
 .mobile-content .card .card {
   background: transparent;
@@ -239,9 +232,15 @@
   overflow-y: auto;
   padding: var(--space-4) var(--space-4) calc(var(--space-12) + env(safe-area-inset-bottom));
   color: var(--color-text);
+  --surface-text-muted: var(--color-text-muted);
+  --ink-soft: var(--surface-text-muted);
 }
 
-.mobile-content .card { color: var(--color-text); }
+.mobile-content .card {
+  color: var(--color-text);
+  --surface-text-muted: var(--color-text-muted);
+  --ink-soft: var(--surface-text-muted);
+}
 
 .tabbar {
   position: fixed;

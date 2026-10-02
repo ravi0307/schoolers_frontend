@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
+import styles from "./AdminLeave.module.css";
 
 export default function AdminLeave() {
   const { data, loading, error, refetch } = useApi(() => leaveApi.listLeave(), []);
@@ -53,9 +54,9 @@ export default function AdminLeave() {
                     <b>{l.requester_name} · {l.requester_type}</b>
                     <span>{l.from_date} → {l.to_date} · {l.reason}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="btn primary sm" onClick={() => approve(l.leave_id)}>✓</button>
-                    <button className="btn ghost sm" onClick={() => reject(l.leave_id)}>✕</button>
+                  <div className={styles.requestActions}>
+                    <button className="btn primary sm" aria-label={`Approve leave request from ${l.requester_name}`} onClick={() => approve(l.leave_id)}>✓</button>
+                    <button className="btn ghost sm" aria-label={`Reject leave request from ${l.requester_name}`} onClick={() => reject(l.leave_id)}>✕</button>
                   </div>
                 </div>
               ))

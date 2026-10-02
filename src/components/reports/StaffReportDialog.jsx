@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Spinner, ErrorBanner, Pill, initials } from "../ui/Primitives";
 import * as reportsApi from "../../api/reports";
@@ -15,6 +14,7 @@ import {
   statusTone,
 } from "../../utils/staffReport";
 import { downloadStaffReport } from "../../utils/staffReportPdf";
+import { useReportDialogAccessibility } from "./useReportDialogAccessibility";
 
 /**
  * The staff report, in a popup.
@@ -187,21 +187,14 @@ export function StaffReportDialog({ staffId, onClose }) {
     () => reportsApi.staffReport(staffId),
     [staffId]
   );
-  const boxRef = useRef(null);
-
-  useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    boxRef.current?.focus();
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const boxRef = useReportDialogAccessibility(onClose);
 
   const staff = data?.staff;
 
   return (
-    <div className="confirm-overlay" onClick={onClose}>
+    <div className="confirm-overlay" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
       <div
         className="confirm-box sr-box"
         onClick={(e) => e.stopPropagation()}
@@ -225,16 +218,18 @@ export function StaffReportDialog({ staffId, onClose }) {
                 : ""}
             </div>
           </div>
-          {data && (
-            <button
-              className="btn gold"
-              type="button"
-              onClick={() => downloadStaffReport(data)}
-            >
-              Download PDF
-            </button>
-          )}
-          <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+          <div className="sr-actions">
+            {data && (
+              <button
+                className="btn gold"
+                type="button"
+                onClick={() => downloadStaffReport(data)}
+              >
+                Download PDF
+              </button>
+            )}
+            <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+          </div>
         </div>
 
         <div className="sr-body">

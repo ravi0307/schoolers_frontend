@@ -7,26 +7,6 @@ import styles from "./WebLayout.module.css";
 
 const PortalShellContext = createContext(false);
 
-/**
- * Turn a nav array into a render list, inserting a heading whenever the
- * `group` changes. Portals that pass a flat array (no `group` key) get exactly
- * the previous behaviour: no headings, same order.
- */
-function buildNavEntries(navItems) {
-  const entries = [];
-  let currentGroup = null;
-  for (const item of navItems) {
-    if (item.group && item.group !== currentGroup) {
-      currentGroup = item.group;
-      entries.push({ type: "group", key: `group-${currentGroup}`, label: currentGroup });
-    }
-    if (item.to) {
-      entries.push({ type: "link", key: item.to, item });
-    }
-  }
-  return entries;
-}
-
 // Each role's profile lives under its own portal prefix, so the link is
 // derived from the session rather than passed down by every shell.
 const PROFILE_PATH = {
@@ -205,21 +185,17 @@ export default function WebLayout({ navItems, portalLabel, children }) {
             <div className="portal-label">{portalLabel}</div>
           </div>
           <nav aria-label="Portal">
-            {buildNavEntries(navItems).map((entry) =>
-              entry.type === "group" ? (
-                <div key={entry.key} className="sidebar-group">{entry.label}</div>
-              ) : (
-                <NavLink
-                  key={entry.key}
-                  to={entry.item.to}
-                  onClick={() => setDrawerOpen(false)}
-                  className={({ isActive }) => (isActive ? "active" : "")}
-                >
-                  <entry.item.icon className={styles.navIcon} aria-hidden="true" />
-                  <span>{entry.item.label}</span>
-                </NavLink>
-              )
-            )}
+            {navItems.filter((item) => item.to).map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setDrawerOpen(false)}
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                <item.icon className={styles.navIcon} aria-hidden="true" />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
           </nav>
           <footer className={styles.footer}>
             <NavLink
