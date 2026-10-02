@@ -262,9 +262,9 @@ test("the deposit action sits at the far right, in a column of its own", () => {
   // The full name belongs in the tooltip, not in the button: a column of
   // "Deposit for Aarav Sharma" would be unreadable at any width.
   assert.doesNotMatch(page, /rowActionLabel="Deposit for \{name\}"/);
-  assertContains("src/styles/global.css", [
-    /\.acct-action-cell\s*\{[^}]*text-align:\s*right/s,
-    /\.acct-action-head\s*\{[^}]*text-align:\s*right/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-action-cell\)\s*\{[^}]*text-align:\s*right/s,
+    /:global\(\.acct-action-head\)\s*\{[^}]*text-align:\s*right/s,
   ]);
 });
 

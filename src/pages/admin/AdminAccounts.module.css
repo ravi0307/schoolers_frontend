@@ -1,0 +1,306 @@
+.accounts {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  color: var(--color-text-on-dark);
+  --ink-soft: var(--color-text-muted-on-dark);
+}
+
+.accounts :global(.card) {
+  min-width: 0;
+}
+
+.sectionLabel {
+  margin-top: 0;
+}
+
+.sheetSummary {
+  margin-bottom: var(--space-3);
+}
+
+.accounts :global(.acct-table) {
+  min-width: 45rem;
+}
+
+.accounts :global(.acct-table th),
+.accounts :global(.acct-table td) {
+  white-space: nowrap;
+}
+
+.accounts :global(.acct-sticky) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11.875rem;
+  background: var(--color-surface-raised);
+}
+
+.accounts :global(.acct-table tbody .acct-sticky) {
+  font-weight: var(--font-weight-semibold);
+}
+
+.accounts :global(.acct-table .acct-month) {
+  text-align: right;
+}
+
+.accounts :global(.acct-table .acct-cell) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.accounts :global(.acct-person) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.accounts :global(.acct-person-name) {
+  font-weight: var(--font-weight-semibold);
+}
+
+.accounts :global(.acct-person-meta) {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.accounts :global(.acct-empty) {
+  min-width: 2.125rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.accounts :global(.acct-empty:hover) {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.accounts :global(.acct-amount) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.accounts :global(.acct-value) {
+  font-variant-numeric: tabular-nums;
+}
+
+.accounts :global(.acct-cell-actions) {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+}
+
+.accounts :global(.acct-amount:hover .acct-cell-actions),
+.accounts :global(.acct-amount:focus-within .acct-cell-actions) {
+  opacity: 1;
+}
+
+.accounts :global(.acct-cell-actions button) {
+  padding: var(--space-1);
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+.accounts :global(.acct-cell-actions button:hover) {
+  color: var(--color-text);
+}
+
+.accounts :global(.acct-paid) {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+}
+
+.accounts :global(.acct-cell-editing) {
+  background: var(--color-surface);
+}
+
+.accounts :global(.acct-input) {
+  max-width: 6.875rem;
+  padding: var(--space-1) var(--space-2);
+  text-align: right;
+  font-size: var(--font-size-sm);
+}
+
+.accounts :global(.acct-col-sub) {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.accounts :global(.acct-month-lead) {
+  border-right: 1px solid var(--color-border);
+}
+
+.accounts :global(.acct-table .acct-note-head) {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.accounts :global(.acct-table .acct-note-cell) {
+  min-width: 11.875rem;
+  text-align: left;
+}
+
+.accounts :global(.acct-note) {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accounts :global(.acct-note:hover) {
+  border-color: var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.accounts :global(.acct-note-blank) {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.accounts :global(.acct-input-note) {
+  width: 100%;
+  max-width: 15rem;
+  text-align: left;
+}
+
+.accounts :global(.acct-action-cell) {
+  text-align: right;
+}
+
+.accounts :global(.acct-action-head) {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.accounts :global(.acct-row-action) {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.accounts :global(.acct-row-action:hover:not(:disabled)) {
+  border-color: var(--color-focus);
+  color: var(--color-text);
+}
+
+.accounts :global(.acct-row-action:disabled) {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.accounts :global(.acct-controls) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.accounts :global(.acct-search) {
+  flex: 1 1 11.875rem;
+  min-width: 9.375rem;
+  max-width: 20rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+}
+
+.accounts :global(.acct-sort) {
+  padding: var(--space-2);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.accounts :global(.acct-count),
+.accounts :global(.acct-scroll-hint) {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.accounts :global(.acct-scroll-hint) {
+  font-style: italic;
+}
+
+.accounts :global(.acct-vertical) {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.accounts :global(.acct-vertical .acct-table thead th) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+@media (hover: none) {
+  .accounts :global(.acct-cell-actions) {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 48rem) {
+  .accounts :global(.acct-controls) {
+    align-items: stretch;
+  }
+
+  .accounts :global(.acct-search) {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .accounts :global(.acct-count),
+  .accounts :global(.acct-scroll-hint) {
+    flex-basis: 100%;
+  }
+}

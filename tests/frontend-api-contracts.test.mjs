@@ -1231,15 +1231,15 @@ test("a paid amount shows the date it was paid, formatted not raw", () => {
   const valueAt = page.indexOf('className="acct-value"');
   assert.ok(actionsAt !== -1 && valueAt !== -1, "the paid cell must have actions and a value");
   assert.ok(actionsAt < valueAt, "actions must sit before the figure, keeping the right edge aligned");
-  assertContains("src/styles/global.css", [
-    /\.acct-paid\s*\{[^}]*color:\s*var\(--ink-soft\)/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-paid\)\s*\{[^}]*color:\s*var\(--color-text-muted\)/s,
   ]);
 });
 
 test("the accounts grid keeps the person column visible while months scroll", () => {
-  assertContains("src/styles/global.css", [
-    /\.acct-sticky\s*\{[^}]*position:\s*sticky/s,
-    /\.acct-table\s*\{[^}]*min-width/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-sticky\)\s*\{[^}]*position:\s*sticky/s,
+    /:global\(\.acct-table\)\s*\{[^}]*min-width/s,
   ]);
 });
 
@@ -1404,7 +1404,7 @@ test("each accounts grid can search and sort its own people", () => {
   assert.match(page, /noMatchText="No students match that search\."/);
 });
 
-test("the accounts grids scroll vertically at eight rows with a sticky header", () => {
+test("the accounts grids scroll vertically with a sticky header", () => {
   // A school of hundreds of staff or students would otherwise bury the person
   // the admin is looking for under a full-page table.
   const utils = source("src/utils/accountsTable.js");
@@ -1412,20 +1412,18 @@ test("the accounts grids scroll vertically at eight rows with a sticky header", 
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /className="table-scroll acct-vertical"/);
   assert.match(page, /scrollHintText\(rows\.length\)/, "the grid says how many rows are below the fold");
-  assertContains("src/styles/global.css", [
-    /\.acct-vertical\s*\{[^}]*overflow-y:\s*auto/s,
-    /\.acct-vertical \.acct-table thead th\s*\{[^}]*position:\s*sticky/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /:global\(\.acct-vertical\)\s*\{[^}]*overflow:\s*auto/s,
+    /:global\(\.acct-vertical \.acct-table thead th\)\s*\{[^}]*position:\s*sticky/s,
   ]);
 });
 
-test("the scroll box is sized from the measured row height, not a hard-coded one", () => {
-  // A hard-coded pixel height silently breaks the sticky header: it either
-  // covers the first row or wastes the last one. Measuring keeps both honest
-  // at any font size or zoom.
+test("the scroll box has a responsive tokenized height without inline styles", () => {
+  // Keep the viewport bounded without setting layout styles imperatively.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /useLayoutEffect\(/, "the box must be sized before paint, not after a visible jump");
-  assert.match(page, /headHeight \+ rowHeight \* VISIBLE_ROWS/);
-  assert.match(page, /if \(!rowHeight\) return/, "an unmeasured row must not collapse the box to the header");
+  const module = source("src/pages/admin/AdminAccounts.module.css");
+  assert.doesNotMatch(page, /style\.[a-zA-Z]+\s*=/);
+  assert.match(module, /max-height:\s*24rem/);
   // And a narrowed grid must not stay scrolled past its own new end.
   assert.match(page, /box\.scrollTop = 0/);
 });
@@ -1449,8 +1447,8 @@ test("the count note only does arithmetic once the grid is narrowed", () => {
 test("editing and clearing are both reachable without hover", () => {
   // Hover-revealed actions are unusable on touch, so the stylesheet also
   // exposes them when there is no hover.
-  assertContains("src/styles/global.css", [
-    /@media\s*\(hover:\s*none\)\s*\{[^}]*\.acct-cell-actions\s*\{\s*opacity:\s*1/s,
+  assertContains("src/pages/admin/AdminAccounts.module.css", [
+    /@media\s*\(hover:\s*none\)\s*\{[^}]*:global\(\.acct-cell-actions\)\s*\{\s*opacity:\s*1/s,
   ]);
   // And the cell offers an empty-state target, so an unpaid month can be
   // filled in without knowing the hover trick.
