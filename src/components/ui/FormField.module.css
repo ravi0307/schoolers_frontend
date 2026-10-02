@@ -1,0 +1,6 @@
+.field { margin-bottom: var(--space-4); min-width: 0; }
+.field > label { color: var(--color-text); display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-1); }
+.required { color: var(--color-danger); }
+.hint, .error { font-size: var(--font-size-xs); margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.hint { color: var(--color-text-muted); }
+.error { color: var(--color-danger); }

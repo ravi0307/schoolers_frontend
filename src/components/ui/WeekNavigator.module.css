@@ -1,0 +1,76 @@
+.navigator {
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.weekGroup {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: min(100%, 21rem);
+}
+
+.weekGroup :global(.btn) {
+  display: inline-grid;
+  place-items: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0;
+}
+
+.range {
+  min-height: 2.75rem;
+  padding-inline: var(--space-3);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.dateTrigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dateTrigger:focus-within {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.dateInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dateInput:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 40rem) {
+  .navigator {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .weekGroup {
+    flex: 1 1 18rem;
+  }
+}

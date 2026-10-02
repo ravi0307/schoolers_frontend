@@ -89,7 +89,9 @@ test("toggling staff attendance cannot expand the staff detail row", () => {
   // sit inside the existing stopPropagation wrapper or every toggle would
   // also open the detail panel.
   const page = source(ADMIN_STAFF);
-  const wrapper = page.match(/<div className="cta-row"[^>]*onClick=\{\(e\) => e\.stopPropagation\(\)\}>([\s\S]*?)<\/div>/);
+  const wrapper = page.match(
+    /<div className=(?:"cta-row"|{`cta-row \$\{styles\.staffActions\}`})[^>]*onClick=\{\(e\) => e\.stopPropagation\(\)\}>([\s\S]*?)<\/div>/
+  );
   assert.ok(wrapper, "expected a cta-row with stopPropagation");
   assert.match(
     wrapper[1],

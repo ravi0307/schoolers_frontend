@@ -7,6 +7,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
+import styles from "./AdminClasses.module.css";
 
 function getStudentField(student, keys) {
   for (const key of keys) {
@@ -66,10 +67,6 @@ export default function AdminClasses() {
   function isTeacherUnavailable(teacherId, currentClassId = null) {
     const assignedClass = teacherAssignments[teacherId];
     return Boolean(assignedClass && assignedClass.class_id !== currentClassId);
-  }
-
-  function teacherOptionColor(teacherId) {
-    return teacherAssignments[teacherId] ? "var(--red-pen)" : "var(--ok-green)";
   }
 
   async function submit(e) {
@@ -147,21 +144,20 @@ export default function AdminClasses() {
               const isExpanded = expandedClassId === c.class_id;
 
               return (
-                <div key={c.class_id} style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: isExpanded ? 8 : 0, marginBottom: isExpanded ? 8 : 0 }}>
+                <div key={c.class_id} className={styles.classEntry}>
                   <div
-                    className="listitem"
+                    className={`listitem ${styles.classHeader}`}
                     onClick={() => handleClassToggle(c.class_id)}
-                    style={{ cursor: "pointer", width: "100%" }}
                   >
                     <div className="avatar g">{c.name[0]}</div>
-                    <div className="meta" style={{ flex: 1 }}>
+                    <div className={`meta ${styles.classMeta}`}>
                       <b>{c.name}</b>
                       <span>
                         {studentCount} {studentCount === 1 ? "student" : "students"} · Class teacher: {teacherName(c.class_teacher_id)}
                       </span>
                     </div>
 
-                    <div className="cta-row" style={{ gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                    <div className={`cta-row ${styles.classActions}`} onClick={(e) => e.stopPropagation()}>
                       <button
                         className="btn ghost sm"
                         onClick={() => {
@@ -177,8 +173,8 @@ export default function AdminClasses() {
                   </div>
 
                   {editingClassId === c.class_id && (
-                    <div className="card white" style={{ margin: "8px 0 10px" }}>
-                      <div className="field" style={{ marginBottom: 0 }}>
+                    <div className={`card white ${styles.editCard}`}>
+                      <div className={`field ${styles.fieldCompact}`}>
                         <label>Class name</label>
                         <input value={editName} onChange={(e) => setEditName(e.target.value)} />
                       </div>
@@ -195,9 +191,7 @@ export default function AdminClasses() {
                               key={teacher.teacher_id}
                               value={teacher.teacher_id}
                               disabled={isTeacherUnavailable(teacher.teacher_id, c.class_id)}
-                              style={{
-                                color: teacherOptionColor(teacher.teacher_id),
-                              }}
+                              className={teacherAssignments[teacher.teacher_id] ? styles.optionUnavailable : styles.optionAvailable}
                             >
                               {teacherLabel(teacher)}
                             </option>
@@ -205,7 +199,7 @@ export default function AdminClasses() {
                         </select>
                       </div>
                       <ErrorBanner message={teachersError} />
-                      <div className="cta-row" style={{ marginTop: 10 }}>
+                      <div className={`cta-row ${styles.formActions}`}>
                         <button className="btn primary sm" onClick={() => updateClass(c.class_id)}>Save</button>
                         <button className="btn ghost sm" onClick={() => { setEditingClassId(null); setEditName(""); setEditClassTeacherId(""); }}>Cancel</button>
                       </div>
@@ -213,30 +207,20 @@ export default function AdminClasses() {
                   )}
 
                   {isExpanded && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
-                      <div style={{ fontWeight: 700, marginBottom: 10 }}>Students</div>
+                    <div className={styles.classDetails}>
+                      <div className={styles.studentsHeading}>Students</div>
                       {classStudents.length ? (
-                        <div style={{ display: "grid", gap: 0 }}>
+                        <div className={styles.studentList}>
                           {classStudents.map((student) => (
-                            <div
-                              key={student.student_id}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "44px minmax(180px, 1.4fr) minmax(130px, 1fr) minmax(120px, 1fr) minmax(130px, 1fr)",
-                                alignItems: "center",
-                                gap: 12,
-                                padding: "12px 10px",
-                                borderBottom: "1px solid #e5e7eb",
-                              }}
-                            >
+                            <div key={student.student_id} className={styles.studentRow}>
                               <div className="avatar">{String(student.name || "?")[0].toUpperCase()}</div>
-                              <div style={{ display: "grid", gap: 3 }}>
-                                <div style={{ fontWeight: 700 }}>{student.name}</div>
-                                <div style={{ color: "#6b7280", fontSize: 12 }}>{getStudentField(student, ["admission_no"])}</div>
+                              <div className={styles.studentNameBlock}>
+                                <div className={styles.studentName}>{student.name}</div>
+                                <div className={styles.studentPrimary}>{getStudentField(student, ["admission_no"])}</div>
                               </div>
-                              <div style={{ color: "#374151", fontWeight: 500 }}>{getStudentField(student, ["date_of_birth", "dob"])}</div>
-                              <div style={{ color: "#374151", fontWeight: 500 }}>{getStudentField(student, ["parent_name", "guardian_name"])}</div>
-                              <div style={{ color: "#374151", fontWeight: 500 }}>{getStudentField(student, ["parent_phone", "guardian_phone"])}</div>
+                              <div className={styles.studentDatum}>{getStudentField(student, ["date_of_birth", "dob"])}</div>
+                              <div className={styles.studentDatum}>{getStudentField(student, ["parent_name", "guardian_name"])}</div>
+                              <div className={styles.studentDatum}>{getStudentField(student, ["parent_phone", "guardian_phone"])}</div>
                             </div>
                           ))}
                         </div>
@@ -256,7 +240,7 @@ export default function AdminClasses() {
       )}
 
       {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Class name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Grade 5 - A" />
@@ -270,9 +254,7 @@ export default function AdminClasses() {
                   key={teacher.teacher_id}
                   value={teacher.teacher_id}
                   disabled={isTeacherUnavailable(teacher.teacher_id)}
-                  style={{
-                    color: teacherOptionColor(teacher.teacher_id),
-                  }}
+                  className={teacherAssignments[teacher.teacher_id] ? styles.optionUnavailable : styles.optionAvailable}
                 >
                   {teacherLabel(teacher)}
                 </option>
@@ -288,7 +270,7 @@ export default function AdminClasses() {
           </div>
         </form>
       ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Class</button>
+        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Class</button>
       )}
     </AdminShell>
   );

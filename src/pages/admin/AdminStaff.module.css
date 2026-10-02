@@ -1,0 +1,118 @@
+.searchCard,
+.attendanceCard,
+.formCard {
+  margin-bottom: var(--space-3);
+}
+
+.searchField {
+  margin-bottom: 0;
+}
+
+.attendanceSummary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.sectionLabel,
+.detailLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.attendanceAction {
+  margin-left: auto;
+}
+
+.helperText {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.staffEntry {
+  display: block;
+  cursor: pointer;
+}
+
+.staffRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.staffIdentity {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.staffName {
+  min-width: 0;
+}
+
+.staffRole {
+  flex: 1;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.staffActions {
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.75rem), 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.detailItem {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detailWide {
+  grid-column: 1 / -1;
+}
+
+.formCard {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 42rem) {
+  .staffRow {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .staffIdentity {
+    flex-basis: 100%;
+  }
+
+  .staffRole {
+    text-align: left;
+  }
+
+  .staffActions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .attendanceAction {
+    margin-left: 0;
+  }
+}

@@ -1,9 +1,11 @@
-import { useRef, useState, useMemo, useEffect } from "react";
+import { useRef, useState, useMemo, useEffect, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import * as galleryApi from "../../api/gallery";
 import { resolveMediaUrl } from "../../api/client";
 import { buildGalleryCards, canManageCard, canManageMedia, mediaIdsOf } from "../../utils/galleryAlbums";
 import MediaLightbox from "./MediaLightbox";
+import GalleryMedia from "./GalleryMedia";
+import GalleryCard from "../ui/GalleryCard";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../ui/Primitives";
 import Pagination, { usePagination } from "../ui/Pagination";
 import { useToast } from "../../context/ToastContext";
@@ -33,6 +35,8 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
   const [pendingDelete, setPendingDelete] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [editing, setEditing] = useState(null);
+  const albumDialogRef = useRef(null);
+  const albumTriggerRef = useRef(null);
   // Gating is per item, not per page: staff only see controls on media they
   // uploaded, and admins on everything in their school. The page-level
   // `canManage` flag only says the signed-in role may manage things at all.
@@ -42,6 +46,11 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
   // is showing. Held together so opening a different album resets to its first
   // photo instead of carrying an index across.
   const [viewer, setViewer] = useState(null);
+  const closeViewer = useCallback(() => setViewer(null), []);
+  const navigateViewer = useCallback(
+    (index) => setViewer((current) => (current ? { ...current, index } : current)),
+    []
+  );
 
   const cards = useMemo(() => buildGalleryCards(data), [data]);
   const pager = usePagination(cards);
@@ -49,15 +58,41 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
 
   useEffect(() => {
     if (!openAlbum || viewer) return undefined;
+    const dialog = albumDialogRef.current;
+    const trigger = albumTriggerRef.current;
+    const focusable = () =>
+      Array.from(dialog?.querySelectorAll(
+        'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      ) || []);
     const onKeyDown = (event) => {
-      if (event.key === "Escape") setOpenAlbumKey(null);
+      if (event.key === "Escape") {
+        setOpenAlbumKey(null);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) {
+        event.preventDefault();
+        return;
+      }
+      if (event.shiftKey && document.activeElement === items[0]) {
+        event.preventDefault();
+        items.at(-1).focus();
+      } else if (!event.shiftKey && document.activeElement === items.at(-1)) {
+        event.preventDefault();
+        items[0].focus();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    dialog?.querySelector(".album-dialog-close")?.focus();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      if (!document.querySelector(".media-viewer-overlay") && trigger?.isConnected) {
+        trigger.focus();
+      }
     };
   }, [openAlbum, viewer]);
 
@@ -225,13 +260,13 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
   return (
     <>
       {canUpload && (
-        <button className="btn gold" style={{ marginBottom: 14 }} onClick={() => setFormOpen((open) => !open)}>
+        <button className="btn gold gallery-add-button" onClick={() => setFormOpen((open) => !open)}>
           {formOpen ? "✕ Cancel" : "➕ Add to Gallery"}
         </button>
       )}
 
       {formOpen && canUpload && (
-        <form className="card white" style={{ marginBottom: 14 }} onSubmit={submit}>
+        <form className="card white gallery-form" onSubmit={submit}>
           <div className="field">
             <label htmlFor="gallery-title">Title</label>
             <input
@@ -245,12 +280,12 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
             <label>Files (photos or short videos, up to 5 MB each — you can select several)</label>
             <input ref={fileInputRef} type="file" accept={ACCEPT} multiple onChange={pickFiles} />
             {files.length > 0 && (
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+              <div className="gallery-file-note">
                 {fileListLabel}
               </div>
             )}
           </div>
-          {formError && <div className="error-text" style={{ marginBottom: 10 }}>{formError}</div>}
+          {formError && <div className="error-text gallery-form-error">{formError}</div>}
           <button className="btn primary block" type="submit" disabled={saving}>
             {saving
               ? done > 0
@@ -264,7 +299,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
       )}
 
       {editing && (
-        <form className="card white" style={{ marginBottom: 14 }} onSubmit={submitEdit}>
+        <form className="card white gallery-form" onSubmit={submitEdit}>
           <div className="field">
             <label htmlFor="gallery-edit-title">Title</label>
             <input
@@ -280,7 +315,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                 type="checkbox"
                 checked={editing.replaceFile}
                 onChange={(e) => setEditing((s) => ({ ...s, replaceFile: e.target.checked, file: null }))}
-                style={{ marginRight: 6 }}
+                className="gallery-replace-toggle"
               />
               Replace the file
             </label>
@@ -291,12 +326,12 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                 onChange={(e) => setEditing((s) => ({ ...s, file: e.target.files?.[0] || null }))}
               />
             )}
-            <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+            <div className="gallery-file-note">
               Leave this unticked to keep the current photo or video.
             </div>
           </div>
-          {formError && <div className="error-text" style={{ marginBottom: 10 }}>{formError}</div>}
-          <div style={{ display: "flex", gap: 8 }}>
+          {formError && <div className="error-text gallery-form-error">{formError}</div>}
+          <div className="gallery-form-actions">
             <button className="btn primary" type="submit" disabled={saving}>
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -317,53 +352,45 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
               {pager.pageItems.map((card) => {
                 if (card.kind === "album") {
                   return (
-                    <div key={card.key} className="gallery-album">
-                      <div className="album-head-row">
-                        {/* Only offered when the user may manage every photo in
-                            the album: removing one they uploaded but not the
-                            rest would fail on the server. */}
-                        {canManageCard(card, user) && (
-                          <button type="button" className="gallery-tile-remove" title={`Remove album "${card.title}"`} onClick={() => handleRemove(card)}>✕</button>
-                        )}
-                      </div>
-                      <div
+                    <GalleryCard key={card.key} as="div" className="gallery-album">
+                      {canManageCard(card, user) && (
+                        <button type="button" className="gallery-tile-remove" title={`Remove album "${card.title}"`} onClick={() => handleRemove(card)}>✕</button>
+                      )}
+                      <button
+                        type="button"
                         className="gallery-album-head"
-                        role="button"
-                        tabIndex={0}
                         aria-haspopup="dialog"
-                        onClick={() => setOpenAlbumKey(card.key)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setOpenAlbumKey(card.key);
-                          }
+                        onClick={(event) => {
+                          albumTriggerRef.current = event.currentTarget;
+                          setOpenAlbumKey(card.key);
                         }}
                       >
-                        <div className="album-thumbs">
+                        <span className="album-thumbs">
                           {card.items.slice(0, 4).map((it) => (
-                            <img
+                            <GalleryMedia
                               key={it.media_id}
                               className="album-thumb"
                               src={resolveMediaUrl(it.file_url)}
                               alt={it.title}
-                              loading="lazy"
+                              kind={it.media_kind}
+                              compact
                             />
                           ))}
-                        </div>
-                        <div className="album-meta">
+                        </span>
+                        <span className="album-meta">
                           <b>{card.title}</b>
                           <span>
                             {card.items.length} photo{card.items.length !== 1 ? "s" : ""}
                             {card.createdAt ? ` · ${formatDateTime(card.createdAt)}` : ""}
                           </span>
-                        </div>
-                      </div>
-                    </div>
+                        </span>
+                      </button>
+                    </GalleryCard>
                   );
                 }
                 const it = card.item;
                 return (
-                  <div key={it.media_id} className="gallery-tile">
+                  <GalleryCard key={it.media_id} className="gallery-tile">
                     {canManageItem(it) && (
                       <div className="gallery-tile-actions">
                         <button type="button" className="gallery-tile-edit" title={`Edit ${it.title}`} onClick={() => openEditor(it)}>✎</button>
@@ -376,11 +403,12 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                       onClick={() => openViewer([it], 0)}
                       aria-label={`Open ${it.title || "media"} full size`}
                     >
-                      {it.media_kind === "video" ? (
-                        <video className="gallery-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
-                      ) : (
-                        <img className="gallery-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
-                      )}
+                      <GalleryMedia
+                        className="gallery-media"
+                        src={resolveMediaUrl(it.file_url)}
+                        alt={it.title}
+                        kind={it.media_kind}
+                      />
                     </button>
                     <div className="gallery-tile-meta">
                       <b>{it.title}</b>
@@ -389,7 +417,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                         {it.created_at ? ` · ${formatDateTime(it.created_at)}` : ""}
                       </span>
                     </div>
-                  </div>
+                  </GalleryCard>
                 );
               })}
             </div>
@@ -406,7 +434,11 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
           aria-labelledby="gallery-album-title"
           onClick={() => setOpenAlbumKey(null)}
         >
-          <section className="album-dialog" onClick={(event) => event.stopPropagation()}>
+          <section
+            ref={albumDialogRef}
+            className="album-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
             <header className="album-dialog-header">
               <div className="album-dialog-heading">
                 <h2 id="gallery-album-title">{openAlbum.title}</h2>
@@ -433,14 +465,21 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                     onClick={() => openViewer(openAlbum.items, itemIndex)}
                     aria-label={`Open ${it.title || "photo"} full size`}
                   >
-                    {it.media_kind === "video" ? (
-                      <video className="album-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
-                    ) : (
-                      <img className="album-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
-                    )}
+                    <GalleryMedia
+                      className="album-media"
+                      src={resolveMediaUrl(it.file_url)}
+                      alt={it.title}
+                      kind={it.media_kind}
+                    />
                   </button>
                   <div className="album-item-info">
-                    <span>{formatDateTime(it.created_at)}</span>
+                    <div className="album-item-meta">
+                      <strong>{it.title || "Untitled media"}</strong>
+                      <span>
+                        {it.posted_by || "Unknown uploader"}
+                        {it.created_at ? ` · ${formatDateTime(it.created_at)}` : ""}
+                      </span>
+                    </div>
                     {canManageItem(it) && (
                       <>
                         <button
@@ -471,8 +510,8 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
       <MediaLightbox
         items={viewer?.items}
         index={viewer?.index ?? 0}
-        onClose={() => setViewer(null)}
-        onNavigate={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+        onClose={closeViewer}
+        onNavigate={navigateViewer}
       />
       <ConfirmDialog
         open={!!pendingDelete}

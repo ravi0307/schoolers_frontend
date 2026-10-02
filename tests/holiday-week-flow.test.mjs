@@ -293,13 +293,10 @@ test("both timetables default to the current week and navigate weeks", () => {
 });
 
 test("both timetables mark holiday columns in red", () => {
-  for (const page of [
-    "src/pages/admin/AdminTimetable.jsx",
-    "src/pages/teacher/TeacherTimetable.jsx",
-  ]) {
-    const text = source(page);
-    assert.match(text, /className=\{column\.isHoliday \? "timetable-day-holiday" : undefined\}/);
-  }
+  const admin = source("src/pages/admin/AdminTimetable.jsx");
+  const teacher = source("src/pages/teacher/TeacherTimetable.jsx");
+  assert.match(admin, /timetable-day-cell\$\{column\.isHoliday \? " timetable-day-holiday" : ""\}/);
+  assert.match(teacher, /className=\{column\.isHoliday \? "timetable-day-holiday" : undefined\}/);
   assertContains("src/components/ui/TimetableWeekHeader.jsx", [
     /className=\{column\.isHoliday \? "timetable-day-holiday" : undefined\}/,
     /timetable-day-flag/,
@@ -312,14 +309,29 @@ test("both timetables mark holiday columns in red", () => {
 });
 
 test("week selector offers previous, next, and back-to-this-week", () => {
-  assertContains("src/components/ui/WeekSelector.jsx", [
+  assertContains("src/components/ui/WeekNavigator.jsx", [
     /go\(-1\)/,
     /go\(1\)/,
     /goToToday/,
     /startOfWeekIso\(\)/,
     /formatWeekRange\(weekStart\)/,
     /type="date"/,
+    /new Intl\.DateTimeFormat\("en-GB"/,
+    /setPickerValue\(weekStart\)/,
   ]);
+});
+
+test("class timetable summaries stay scrollable and pluralize period counts", () => {
+  const page = source("src/pages/admin/AdminTimetable.jsx");
+  const css = source("src/styles/global.css");
+  assertContains("src/pages/admin/AdminTimetable.jsx", [
+    /timetable-summary-scroll/,
+    /scope="col"/,
+    /periodCount === 1 \? "period" : "periods"/,
+    /variant="outline"[\s\S]*?className="timetable-class-card-action"/,
+  ]);
+  assert.match(css, /grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 31rem\), 1fr\)\)/);
+  assert.doesNotMatch(page, /Weekly timetable summary — select a class to manage periods/);
 });
 
 test("teacher timetable stays read-only with the week view", () => {

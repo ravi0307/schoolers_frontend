@@ -1,0 +1,17 @@
+.toast {
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  left: 50%;
+  max-width: min(90vw, 36rem);
+  overflow-wrap: anywhere;
+  padding: var(--space-3) var(--space-4);
+  position: fixed;
+  text-align: center;
+  transform: translateX(-50%);
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  z-index: var(--z-toast);
+}

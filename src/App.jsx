@@ -4,6 +4,8 @@ import { ToastProvider } from "./context/ToastContext";
 import { ParentProvider } from "./context/ParentContext";
 import { TeacherProvider } from "./context/TeacherContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import AdminShell from "./components/layout/AdminShell";
+import TeacherShell from "./components/layout/TeacherShell";
 
 import Login from "./pages/Login";
 import PublicWebsite from "./pages/PublicWebsite";
@@ -96,52 +98,54 @@ export default function App() {
 
             {/* Teacher */}
             <Route
-              path="/teacher/*"
+              path="/teacher"
               element={
                 <ProtectedRoute roles={["teacher"]}>
                   <TeacherProvider>
-                    <Routes>
-                      <Route path="dashboard" element={<TeacherDashboard />} />
-                      <Route path="attendance" element={<TeacherAttendance />} />
-                      <Route path="marks" element={<TeacherMarks />} />
-                      <Route path="timetable" element={<TeacherTimetable />} />
-                      <Route path="broadcast" element={<TeacherBroadcast />} />
-                      <Route path="gallery" element={<TeacherGallery />} />
-                      <Route path="profile" element={<UserProfile />} />
-                      <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
-                    </Routes>
+                    <TeacherShell />
                   </TeacherProvider>
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<TeacherDashboard />} />
+              <Route path="attendance" element={<TeacherAttendance />} />
+              <Route path="marks" element={<TeacherMarks />} />
+              <Route path="timetable" element={<TeacherTimetable />} />
+              <Route path="broadcast" element={<TeacherBroadcast />} />
+              <Route path="gallery" element={<TeacherGallery />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
+            </Route>
 
             {/* Admin */}
             <Route
-              path="/admin/*"
+              path="/admin"
               element={
                 <ProtectedRoute roles={["admin"]}>
-                  <Routes>
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="classes" element={<AdminClasses />} />
-                    <Route path="timetable" element={<AdminTimetable />} />
-                    <Route path="holidays" element={<AdminHolidays />} />
-                    <Route path="subjects" element={<AdminSubjects />} />
-                    <Route path="gallery" element={<AdminGallery />} />
-                    <Route path="broadcast" element={<AdminBroadcast />} />
-                    <Route path="students" element={<AdminStudents />} />
-                    <Route path="staff" element={<AdminStaff />} />
-                    <Route path="routes" element={<AdminRoutes />} />
-                    <Route path="leave" element={<AdminLeave />} />
-                    <Route path="website" element={<AdminWebsite />} />
-                    <Route path="notifications" element={<AdminNotifications />} />
-                    <Route path="accounts" element={<AdminAccounts />} />
-                    <Route path="reports" element={<AdminReports />} />
-                    <Route path="profile" element={<UserProfile />} />
-                    <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-                  </Routes>
+                  <AdminShell />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="classes" element={<AdminClasses />} />
+              <Route path="timetable" element={<AdminTimetable />} />
+              <Route path="holidays" element={<AdminHolidays />} />
+              <Route path="subjects" element={<AdminSubjects />} />
+              <Route path="gallery" element={<AdminGallery />} />
+              <Route path="broadcast" element={<AdminBroadcast />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="staff" element={<AdminStaff />} />
+              <Route path="routes" element={<AdminRoutes />} />
+              <Route path="leave" element={<AdminLeave />} />
+              <Route path="website" element={<AdminWebsite />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="accounts" element={<AdminAccounts />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+            </Route>
 
             {/* Pilot */}
             <Route

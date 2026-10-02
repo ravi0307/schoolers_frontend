@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AdminShell from "../components/layout/AdminShell";
 import ParentShell from "../components/layout/ParentShell";
@@ -6,11 +7,18 @@ import TeacherShell from "../components/layout/TeacherShell";
 import PilotShell from "../components/layout/PilotShell";
 import MasterShell from "../components/layout/MasterShell";
 import StaffSelfSummary from "../components/profile/StaffSelfSummary";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import DescriptionList from "../components/ui/DescriptionList";
+import FormActions from "../components/ui/FormActions";
+import LoadingState from "../components/ui/LoadingState";
+import PageHeader from "../components/ui/PageHeader";
+import PasswordInput from "../components/ui/PasswordInput";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useApi } from "../hooks/useApi";
 import * as authApi from "../api/auth";
-import { Spinner, ErrorBanner } from "../components/ui/Primitives";
+import { ErrorBanner } from "../components/ui/Primitives";
 import { resolveMediaUrl } from "../api/client";
 
 /**
@@ -76,26 +84,22 @@ function validate({ currentPassword, newPassword, confirmPassword }) {
   return null;
 }
 
-function DetailRow({ label, value }) {
-  return (
-    <div className="profile-detail-row">
-      <span className="profile-detail-label">{label}</span>
-      <span className="profile-detail-value">{value}</span>
-    </div>
-  );
-}
-
 function PasswordForm() {
   const toast = useToast();
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setFormError("");
+  };
 
   async function submit(e) {
     e.preventDefault();
     const problem = validate(form);
     if (problem) {
+      setFormError(problem);
       toast(problem);
       return;
     }
@@ -106,52 +110,46 @@ function PasswordForm() {
       // Clear the box rather than leaving a now-stale current password in it.
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err) {
-      toast(err?.response?.data?.detail || "Could not change the password");
+      const message = err?.response?.data?.detail || "Could not change the password";
+      setFormError(message);
+      toast(message);
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form className="card white password-form" onSubmit={submit}>
+    <Card as="form" className="card white password-form" onSubmit={submit}>
       <div className="section-label">Change password</div>
-      <div className="field">
-        <label htmlFor="profile-current-password">Current password</label>
-        <input
-          id="profile-current-password"
-          type="password"
-          autoComplete="current-password"
-          value={form.currentPassword}
-          onChange={set("currentPassword")}
-          required
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="profile-new-password">New password</label>
-        <input
-          id="profile-new-password"
-          type="password"
-          autoComplete="new-password"
-          value={form.newPassword}
-          onChange={set("newPassword")}
-          required
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="profile-confirm-password">Confirm new password</label>
-        <input
-          id="profile-confirm-password"
-          type="password"
-          autoComplete="new-password"
-          value={form.confirmPassword}
-          onChange={set("confirmPassword")}
-          required
-        />
-      </div>
-      <button className="btn primary" type="submit" disabled={saving}>
-        {saving ? "Saving..." : "Change password"}
-      </button>
-    </form>
+      <PasswordInput
+        id="profile-current-password"
+        label="Current password"
+        autoComplete="current-password"
+        value={form.currentPassword}
+        onChange={set("currentPassword")}
+      />
+      <PasswordInput
+        id="profile-new-password"
+        label="New password"
+        autoComplete="new-password"
+        value={form.newPassword}
+        onChange={set("newPassword")}
+        hint="Use at least 8 characters."
+      />
+      <PasswordInput
+        id="profile-confirm-password"
+        label="Confirm new password"
+        autoComplete="new-password"
+        value={form.confirmPassword}
+        onChange={set("confirmPassword")}
+      />
+      {formError && <p className="profile-form-error" role="alert">{formError}</p>}
+      <FormActions>
+        <Button type="submit" className="btn primary" loading={saving}>
+          {saving ? "Saving..." : "Change password"}
+        </Button>
+      </FormActions>
+    </Card>
   );
 }
 
@@ -159,14 +157,17 @@ export default function UserProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, loading, error } = useApi(() => authApi.me(), []);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const Shell = SHELLS[user?.role] || BareShell;
   // Where "Back" goes. The signed-in role's own home rather than history(),
   // so a page opened directly from a bookmark still lands somewhere real.
   const home = HOME_BY_ROLE[user?.role] || "/";
-  const displayName = data?.display_name || user?.name || user?.username || "Your account";
+  const displayName = data?.display_name || user?.name || null;
   const role = data?.role || user?.role;
   const logo = resolveMediaUrl(data?.school_logo_url || user?.schoolLogoUrl);
+  useEffect(() => setLogoFailed(false), [logo]);
+  const roleLabel = ROLE_LABEL[role] || role || "Role not provided";
   // An admin account is often created before the staff row it acts for, so the
   // role alone does not mean there is a register or a payslip behind it. With
   // no linked person the self-report endpoint answers 403, so the summary is
@@ -175,35 +176,41 @@ export default function UserProfile() {
 
   return (
     <Shell>
-      <div className="scr-title">My profile</div>
-      <div className="scr-sub">
-        The account you are signed in with. Your name and email are maintained on
-        the {role === "parent" || role === "pilot" ? "staff and family record" : "staff record"},
-        so ask your administrator to correct them.
-      </div>
+      <PageHeader
+        className="profile-heading"
+        title="My profile"
+        subtitle={
+          <>
+            Your name and email are maintained on the {role === "parent" || role === "pilot" ? "staff and family record" : "staff record"}, so ask your administrator to correct them.
+          </>
+        }
+        action={
+          <Button variant="outline" className="btn ghost profile-back" onClick={() => navigate(home)}>
+            <ArrowLeft aria-hidden="true" size={16} />
+            Back to dashboard
+          </Button>
+        }
+      />
 
-      {loading && <Spinner />}
+      {loading && <LoadingState />}
       <ErrorBanner message={error} />
 
       {!loading && !error && (
         <div className="profile-grid">
-          <div className="card white profile-account">
+          <Card className="card white profile-account">
             <div className="section-label">Your account</div>
 
             <div className="profile-identity">
               <div className="profile-avatar">
-                {logo ? (
+                {logo && !logoFailed ? (
                   <img
                     src={logo}
                     alt={`${data?.school_name || "School"} logo`}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-                    }}
+                    onError={() => setLogoFailed(true)}
                   />
                 ) : null}
-                <span hidden={!!logo} aria-hidden="true">
-                  {(data?.school_name || displayName)
+                <span hidden={!!logo && !logoFailed} aria-hidden="true">
+                  {(data?.school_name || displayName || data?.username || user?.username || "U")
                     .split(/\s+/)
                     .filter((w) => /[a-z0-9]/i.test(w))
                     .slice(0, 2)
@@ -212,36 +219,29 @@ export default function UserProfile() {
                 </span>
               </div>
               <div>
-                <div className="profile-identity-name">{displayName}</div>
-                <div className="profile-identity-role">{ROLE_LABEL[role] || role}</div>
+                <div className={`profile-identity-name${displayName ? "" : " profile-detail-empty"}`}>
+                  {displayName || "Name not provided"}
+                </div>
+                <div className={`profile-identity-role${role ? "" : " profile-detail-empty"}`}>
+                  {roleLabel}
+                </div>
               </div>
             </div>
 
-            <div className="profile-details">
-              <DetailRow label="Name" value={displayName} />
-              <DetailRow label="Username" value={data?.username || user?.username || "—"} />
-              <DetailRow
-                label="Email"
-                value={data?.email || "No email address on file"}
-              />
-              <DetailRow
-                label="School"
-                value={data?.school_name || "Not tied to a school"}
-              />
-              <DetailRow label="Role" value={ROLE_LABEL[role] || role || "—"} />
-            </div>
-          </div>
+            <DescriptionList
+              items={[
+                { label: "Name", value: displayName },
+                { label: "Username", value: data?.username || user?.username },
+                { label: "Email", value: data?.email },
+                { label: "School", value: data?.school_name, emptyLabel: "Not tied to a school" },
+              ]}
+            />
+          </Card>
 
           <PasswordForm />
 
           {STAFF_LINKED_ROLES.has(role) && hasStaffRecord && <StaffSelfSummary />}
 
-          <button
-            className="btn ghost profile-back"
-            onClick={() => navigate(home)}
-          >
-            Back
-          </button>
         </div>
       )}
     </Shell>

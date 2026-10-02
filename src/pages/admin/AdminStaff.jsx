@@ -8,6 +8,7 @@ import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primi
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
+import styles from "./AdminStaff.module.css";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -294,8 +295,8 @@ export default function AdminStaff() {
 
       {!loading && !error && (
         <>
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
+          <div className={`card ${styles.searchCard}`}>
+            <div className={`field ${styles.searchField}`}>
               <label>Search staff</label>
               <input
                 value={search}
@@ -306,9 +307,9 @@ export default function AdminStaff() {
           </div>
 
           {data && data.length > 0 && (
-            <div className="card" style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <div className={`card ${styles.attendanceCard}`}>
+              <div className={styles.attendanceSummary}>
+                <strong className={styles.sectionLabel}>
                   Attendance · {today}
                 </strong>
                 <span className="pill ok">Present {data.length - absentCount}</span>
@@ -317,15 +318,14 @@ export default function AdminStaff() {
                   {savedCount}/{data.length} recorded
                 </span>
                 <button
-                  className="btn primary sm"
-                  style={{ marginLeft: "auto" }}
+                  className={`btn primary sm ${styles.attendanceAction}`}
                   onClick={markAllPresent}
                   disabled={markingAll}
                 >
                   {markingAll ? "Saving..." : "Mark all present"}
                 </button>
               </div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+              <div className={styles.helperText}>
                 Everyone starts marked present. Toggling a staff member saves that day straight away.
               </div>
             </div>
@@ -347,20 +347,20 @@ export default function AdminStaff() {
                 const genderValue = person.gender || "";
 
                 return (
-                  <div key={staffId} className="listitem" style={{ display: "block", cursor: "pointer" }} onClick={() => toggleExpanded(staffId)}>
-                    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 12 }}>
+                  <div key={staffId} className={`listitem ${styles.staffEntry}`} onClick={() => toggleExpanded(staffId)}>
+                    <div className={styles.staffRow}>
                       <div className="avatar b">{initials(person.name)}</div>
 
-                      <div style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
-                        <div style={{ minWidth: 0 }}>
+                      <div className={styles.staffIdentity}>
+                        <div className={styles.staffName}>
                           <b>{person.name}</b>
                         </div>
-                        <div style={{ flex: 1, textAlign: "center" }}>
+                        <div className={styles.staffRole}>
                           <span>{person.role_title || "Other staff"}</span>
                         </div>
                       </div>
 
-                      <div className="cta-row" style={{ gap: 8, marginLeft: "auto" }} onClick={(e) => e.stopPropagation()}>
+                      <div className={`cta-row ${styles.staffActions}`} onClick={(e) => e.stopPropagation()}>
                         <button
                           className={`btn sm ${statuses[staffId] === "Present" ? "primary" : "ghost"}`}
                           onClick={() => toggleAttendance(staffId)}
@@ -384,55 +384,46 @@ export default function AdminStaff() {
                     </div>
 
                     {isExpanded && (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          paddingTop: 12,
-                          borderTop: "1px solid #e5e7eb",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Phone</strong>
+                      <div className={styles.detailGrid}>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Phone</strong>
                           <span>{person.phone || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Email ID</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Email ID</strong>
                           <span>{emailValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Date of Birth</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Date of Birth</strong>
                           <span>{dateOfBirthValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Marital Status</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Marital Status</strong>
                           <span>{maritalStatusValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Gender</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Gender</strong>
                           <span>{genderValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Present Address</strong>
+                        <div className={`${styles.detailItem} ${styles.detailWide}`}>
+                          <strong className={styles.detailLabel}>Present Address</strong>
                           <span>{presentAddressValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Permanent Address</strong>
+                        <div className={`${styles.detailItem} ${styles.detailWide}`}>
+                          <strong className={styles.detailLabel}>Permanent Address</strong>
                           <span>{permanentAddressValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Aadhaar Card</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Aadhaar Card</strong>
                           <span>{aadhaarValue || "Not provided"}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Contact</strong>
+                        <div className={styles.detailItem}>
+                          <strong className={styles.detailLabel}>Emergency Contact</strong>
                           <span>{emergencyValue || "Not provided"}</span>
                         </div>
                         {person.role_category === "Pilot" ? (
-                          <div style={{ display: "grid", gap: 4 }}>
-                            <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Driving License</strong>
+                          <div className={styles.detailItem}>
+                            <strong className={styles.detailLabel}>Driving License</strong>
                             <span>{drivingLicenseValue || "Not provided"}</span>
                           </div>
                         ) : null}
@@ -450,7 +441,7 @@ export default function AdminStaff() {
       )}
 
       {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Full name <span className="required-mark">*</span></label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Nair" />
@@ -543,7 +534,7 @@ export default function AdminStaff() {
           </div>
         </form>
       ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>
+        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>
           + Add Staff
         </button>
       )}

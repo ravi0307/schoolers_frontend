@@ -1,0 +1,18 @@
+.header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  min-width: 0;
+}
+
+.copy { min-width: 0; }
+.subtitle { margin-bottom: 0; max-width: 65ch; }
+.action { flex: 0 1 auto; min-width: 0; }
+
+@media (max-width: 40rem) {
+  .header { align-items: flex-start; flex-direction: column; }
+  .action { width: 100%; }
+}

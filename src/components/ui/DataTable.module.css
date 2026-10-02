@@ -1,0 +1,7 @@
+.viewport {
+  max-width: 100%;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}

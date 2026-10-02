@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut, UserRound } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import styles from "./WebLayout.module.css";
 
 // Same per-role prefix as the sidebar link, so both layouts agree on where a
 // user's own profile lives.
@@ -26,26 +28,25 @@ export default function MobileLayout({ tabs, children }) {
           aria-label="My Profile"
           title="My Profile"
           className={({ isActive }) => (isActive ? "active" : "")}
-          style={{ color: "#fff", textDecoration: "none", fontSize: 18 }}
         >
-          👤
+          <UserRound aria-hidden="true" />
         </NavLink>
         <button
-          className="btn ghost sm"
-          style={{ color: "#fff", borderColor: "rgba(255,255,255,.3)" }}
+          className={`btn ghost sm ${styles.mobileSignout}`}
           onClick={() => {
             logout();
             navigate("/login");
           }}
         >
-          Sign Out
+          <LogOut aria-hidden="true" />
+          <span>Sign Out</span>
         </button>
       </div>
       <div className="mobile-content">{children}</div>
       <div className="tabbar">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} className={({ isActive }) => (isActive ? "active" : "")}>
-            <span>{t.icon}</span>
+            <t.icon className={styles.tabIcon} aria-hidden="true" />
             <span>{t.label}</span>
           </NavLink>
         ))}
