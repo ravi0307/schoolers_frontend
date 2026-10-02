@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useApi } from "../../hooks/useApi";
 import * as galleryApi from "../../api/gallery";
 import { resolveMediaUrl } from "../../api/client";
@@ -29,7 +29,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
   const [done, setDone] = useState(0);
   const [formError, setFormError] = useState(null);
   const fileInputRef = useRef(null);
-  const [expandedAlbum, setExpandedAlbum] = useState(null);
+  const [openAlbumKey, setOpenAlbumKey] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -45,6 +45,21 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
 
   const cards = useMemo(() => buildGalleryCards(data), [data]);
   const pager = usePagination(cards);
+  const openAlbum = cards.find((card) => card.kind === "album" && card.key === openAlbumKey);
+
+  useEffect(() => {
+    if (!openAlbum || viewer) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setOpenAlbumKey(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [openAlbum, viewer]);
 
   function openViewer(items, index) {
     setViewer({ items, index });
@@ -118,6 +133,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
 
   function openEditor(item) {
     if (!item || !canManageItem(item)) return;
+    setOpenAlbumKey(null);
     setFormError(null);
     setEditing({
       item,
@@ -193,6 +209,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
     setPendingDelete(null);
     // The viewer may be showing media that has just been deleted.
     setViewer(null);
+    if (isAlbum) setOpenAlbumKey(null);
     if (failed === 0) {
       toast(isAlbum ? `Removed ${ids.length} item${ids.length === 1 ? "" : "s"} from the gallery` : "Removed from the gallery");
     } else if (failed < ids.length) {
@@ -299,9 +316,8 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
             <div className="gallery-grid">
               {pager.pageItems.map((card) => {
                 if (card.kind === "album") {
-                  const isExpanded = expandedAlbum === card.key;
                   return (
-                    <div key={card.key} className="gallery-album" style={{ borderBottom: isExpanded ? "1px solid #e5e7eb" : undefined }}>
+                    <div key={card.key} className="gallery-album">
                       <div className="album-head-row">
                         {/* Only offered when the user may manage every photo in
                             the album: removing one they uploaded but not the
@@ -314,12 +330,12 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                         className="gallery-album-head"
                         role="button"
                         tabIndex={0}
-                        aria-expanded={isExpanded}
-                        onClick={() => setExpandedAlbum(isExpanded ? null : card.key)}
+                        aria-haspopup="dialog"
+                        onClick={() => setOpenAlbumKey(card.key)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            setExpandedAlbum(isExpanded ? null : card.key);
+                            setOpenAlbumKey(card.key);
                           }
                         }}
                       >
@@ -342,45 +358,6 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
                           </span>
                         </div>
                       </div>
-                      {/* Visible to every role. This used to require canDelete,
-                          which left parents and teachers clicking an album with
-                          nothing happening, because only admins may delete. */}
-                      {isExpanded && (
-                        <div className="album-detail">
-                          {card.items.map((it, itemIndex) => (
-                            <div key={it.media_id} className="album-item">
-                              <button
-                                type="button"
-                                className="album-open"
-                                onClick={() => openViewer(card.items, itemIndex)}
-                                aria-label={`Open ${it.title || "photo"} full size`}
-                              >
-                                {it.media_kind === "video" ? (
-                                  <video className="album-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
-                                ) : (
-                                  <img className="album-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
-                                )}
-                              </button>
-                              <div className="album-item-info">
-                                <span>{formatDateTime(it.created_at)}</span>
-                                {canManageItem(it) && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="gallery-tile-edit"
-                                      title={`Edit ${it.title}`}
-                                      onClick={() => openEditor(it)}
-                                    >
-                                      ✎
-                                    </button>
-                                    <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   );
                 }
@@ -421,6 +398,76 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
         ) : (
           <Empty>{empty}</Empty>
         ))}
+      {openAlbum && (
+        <div
+          className="album-dialog-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gallery-album-title"
+          onClick={() => setOpenAlbumKey(null)}
+        >
+          <section className="album-dialog" onClick={(event) => event.stopPropagation()}>
+            <header className="album-dialog-header">
+              <div className="album-dialog-heading">
+                <h2 id="gallery-album-title">{openAlbum.title}</h2>
+                <span>
+                  {openAlbum.items.length} photo{openAlbum.items.length !== 1 ? "s" : ""}
+                  {openAlbum.createdAt ? ` · ${formatDateTime(openAlbum.createdAt)}` : ""}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="album-dialog-close"
+                onClick={() => setOpenAlbumKey(null)}
+                aria-label="Close album"
+              >
+                ✕
+              </button>
+            </header>
+            <div className="album-detail">
+              {openAlbum.items.map((it, itemIndex) => (
+                <div key={it.media_id} className="album-item">
+                  <button
+                    type="button"
+                    className="album-open"
+                    onClick={() => openViewer(openAlbum.items, itemIndex)}
+                    aria-label={`Open ${it.title || "photo"} full size`}
+                  >
+                    {it.media_kind === "video" ? (
+                      <video className="album-media" src={resolveMediaUrl(it.file_url)} muted preload="metadata" />
+                    ) : (
+                      <img className="album-media" src={resolveMediaUrl(it.file_url)} alt={it.title} loading="lazy" />
+                    )}
+                  </button>
+                  <div className="album-item-info">
+                    <span>{formatDateTime(it.created_at)}</span>
+                    {canManageItem(it) && (
+                      <>
+                        <button
+                          type="button"
+                          className="gallery-tile-edit"
+                          title={`Edit ${it.title}`}
+                          onClick={() => openEditor(it)}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          className="gallery-tile-remove"
+                          title={`Remove ${it.title}`}
+                          onClick={() => handleRemove(it)}
+                        >
+                          ✕
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
       <MediaLightbox
         items={viewer?.items}
         index={viewer?.index ?? 0}
