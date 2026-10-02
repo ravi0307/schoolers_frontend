@@ -2,11 +2,12 @@ import { useRef, useState, useMemo } from "react";
 import { useApi } from "../../hooks/useApi";
 import * as galleryApi from "../../api/gallery";
 import { resolveMediaUrl } from "../../api/client";
-import { buildGalleryCards, mediaIdsOf } from "../../utils/galleryAlbums";
+import { buildGalleryCards, canManageCard, canManageMedia, mediaIdsOf } from "../../utils/galleryAlbums";
 import MediaLightbox from "./MediaLightbox";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../ui/Primitives";
 import Pagination, { usePagination } from "../ui/Pagination";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 const ACCEPT = "image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,video/quicktime";
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -17,8 +18,9 @@ function formatDateTime(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
 }
 
-export default function GalleryView({ canUpload = false, canDelete = false, empty = "No gallery media yet." }) {
+export default function GalleryView({ canUpload = false, canManage = false, empty = "No gallery media yet." }) {
   const toast = useToast();
+  const { user } = useAuth();
   const { data, loading, error, refetch } = useApi(() => galleryApi.listGallery(), []);
   const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -30,6 +32,12 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
   const [expandedAlbum, setExpandedAlbum] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [removing, setRemoving] = useState(false);
+  const [editing, setEditing] = useState(null);
+  // Gating is per item, not per page: staff only see controls on media they
+  // uploaded, and admins on everything in their school. The page-level
+  // `canManage` flag only says the signed-in role may manage things at all.
+  const mayManage = canManage && !!user;
+  const canManageItem = (item) => mayManage && canManageMedia(item, user);
   // Which set of media the full-size viewer is paging through, and which one it
   // is showing. Held together so opening a different album resets to its first
   // photo instead of carrying an index across.
@@ -108,6 +116,52 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
     setPendingDelete({ kind, item });
   }
 
+  function openEditor(item) {
+    if (!item || !canManageItem(item)) return;
+    setFormError(null);
+    setEditing({
+      item,
+      title: item.title || "",
+      file: null,
+      replaceFile: false,
+    });
+  }
+
+  function closeEditor() {
+    if (saving) return;
+    setEditing(null);
+    setFormError(null);
+  }
+
+  async function submitEdit(event) {
+    event.preventDefault();
+    if (!editing) return;
+    const nextTitle = editing.title.trim();
+    if (!nextTitle) {
+      setFormError("Give the media a title.");
+      return;
+    }
+    if (editing.replaceFile && !editing.file) {
+      setFormError("Choose a replacement file, or untick replace to keep the current one.");
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      await galleryApi.updateGalleryMedia(editing.item.media_id, {
+        title: nextTitle,
+        replacementFile: editing.replaceFile ? editing.file : undefined,
+      });
+      setEditing(null);
+      toast("Updated the gallery item");
+      refetch();
+    } catch (err) {
+      setFormError(err?.response?.data?.detail || err?.message || "Could not update the media");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function confirmRemove() {
     if (!pendingDelete || removing) return;
     // An album card has no media_id of its own, so this used to send
@@ -128,6 +182,13 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
         failed += 1;
       }
     }
+    // An album can mix several people's uploads, so report refused items
+    // honestly instead of implying the whole album went.
+    const rejected = ids.filter((id) => {
+      const items = pendingDelete.item.items || [];
+      const match = items.find((it) => it.media_id === id);
+      return match && !canManageMedia(match, user);
+    });
     setRemoving(false);
     setPendingDelete(null);
     // The viewer may be showing media that has just been deleted.
@@ -137,7 +198,9 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
     } else if (failed < ids.length) {
       toast(`${ids.length - failed} removed, ${failed} could not be removed`);
     } else {
-      toast("Could not remove from the gallery");
+      toast(rejected.length
+        ? "You can only remove media you uploaded — ask a school admin for the rest"
+        : "Could not remove from the gallery");
     }
     refetch();
   }
@@ -183,6 +246,50 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
         </form>
       )}
 
+      {editing && (
+        <form className="card white" style={{ marginBottom: 14 }} onSubmit={submitEdit}>
+          <div className="field">
+            <label htmlFor="gallery-edit-title">Title</label>
+            <input
+              id="gallery-edit-title"
+              value={editing.title}
+              onChange={(e) => setEditing((s) => ({ ...s, title: e.target.value }))}
+              placeholder="e.g. Annual day practice"
+            />
+          </div>
+          <div className="field">
+            <label>
+              <input
+                type="checkbox"
+                checked={editing.replaceFile}
+                onChange={(e) => setEditing((s) => ({ ...s, replaceFile: e.target.checked, file: null }))}
+                style={{ marginRight: 6 }}
+              />
+              Replace the file
+            </label>
+            {editing.replaceFile && (
+              <input
+                type="file"
+                accept={ACCEPT}
+                onChange={(e) => setEditing((s) => ({ ...s, file: e.target.files?.[0] || null }))}
+              />
+            )}
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+              Leave this unticked to keep the current photo or video.
+            </div>
+          </div>
+          {formError && <div className="error-text" style={{ marginBottom: 10 }}>{formError}</div>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn primary" type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+            <button className="btn ghost" type="button" onClick={closeEditor} disabled={saving}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
       {loading && <Spinner />}
       <ErrorBanner message={error} />
 
@@ -196,7 +303,10 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                   return (
                     <div key={card.key} className="gallery-album" style={{ borderBottom: isExpanded ? "1px solid #e5e7eb" : undefined }}>
                       <div className="album-head-row">
-                        {canDelete && (
+                        {/* Only offered when the user may manage every photo in
+                            the album: removing one they uploaded but not the
+                            rest would fail on the server. */}
+                        {canManageCard(card, user) && (
                           <button type="button" className="gallery-tile-remove" title={`Remove album "${card.title}"`} onClick={() => handleRemove(card)}>✕</button>
                         )}
                       </div>
@@ -253,8 +363,18 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                               </button>
                               <div className="album-item-info">
                                 <span>{formatDateTime(it.created_at)}</span>
-                                {canDelete && (
-                                  <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                                {canManageItem(it) && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="gallery-tile-edit"
+                                      title={`Edit ${it.title}`}
+                                      onClick={() => openEditor(it)}
+                                    >
+                                      ✎
+                                    </button>
+                                    <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -267,8 +387,11 @@ export default function GalleryView({ canUpload = false, canDelete = false, empt
                 const it = card.item;
                 return (
                   <div key={it.media_id} className="gallery-tile">
-                    {canDelete && (
-                      <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                    {canManageItem(it) && (
+                      <div className="gallery-tile-actions">
+                        <button type="button" className="gallery-tile-edit" title={`Edit ${it.title}`} onClick={() => openEditor(it)}>✎</button>
+                        <button type="button" className="gallery-tile-remove" title={`Remove ${it.title}`} onClick={() => handleRemove(it)}>✕</button>
+                      </div>
                     )}
                     <button
                       type="button"

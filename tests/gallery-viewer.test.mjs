@@ -3,7 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-import { albumKeyOf, buildGalleryCards, mediaIdsOf } from "../src/utils/galleryAlbums.js";
+import {
+  albumKeyOf,
+  buildGalleryCards,
+  canManageCard,
+  canManageMedia,
+  mediaIdsOf,
+} from "../src/utils/galleryAlbums.js";
 
 const root = path.resolve(".");
 function source(file) {
@@ -181,6 +187,56 @@ test("removing nothing asks for no deletes", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Who may manage an item
+// ---------------------------------------------------------------------------
+
+test("an admin may manage any media in their own school", () => {
+  const admin = { userId: 4, role: "admin" };
+  assert.equal(canManageMedia(media({ uploader_user_id: 99 }), admin), true);
+  assert.equal(canManageMedia(media({ uploader_user_id: null }), admin), true);
+});
+
+test("staff may manage only media they uploaded", () => {
+  const teacher = { userId: 7, role: "teacher" };
+  assert.equal(canManageMedia(media({ uploader_user_id: 7 }), teacher), true);
+  assert.equal(canManageMedia(media({ uploader_user_id: 8 }), teacher), false);
+});
+
+test("legacy media with no recorded uploader is admin-only", () => {
+  // Guessing ownership from posted_by would hand one teacher another's photos.
+  const teacher = { userId: 7, role: "teacher" };
+  assert.equal(canManageMedia(media({ uploader_user_id: null }), teacher), false);
+  assert.equal(canManageMedia(media({}), teacher), false);
+});
+
+test("parents may manage nothing", () => {
+  const parent = { userId: 3, role: "parent" };
+  assert.equal(canManageMedia(media({ uploader_user_id: 3 }), parent), false);
+  assert.equal(canManageMedia(media({ uploader_user_id: 1 }), parent), false);
+  assert.equal(canManageMedia(media({ uploader_user_id: null }), parent), false);
+});
+
+test("a signed-out or missing user may manage nothing", () => {
+  assert.equal(canManageMedia(media({ uploader_user_id: 7 }), null), false);
+  assert.equal(canManageMedia(media({ uploader_user_id: 7 }), undefined), false);
+  assert.equal(canManageMedia(null, { userId: 7, role: "admin" }), false);
+});
+
+test("an album is removable only when the user owns every photo in it", () => {
+  const teacher = { userId: 7, role: "teacher" };
+  const mine = media({ uploader_user_id: 7, title: "Trip" });
+  const theirs = media({ uploader_user_id: 8, title: "Trip" });
+
+  const mineToo = media({ uploader_user_id: 7, title: "Trip" });
+  const allMine = buildGalleryCards([mine, mineToo]);
+  assert.equal(canManageCard(allMine[0], teacher), true);
+
+  const mixed = buildGalleryCards([mine, theirs]);
+  assert.equal(canManageCard(mixed[0], teacher), false);
+  assert.equal(canManageCard(mixed[0], { userId: 4, role: "admin" }), true);
+});
+
+// ---------------------------------------------------------------------------
 // GalleryView wiring
 // ---------------------------------------------------------------------------
 
@@ -192,11 +248,14 @@ test("an expanded album is not gated behind delete permission", () => {
   assert.match(text, /\{isExpanded\s*&&\s*\(\s*<div className="album-detail">/);
 });
 
-test("only admins are offered the remove button", () => {
-  // The gate was right for the ✕ and wrong for the panel; it must not be lost.
+test("manage controls are gated per item, not by role alone", () => {
+  // Staff may remove their own uploads but not a colleague's, so the ✕ and ✎
+  // must each sit behind the ownership check rather than a page-level role flag.
   const text = source("src/components/gallery/GalleryView.jsx");
-  const removeButtons = text.match(/\{canDelete\s*&&\s*\(\s*<button[^>]*gallery-tile-remove/g) || [];
-  assert.ok(removeButtons.length >= 3, `expected canDelete to gate each remove button, found ${removeButtons.length}`);
+  const removeButtons = text.match(/\{canManageItem\(it\)\s*&&/g) || [];
+  assert.ok(removeButtons.length >= 2, `expected canManageItem to gate each remove/edit pair, found ${removeButtons.length}`);
+  assert.match(text, /canManageCard\(card,\s*user\)\s*&&/);
+  assert.doesNotMatch(text, /\{canDelete\s*&&/);
 });
 
 test("both album items and single tiles open the full-size viewer", () => {
@@ -223,12 +282,35 @@ test("removing an album goes through mediaIdsOf, not a single id", () => {
   assert.doesNotMatch(text, /pendingDelete\.item\.media_id\s*\)\s*;/);
 });
 
-test("parent and teacher galleries are the roles that hit the bug", () => {
-  // Both render GalleryView without canDelete, which is exactly why gating the
-  // expanded album on it broke them. Admin passes it, so admins never noticed.
-  assert.doesNotMatch(source("src/pages/parent/ParentGallery.jsx"), /canDelete/);
-  assert.doesNotMatch(source("src/pages/teacher/TeacherGallery.jsx"), /canDelete/);
-  assert.match(source("src/pages/admin/AdminGallery.jsx"), /canDelete/);
+test("parent stays read-only, admin and teacher may manage", () => {
+  // Parents browse the gallery and must get no manage flag at all. Teachers do
+  // get it, because per-item ownership decides what they actually see.
+  assert.doesNotMatch(source("src/pages/parent/ParentGallery.jsx"), /canManage\b/);
+  assert.match(source("src/pages/teacher/TeacherGallery.jsx"), /<GalleryView canUpload canManage \/>/);
+  assert.match(source("src/pages/admin/AdminGallery.jsx"), /<GalleryView canUpload canManage \/>/);
+});
+
+test("parents get no manage controls even if a flag were passed", () => {
+  // Defence in depth: the ownership helper refuses anyone who is not an admin
+  // unless the item's uploader matches, so a stray prop cannot expose controls.
+  const text = source("src/utils/galleryAlbums.js");
+  assert.match(text, /user\.role === "admin"/);
+  assert.match(text, /item\.uploader_user_id === user\.userId/);
+});
+
+test("an edit offers the current title and an optional replacement file", () => {
+  const text = source("src/components/gallery/GalleryView.jsx");
+  assert.match(text, /title:\s*item\.title \|\| ""/);
+  assert.match(text, /updateGalleryMedia\(editing\.item\.media_id/);
+  assert.match(text, /replacementFile:\s*editing\.replaceFile \? editing\.file : undefined/);
+});
+
+test("removing an album reports items the user is not allowed to touch", () => {
+  // Albums are grouped client-side by title, so one album can legitimately mix
+  // several people's uploads. The toast must not claim success for all of them.
+  const text = source("src/components/gallery/GalleryView.jsx");
+  assert.match(text, /canManageMedia\(match,\s*user\)/);
+  assert.match(text, /can only remove media you uploaded/);
 });
 
 // ---------------------------------------------------------------------------

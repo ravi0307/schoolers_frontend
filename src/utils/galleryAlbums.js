@@ -51,3 +51,27 @@ export function mediaIdsOf(card) {
   if (card.kind === "album") return (card.items || []).map((it) => it.media_id);
   return card.item?.media_id ? [card.item.media_id] : [];
 }
+
+/** Can the signed-in user edit/remove this media item?
+ *
+ *  A school admin may manage anything in their own school. Staff may only
+ *  manage media they uploaded, compared by user id. This is display logic
+ *  only -- the server repeats the same check, so hiding a button is a
+ *  convenience and never the enforcement.
+ */
+export function canManageMedia(item, user) {
+  if (!item || !user) return false;
+  if (user.role === "admin") return true;
+  if (user.role !== "teacher" && user.role !== "admin") return false;
+  if (item.uploader_user_id == null) return false;
+  return item.uploader_user_id === user.userId;
+}
+
+/** An album can only be removed as a whole if the user may manage every item in
+ *  it. Albums are grouped client-side by title, so one of them can legitimately
+ *  mix several people's uploads. */
+export function canManageCard(card, user) {
+  if (!card) return false;
+  if (card.kind === "album") return (card.items || []).every((it) => canManageMedia(it, user));
+  return canManageMedia(card.item, user);
+}

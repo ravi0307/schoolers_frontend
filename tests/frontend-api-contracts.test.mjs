@@ -581,8 +581,8 @@ test("admin, teacher, and parent portals each expose the gallery route", () => {
   assertContains("src/components/layout/TeacherShell.jsx", [/to: "\/teacher\/gallery"/]);
   assertContains("src/components/layout/ParentShell.jsx", [/to: "\/parent\/gallery"/]);
   // Teachers upload, admins can also remove, parents only view.
-  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canDelete \/>/]);
-  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload \/>/]);
+  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canManage \/>/]);
+  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload canManage \/>/]);
   assertContains("src/pages/parent/ParentGallery.jsx", [/<GalleryView empty=/]);
 });
 
@@ -593,7 +593,7 @@ test("gallery role matrix keeps write controls off the read-only and teacher pag
   assert.doesNotMatch(parent, /canUpload/, "parents must not get the upload button");
   assert.doesNotMatch(parent, /deleteGalleryMedia/, "parents must not call the delete API");
   assertContains("src/components/gallery/GalleryView.jsx", [
-    /canUpload = false,\s*canDelete = false/,
+    /canUpload = false,\s*canManage = false/,
     /empty = "No gallery media yet\."/,
   ]);
 });
@@ -683,7 +683,8 @@ test("gallery removal opens a confirmation dialog before deleting", () => {
   assertContains("src/components/gallery/GalleryView.jsx", [
     /pendingDelete/,
     /ConfirmDialog/,
-    /canDelete && \(/,
+    /canManageItem\(it\)/,
+    /canManageCard\(card,\s*user\)/,
     /gallery-tile-remove/,
     /refetch\(\)/,
   ]);
