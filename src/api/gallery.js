@@ -14,6 +14,27 @@ export function uploadGalleryMedia(file, title, classId = null) {
     .then((r) => r.data);
 }
 
-/** Remove a gallery item (soft delete; school admin only). */
+/**
+ * Edit a gallery item. The caller may only pass media they uploaded, or any
+ * media in their own school if they are an admin — the server enforces this,
+ * this function just shapes the request.
+ *
+ * `replacementFile` swaps the stored file for a new upload; when omitted the
+ * existing file is kept as-is (the server unlinks the old one only after the
+ * row has stopped pointing at it).
+ */
+export function updateGalleryMedia(mediaId, { title, classId, setClassId = false, replacementFile } = {}) {
+  const form = new FormData();
+  if (title !== undefined) form.append("title", title);
+  if (setClassId) form.append("class_id", classId ?? "");
+  if (setClassId) form.append("set_class_id", "true");
+  if (replacementFile) form.append("file", replacementFile);
+  return client
+    .patch(`/media/${mediaId}`, form, { headers: { "Content-Type": "multipart/form-data" } })
+    .then((r) => r.data);
+}
+
+/** Remove a gallery item (soft delete). Allowed for admins school-wide, and for
+ *  staff on media they uploaded. */
 export const deleteGalleryMedia = (mediaId) =>
   client.delete(`/media/${mediaId}`).then((r) => r.data);

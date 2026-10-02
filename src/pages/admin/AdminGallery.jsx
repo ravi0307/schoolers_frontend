@@ -6,7 +6,8 @@ export default function AdminGallery() {
     <AdminShell>
       <div className="scr-title">Gallery</div>
       <div className="scr-sub">Photos and videos your team shares with the community</div>
-      <GalleryView canUpload canDelete />
+      {/* Admins may manage any media in their own school, not just their uploads. */}
+      <GalleryView canUpload canManage />
     </AdminShell>
   );
 }
