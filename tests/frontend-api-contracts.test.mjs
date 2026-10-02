@@ -1911,6 +1911,59 @@ test("the profile page renders inside the signed-in role's own shell", () => {
   ]);
 });
 
+test("the profile page lays its cards out in a grid, not one tall stack", () => {
+  // Four stacked cards on one page is a long scroll with nothing beside
+  // anything. Row 1 is the account beside the password form, row 2 is the
+  // attendance summary beside the pay summary, and a single-column fallback has
+  // to exist for a phone -- otherwise the grid overflows the viewport instead
+  // of stacking.
+  assertContains("src/pages/UserProfile.jsx", [/<div className="profile-grid">/]);
+  const css = source("src/styles/global.css");
+  assert.match(css, /\.profile-grid \{[^}]*display: grid/);
+  assert.match(css, /\.profile-grid \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 860px\) \{\s*\.profile-grid, \.profile-summary \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  // A grid item defaults to min-width:auto, so the salary table's min-width
+  // would widen the track and overflow the page instead of scrolling.
+  assert.match(css, /\.profile-grid > \* \{ min-width: 0; \}/);
+  assertContains("src/components/profile/StaffSelfSummary.jsx", [/<div className="table-scroll">/]);
+});
+
+test("the account and details are one card, with the password form beside it", () => {
+  // The identity header is a heading for the details list, not a separate
+  // card -- two cards stacked on the left column just adds a seam.
+  const page = source("src/pages/UserProfile.jsx");
+  assert.match(page, /<div className="card white profile-account">/);
+  assertContains("src/pages/UserProfile.jsx", [/<div className="section-label">Your account<\/div>/]);
+  assert.match(page, /<div className="profile-identity">/);
+  assert.match(page, /<div className="profile-details">/);
+  assertContains("src/pages/UserProfile.jsx", [/<form className="card white password-form"/]);
+  // Order is what places them: account then password, in the first grid row.
+  // `<PasswordForm />` rather than "password-form", which also matches the
+  // component's own definition further up the file.
+  assert.ok(
+    page.indexOf("profile-account") < page.indexOf("<PasswordForm />"),
+    "the account card must come before the password form in the markup"
+  );
+});
+
+test("attendance and pay are two separate sections side by side", () => {
+  // The pay section carries the history table; attendance is the summary only.
+  const component = source("src/components/profile/StaffSelfSummary.jsx");
+  assert.match(component, /<div className="profile-summary">/);
+  assertContains("src/components/profile/StaffSelfSummary.jsx", [
+    /<div className="section-label">Your attendance<\/div>/,
+    /<div className="section-label">Your pay<\/div>/,
+  ]);
+  // Spanning the page grid is what puts them beside each other rather than in
+  // the left column alone.
+  const css = source("src/styles/global.css");
+  assert.match(css, /\.profile-summary \{[^}]*grid-column: 1 \/ -1/);
+  assert.match(css, /\.profile-summary \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  // The day list is the pay table's job now; attendance shows figures only.
+  assert.match(component, /<h5 className="sr-h5">History<\/h5>/);
+  assert.doesNotMatch(component, /attendanceDays|profile-avatar/);
+});
+
 test("the sidebar greets the signed-in user by first name", () => {
   // Under the school name, above the portal label: the greeting belongs to the
   // person, so it must not be pushed below the nav or sit above the branding.

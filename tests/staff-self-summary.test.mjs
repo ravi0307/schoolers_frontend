@@ -4,7 +4,6 @@ import path from "node:path";
 import test from "node:test";
 
 import {
-  attendanceDays,
   attendanceScopeLabel,
   currentMonth,
   salaryCanPageNewer,
@@ -124,16 +123,7 @@ test("a remark is shown as written, and its absence is not a remark", () => {
   assert.equal(salaryNote(null), null);
 });
 
-// ---- the day list on screen ----
-
-test("the own-record day list is read in full, not the admin's 30-day tail", () => {
-  const days = [{ date: "2026-09-10" }, { date: "2026-09-01" }];
-  assert.deepEqual(attendanceDays({ days }), days);
-  assert.deepEqual(attendanceDays({ days, recent: [{ date: "2026-09-10" }] }), days);
-  assert.deepEqual(attendanceDays({ recent: [{ date: "2026-09-10" }] }), [{ date: "2026-09-10" }]);
-  assert.deepEqual(attendanceDays({}), []);
-  assert.deepEqual(attendanceDays(null), []);
-});
+// ---- which slice of the register the summary covers ----
 
 test("the scope says which slice of the register is on screen", () => {
   assert.equal(attendanceScopeLabel({ month: "2026-09" }), "Sep 2026");
@@ -168,7 +158,7 @@ test("the summary page filters by month and pages the salary window", () => {
   assert.match(component, /reportsApi\.myStaffSummary\(\{ attendanceMonth, salaryEnd \}\)/);
   assert.match(component, /\[attendanceMonth, salaryEnd\]/);
   assert.match(component, /type="month"/);
-  assert.match(component, /setAttendanceMonth\(""\)/);
+  assert.match(component, /onMonth\(""\)/);
   assert.match(component, /salaryPageAnchor\(data\?\.salary, direction\)/);
   // A month picker must not offer a future month of attendance.
   assert.match(component, /max=\{currentMonth\(\)\}/);
