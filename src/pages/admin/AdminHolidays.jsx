@@ -11,6 +11,7 @@ import {
   groupHolidayRows,
   rangeLength,
 } from "../../utils/holidayRange";
+import styles from "./AdminHolidays.module.css";
 
 /**
  * Manage the school's holiday calendar.
@@ -169,7 +170,7 @@ export default function AdminHolidays() {
         <>
           <form className="card white" onSubmit={addHoliday}>
             <div className="section-label">Add a holiday</div>
-            <div className="holiday-form-row">
+            <div className={styles.formRow}>
               <div className="field">
                 <label htmlFor="holiday-occasion">Occasion</label>
                 <input
@@ -210,7 +211,7 @@ export default function AdminHolidays() {
             {/* Tells the admin the span is wider than the two fields suggest,
                 which matters most for a term break picked by accident. */}
             {draft.holiday_date && draft.end_date && addLength > 1 && !addError && (
-              <div className="holiday-span-note">
+              <div className={styles.spanNote}>
                 Covers {formatHolidayLength(addLength)} - {formatHolidaySpan(draft.holiday_date, draft.end_date)}.
               </div>
             )}
@@ -219,21 +220,21 @@ export default function AdminHolidays() {
           <div className="card table-card">
             {rows.length ? (
               <div className="table-scroll">
-                <table className="data-table holiday-table">
+                <table className={`data-table ${styles.table}`}>
                   <thead>
                     <tr>
                       <th>Occasion</th>
                       <th>Date</th>
-                      <th className="holiday-actions-head">Actions</th>
+                      <th className={styles.actionsHead}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((row) =>
                       editingId === row.anchor_id ? (
-                        <tr key={row.anchor_id} className="holiday-editing">
+                        <tr key={row.anchor_id} className={styles.editing}>
                           <td>
                             <input
-                              className="holiday-edit-input"
+                              className={styles.editInput}
                               aria-label="Occasion"
                               value={draft.occasion}
                               onChange={(e) =>
@@ -244,9 +245,9 @@ export default function AdminHolidays() {
                             />
                           </td>
                           <td>
-                            <div className="holiday-edit-dates">
+                            <div className={styles.editDates}>
                               <input
-                                className="holiday-edit-input"
+                                className={styles.editInput}
                                 aria-label="First date"
                                 type="date"
                                 value={draft.holiday_date}
@@ -255,7 +256,7 @@ export default function AdminHolidays() {
                                 }
                               />
                               <input
-                                className="holiday-edit-input"
+                                className={styles.editInput}
                                 aria-label="Last date"
                                 type="date"
                                 value={draft.end_date}
@@ -291,7 +292,7 @@ export default function AdminHolidays() {
                           <td>
                             {formatHolidaySpan(row.start, row.end)}
                             {row.days > 1 && (
-                              <span className="holiday-days-badge">
+                              <span className={styles.daysBadge}>
                                 {formatHolidayLength(row.days)}
                               </span>
                             )}

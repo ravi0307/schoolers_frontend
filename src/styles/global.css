@@ -508,55 +508,6 @@
   color: var(--red-pen);
 }
 
-/* Holiday calendar on the admin Holidays page: an add row plus the list table. */
-.holiday-form-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-.holiday-form-row .field { flex: 1 1 200px; margin-bottom: 0; }
-.holiday-form-row .btn { margin-bottom: 1px; }
-
-.holiday-table th:first-child,
-.holiday-table td:first-child { min-width: 180px; }
-.holiday-table td:nth-child(2) { white-space: nowrap; }
-.holiday-actions-head { width: 1%; white-space: nowrap; }
-
-/* How many school days a span covers, so a multi-day break is obviously wider
-   than a single entry and cannot be removed by accident. */
-.holiday-days-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--ruled-blue-light);
-  color: var(--ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* Confirms the span the two date fields add up to before it is saved. */
-.holiday-span-note {
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-/* A row being edited inline, so the change is visibly attached to its holiday. */
-.holiday-table tr.holiday-editing { background: var(--ruled-blue-light); }
-.holiday-edit-input {
-  width: 100%;
-  padding: 7px 9px;
-  border: 1.5px solid var(--ruled-blue);
-  border-radius: 8px;
-  font: inherit;
-  background: var(--paper-light);
-}
-/* The two ends of a span sit side by side so their extent is visible at a glance. */
-.holiday-edit-dates { display: flex; gap: 6px; }
-.holiday-edit-dates .holiday-edit-input { min-width: 0; }
-
 .section-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }
