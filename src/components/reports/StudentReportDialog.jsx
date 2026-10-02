@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../ui/Primitives";
 import * as reportsApi from "../../api/reports";

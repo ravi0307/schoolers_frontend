@@ -951,7 +951,7 @@ test("admin sidebar is ordered by dependency, not alphabetically", () => {
   );
 });
 
-test("admin 'Set up' group keeps its prerequisite sequence", () => {
+test("admin setup links keep their prerequisite sequence", () => {
   const labels = [...source(ADMIN_SHELL).matchAll(/to:\s*"([^"]+)".*?label:\s*"([^"]+)"/g)].map(
     ([, to, label]) => ({ to, label })
   );
@@ -970,23 +970,14 @@ test("every admin sidebar link resolves to a real route", () => {
   }
 });
 
-test("admin sidebar keeps its five groups in order", () => {
-  const groups = [...source(ADMIN_SHELL).matchAll(/group:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(
-    [...new Set(groups)],
-    ["Overview", "Day to day", "Set up", "Accounts and Reporting", "Public"]
-  );
-});
-
-test("grouped nav support in WebLayout is optional and off by default", () => {
+test("admin sidebar keeps its dependency order without non-clickable group headings", () => {
+  const shell = source(ADMIN_SHELL);
   const layout = source("src/components/layout/WebLayout.jsx");
-  assertContains("src/components/layout/WebLayout.jsx", [/sidebar-group/, /item\.group/]);
-  // A flat nav must render zero headings rather than empty ones.
-  assert.match(
-    layout,
-    /item\.group\s*&&/,
-    "group heading must be conditional so flat portals render nothing"
-  );
+  assert.deepEqual(navOrder(ADMIN_SHELL), ADMIN_NAV);
+  assert.doesNotMatch(shell, /group:\s*"/);
+  assert.match(layout, /navItems\.filter\(\(item\) => item\.to\)\.map/);
+  assert.doesNotMatch(layout, /sidebar-group|item\.group/);
+  assert.doesNotMatch(source("src/styles/layout.css"), /sidebar-group/);
 });
 
 test("parent, teacher, pilot and master sidebars stay flat", () => {
@@ -1188,16 +1179,13 @@ test("a recorded amount must be a non-negative number before it is sent", () => 
   assert.match(page, /num < 0/);
 });
 
-test("accounts and reporting are one nav group below Set up, above Public", () => {
+test("Accounts and Reporting remain clickable admin navigation links", () => {
   const shell = source("src/components/layout/AdminShell.jsx");
-  const setUp = shell.indexOf('group: "Set up"');
-  const accounts = shell.indexOf('group: "Accounts and Reporting"');
-  const publicGroup = shell.indexOf('group: "Public"');
-  assert.ok(setUp !== -1 && accounts !== -1 && publicGroup !== -1);
-  assert.ok(setUp < accounts, "Accounts must come after Set up");
-  assert.ok(accounts < publicGroup, "Public must stay last");
-  assert.match(shell, /to: "\/admin\/accounts"/);
-  assert.match(shell, /to: "\/admin\/reports"/);
+  const accounts = shell.indexOf('to: "/admin/accounts"');
+  const reports = shell.indexOf('to: "/admin/reports"');
+  assert.ok(accounts !== -1 && reports !== -1);
+  assert.ok(accounts < reports, "Accounts must stay before Reporting");
+  assert.doesNotMatch(shell, /group:\s*"/);
 });
 
 test("both new admin pages are routed and reachable", () => {
@@ -1710,6 +1698,8 @@ test("the report popup is a real dialog that closes on Escape", () => {
   const accessibility = source("src/components/reports/useReportDialogAccessibility.js");
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
+  assert.match(dialog, /import \{ useEffect, useState \} from "react"/, "the report term selector effect must be imported");
+  assert.match(dialog, /useEffect\(\(\) => \{/);
   assert.match(dialog, /useReportDialogAccessibility\(onClose\)/);
   assert.match(accessibility, /event\.key === "Escape"[\s\S]*?closeRef\.current\(\)/, "Escape must close the report");
   // Clicking the backdrop closes; clicking inside must not.

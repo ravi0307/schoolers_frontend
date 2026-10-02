@@ -143,19 +143,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.sidebar nav .sidebar-group {
-  overflow-wrap: anywhere;
-  padding: var(--space-4) var(--space-3) var(--space-2);
-  color: var(--color-text-muted-on-dark);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
-  text-overflow: clip;
-  text-transform: uppercase;
-  white-space: normal;
-}
-
-.sidebar nav .sidebar-group:first-child { padding-top: 0; }
 .sidebar .profile-link { margin-top: auto; }
 
 .sidebar .signout {
