@@ -341,7 +341,6 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
     assertContains(file, [
       /Posted \(Outgoing\)/,
       /Received \(Incoming\)/,
-      /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
       /postedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, true\)\)/,
       /receivedPager\.pageItems\.map\(\(item\) => renderBroadcastRow\(item, false\)\)/,
       // Ownership is decided by the author's user id in the shared helper, not
@@ -356,6 +355,13 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
       `${file} still decides ownership by display name`);
     assert.doesNotMatch(text, /senderNameForUser/);
   }
+  assertContains("src/pages/admin/AdminBroadcast.module.css", [
+    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+    /@media \(max-width: 48rem\)/,
+  ]);
+  assertContains("src/pages/teacher/TeacherBroadcast.jsx", [
+    /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+  ]);
 });
 
 test("teacher and parent homes render the broadcast feed", () => {

@@ -1,0 +1,71 @@
+.formCard,
+.filterCard {
+  margin-top: var(--space-3);
+}
+
+.broadcastColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.broadcastColumn {
+  min-width: 0;
+}
+
+.columnHeading {
+  margin-top: 0;
+}
+
+.broadcastList {
+  max-height: 32.5rem;
+  padding: var(--space-2) var(--space-4);
+  overflow-y: auto;
+}
+
+.broadcastRow {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.broadcastMeta {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sender,
+.message,
+.broadcastSummary {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broadcastSummary {
+  margin-top: var(--space-1);
+  color: var(--surface-text-muted, var(--color-text-muted));
+  font-size: var(--font-size-xs);
+}
+
+.expandedMessage {
+  flex-basis: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 48rem) {
+  .broadcastColumns { grid-template-columns: minmax(0, 1fr); }
+  .broadcastList { max-height: 28rem; }
+}
