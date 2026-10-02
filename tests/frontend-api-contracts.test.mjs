@@ -1703,11 +1703,14 @@ test("searching the student list matches name, admission number and class", () =
 
 test("the report popup is a real dialog that closes on Escape", () => {
   const dialog = source("src/components/reports/StudentReportDialog.jsx");
+  const accessibility = source("src/components/reports/useReportDialogAccessibility.js");
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/, "Escape must close the report");
+  assert.match(dialog, /useReportDialogAccessibility\(onClose\)/);
+  assert.match(accessibility, /event\.key === "Escape"[\s\S]*?closeRef\.current\(\)/, "Escape must close the report");
   // Clicking the backdrop closes; clicking inside must not.
-  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /className="confirm-overlay" onMouseDown=/);
+  assert.match(dialog, /event\.target === event\.currentTarget/);
   assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
 });
 
@@ -1835,10 +1838,13 @@ test("the reports page lists staff next to students with its own search", () => 
 
 test("the staff report popup is a real dialog that closes on Escape", () => {
   const dialog = source("src/components/reports/StaffReportDialog.jsx");
+  const accessibility = source("src/components/reports/useReportDialogAccessibility.js");
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /if \(e\.key === "Escape"\) onClose\(\)/);
-  assert.match(dialog, /className="confirm-overlay" onClick=\{onClose\}/);
+  assert.match(dialog, /useReportDialogAccessibility\(onClose\)/);
+  assert.match(accessibility, /event\.key === "Escape"[\s\S]*?closeRef\.current\(\)/);
+  assert.match(dialog, /className="confirm-overlay" onMouseDown=/);
+  assert.match(dialog, /event\.target === event\.currentTarget/);
   assert.match(dialog, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
 });
 

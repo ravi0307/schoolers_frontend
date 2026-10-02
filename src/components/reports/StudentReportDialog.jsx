@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../ui/Primitives";
 import * as reportsApi from "../../api/reports";
@@ -12,6 +12,7 @@ import {
   termsForSelector,
 } from "../../utils/studentReport";
 import { downloadStudentReport } from "../../utils/studentReportPdf";
+import { useReportDialogAccessibility } from "./useReportDialogAccessibility";
 
 /**
  * The student report, in a popup.
@@ -176,7 +177,7 @@ export function StudentReportDialog({ studentId, onClose }) {
     () => reportsApi.studentReport(studentId),
     [studentId]
   );
-  const boxRef = useRef(null);
+  const boxRef = useReportDialogAccessibility(onClose);
 
   // Which term the marks section shows. Kept here rather than in MarksSection
   // so the Download button prints the term the admin is actually looking at.
@@ -187,21 +188,12 @@ export function StudentReportDialog({ studentId, onClose }) {
     }
   }, [term, data?.marks_by_term]);
 
-  // Escape closes, and focus lands in the dialog so a keyboard user is not
-  // left tabbing through the page behind it.
-  useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    boxRef.current?.focus();
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const student = data?.student;
 
   return (
-    <div className="confirm-overlay" onClick={onClose}>
+    <div className="confirm-overlay" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
       <div
         className="confirm-box sr-box"
         onClick={(e) => e.stopPropagation()}
@@ -225,16 +217,18 @@ export function StudentReportDialog({ studentId, onClose }) {
                 : ""}
             </div>
           </div>
-          {data && (
-            <button
-              className="btn gold"
-              type="button"
-              onClick={() => downloadStudentReport(data, term)}
-            >
-              Download PDF
-            </button>
-          )}
-          <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+          <div className="sr-actions">
+            {data && (
+              <button
+                className="btn gold"
+                type="button"
+                onClick={() => downloadStudentReport(data, term)}
+              >
+                Download PDF
+              </button>
+            )}
+            <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+          </div>
         </div>
 
         <div className="sr-body">
@@ -263,7 +257,7 @@ export function StudentReportDialog({ studentId, onClose }) {
               <section className="sr-section">
                 <h4 className="sr-h4">Guardians</h4>
                 {student.guardians?.length ? (
-                  <div className="sr-details">
+                  <div className="sr-guardians">
                     {student.guardians.map((g) => (
                       <div className="sr-guardian" key={g.parent_id}>
                         <div className="sr-detail">
