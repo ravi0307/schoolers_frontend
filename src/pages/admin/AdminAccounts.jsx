@@ -1,9 +1,16 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { ErrorBanner } from "../../components/ui/Primitives";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import DataTable from "../../components/ui/DataTable";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHeader from "../../components/ui/PageHeader";
+import Skeleton from "../../components/ui/Skeleton";
 import MonthSelector from "../../components/ui/MonthSelector";
 import FeeDepositDialog from "../../components/accounts/FeeDepositDialog";
 import { currentMonthAnchor } from "../../utils/accountsFlow";
@@ -12,10 +19,10 @@ import {
   STAFF_SORTS,
   filterAndSortRows,
   peopleCountLabel,
-  scrollHintText,
 } from "../../utils/accountsTable";
 import { apiErrorMessage } from "../../api/client";
 import { formatDay } from "../../utils/studentReport";
+import { Pencil, Plus, Search, X } from "lucide-react";
 import styles from "./AdminAccounts.module.css";
 
 /*
@@ -57,18 +64,22 @@ const FEE_MONTHS = 2;
 
 function monthLabel(month) {
   const [year, mon] = month.split("-");
-  return `${MONTH_LABELS[mon] || mon} ${year.slice(2)}`;
+  return `${MONTH_LABELS[mon] || mon} ${year}`;
 }
 
-/** Group a 6-digit+ number the way a ledger does, without losing decimals. */
+function shortPaidDate(value) {
+  return formatDay(value).replace(/\s+\d{4}$/, "");
+}
+
+const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 20 });
+
 function money(value) {
-  if (value === null || value === undefined) return "";
-  const [whole, frac] = String(value).split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return frac ? `${grouped}.${frac}` : grouped;
+  if (value === null || value === undefined || value === "") return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) ? numberFormatter.format(amount) : String(value);
 }
 
-function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
+function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn, headers }) {
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState("");
   const saving = useRef(false);
@@ -102,36 +113,44 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
 
   if (!editing) {
     return (
-      <td className="acct-cell">
+      <td className={styles.amountCell} data-label={`${MONTH_LABELS[month.slice(-2)] || month}:`} headers={headers}>
         {value === null || value === undefined ? (
           <button
             type="button"
-            className="acct-empty"
+            className={styles.recordButton}
             onClick={begin}
-            title={`No ${monthLabel(month)} entry for ${rowName}`}
+            aria-label={`Record payment for ${rowName}, ${monthLabel(month)}`}
           >
-            —
+            <Plus size={16} aria-hidden="true" />
+            <span>Record</span>
           </button>
         ) : (
           <>
-            <span className="acct-amount">
-              <span className="acct-cell-actions">
-                <button type="button" onClick={begin} title="Edit">✎</button>
+            <span className={styles.amount}>
+              <span className={styles.cellActions}>
+                <button type="button" onClick={begin} aria-label={`Edit ${monthLabel(month)} payment for ${rowName}`}>
+                  <Pencil size={16} aria-hidden="true" />
+                </button>
                 <button
                   type="button"
                   onClick={() => onClear()}
-                  title={`Clear the ${monthLabel(month)} entry for ${rowName}`}
+                  aria-label={`Clear the ${monthLabel(month)} payment for ${rowName}`}
                 >
-                  ×
+                  <X size={16} aria-hidden="true" />
                 </button>
               </span>
-              <span className="acct-value">{money(value)}</span>
-            </span>
-            {paidOn && (
-              <span className="acct-paid" title={`Paid on ${formatDay(paidOn)}`}>
-                {formatDay(paidOn)}
+              <span
+                className={styles.amountValue}
+                title={paidOn ? `Paid on ${formatDay(paidOn)}` : undefined}
+              >
+                {money(value)}
               </span>
-            )}
+              {paidOn && (
+                <span className={styles.paid} title={`Paid on ${formatDay(paidOn)}`}>
+                  {shortPaidDate(paidOn)}
+                </span>
+              )}
+            </span>
           </>
         )}
       </td>
@@ -139,13 +158,13 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
   }
 
   return (
-    <td className="acct-cell acct-cell-editing">
+    <td className={`${styles.amountCell} ${styles.cellEditing}`} data-label={`${MONTH_LABELS[month.slice(-2)] || month}:`} headers={headers}>
       <input
         autoFocus
         type="number"
         min="0"
         step="0.01"
-        className="acct-input"
+        className={styles.amountInput}
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         onKeyDown={(e) => {
@@ -163,7 +182,7 @@ function RecordCell({ value, onSave, onClear, busy, rowName, month, paidOn }) {
   );
 }
 
-function RemarkCell({ month, rowName, value, note, onSave, busy }) {
+function RemarkCell({ month, rowName, value, note, onSave, busy, headers }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const saving = useRef(false);
@@ -199,8 +218,8 @@ function RemarkCell({ month, rowName, value, note, onSave, busy }) {
   // there.
   if (value === null || value === undefined) {
     return (
-      <td className="acct-note-cell">
-        <span className="acct-note-blank" title={`No ${monthLabel(month)} entry for ${rowName}, so there is nothing to remark on`}>
+      <td className={styles.remarkCell} data-label={`${MONTH_LABELS[month.slice(-2)] || month}: Remark`} headers={headers}>
+        <span className={styles.remarkBlank} title={`No ${monthLabel(month)} entry for ${rowName}, so there is nothing to remark on`}>
           —
         </span>
       </td>
@@ -209,27 +228,28 @@ function RemarkCell({ month, rowName, value, note, onSave, busy }) {
 
   if (!editing) {
     return (
-      <td className="acct-note-cell">
+      <td className={styles.remarkCell} data-label={`${MONTH_LABELS[month.slice(-2)] || month}: Remark`} headers={headers}>
         <button
           type="button"
-          className="acct-note"
+          className={styles.remarkButton}
           onClick={begin}
-          title={note
-            ? `Edit the ${monthLabel(month)} remark for ${rowName}`
+          aria-label={note
+            ? `Edit ${monthLabel(month)} remark for ${rowName}: ${note}`
             : `Add a remark about ${rowName}'s ${monthLabel(month)} payment`}
+          title={note || `Add a remark about ${rowName}'s ${monthLabel(month)} payment`}
         >
-          {note || "Add a remark"}
+          {note ? <span>{note}</span> : <><Pencil size={14} aria-hidden="true" /> Add a remark</>}
         </button>
       </td>
     );
   }
 
   return (
-    <td className="acct-note-cell acct-cell-editing">
+    <td className={`${styles.remarkCell} ${styles.cellEditing}`} data-label={`${MONTH_LABELS[month.slice(-2)] || month}: Remark`} headers={headers}>
       <input
         autoFocus
         type="text"
-        className="acct-input acct-input-note"
+        className={`${styles.amountInput} ${styles.remarkInput}`}
         value={text}
         maxLength={200}
         placeholder="Remark"
@@ -248,6 +268,10 @@ function RemarkCell({ month, rowName, value, note, onSave, busy }) {
 
 function SheetTable({
   sheet,
+  id,
+  title,
+  summary,
+  period,
   idOf,
   nameOf,
   secondaryOf,
@@ -256,7 +280,6 @@ function SheetTable({
   onClear,
   busy,
   emptyText,
-  noMatchText,
   nameHeader,
   label,
   singular,
@@ -267,12 +290,11 @@ function SheetTable({
 }) {
   const months = sheet?.months || [];
   const allRows = sheet?.rows || [];
+  const tableId = id;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("name");
 
   const rows = filterAndSortRows({ rows: allRows, months, query, sort, nameOf, secondaryOf });
-  const scrollNote = scrollHintText(rows.length);
-
   const scrollRef = useRef(null);
 
   // A filter change can leave the list scrolled past its new end.
@@ -281,72 +303,102 @@ function SheetTable({
     if (box) box.scrollTop = 0;
   }, [query, sort, months.length]);
 
-  if (!allRows.length) {
-    return <Empty>{emptyText}</Empty>;
-  }
-
   return (
-    <>
-      <div className="acct-controls">
-        <input
-          className="field acct-search"
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={`Search ${label} by name`}
-          aria-label={`Search ${label} by name`}
-        />
-        <select
-          className="acct-sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          aria-label={`Sort ${label}`}
-        >
-          {Object.entries(STAFF_SORTS).map(([value, { label: text }]) => (
-            <option key={value} value={value}>{text}</option>
-          ))}
-        </select>
-        <span className="acct-count">
-          {peopleCountLabel({ matched: rows.length, total: allRows.length, singular, plural: label })}
-        </span>
-        {scrollNote && <span className="acct-scroll-hint">{scrollNote}</span>}
+    <div className={styles.sheetContent}>
+      <div className={styles.cardHeader}>
+        <div className={styles.headingGroup}>
+          <h2 className={styles.cardTitle}>{title}</h2>
+          <div className={styles.sheetSummary} role="group" aria-label={`${title} summary`}>{summary}</div>
+        </div>
+        <div className={styles.headerControls}>
+          <div className={styles.searchControl}>
+            <Search size={18} aria-hidden="true" />
+            <FormField id={`${tableId}-search`} label={`Search ${label} by name`}>
+              <input
+                id={`${tableId}-search`}
+                className={styles.searchInput}
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${label} by name`}
+              />
+            </FormField>
+          </div>
+          <FormField id={`${tableId}-sort`} label={`Sort ${label}`}>
+            <select
+              id={`${tableId}-sort`}
+              className={styles.sortSelect}
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              {Object.entries(STAFF_SORTS).map(([value, { label: text }]) => (
+                <option key={value} value={value}>{text}</option>
+              ))}
+            </select>
+          </FormField>
+          <div className={styles.period}>{period}</div>
+          <span className={styles.count}>
+            {peopleCountLabel({ matched: rows.length, total: allRows.length, singular, plural: label })}
+          </span>
+        </div>
       </div>
 
-      {!rows.length ? (
-        <Empty>{noMatchText}</Empty>
+      {!allRows.length ? (
+        <EmptyState>{emptyText}</EmptyState>
+      ) : !rows.length ? (
+        <EmptyState>No {singular} match “{query.trim()}”.</EmptyState>
       ) : (
-        <div className="table-card">
-          <div className="table-scroll acct-vertical" ref={scrollRef}>
-            <table className="data-table acct-table">
+        <DataTable label={`${label} payment records`} className={styles.tableRegion}>
+          <div className={styles.tableScroll} ref={scrollRef}>
+            <table className={`data-table ${styles.table} ${rowAction ? styles.feeTable : styles.salaryTable}`}>
+              <caption className={styles.visuallyHidden}>{label} payment records by month</caption>
+              <colgroup>
+                <col className={styles.nameColumn} />
+                {months.map((month) => (
+                  <Fragment key={month}>
+                    <col className={styles.amountColumn} />
+                    {withRemarks && <col className={styles.remarkColumn} />}
+                  </Fragment>
+                ))}
+                {rowAction && <col className={styles.actionColumn} />}
+              </colgroup>
               <thead>
                 <tr>
-                  <th className="acct-sticky">{nameHeader}</th>
-                  {months.map((m) => (
-                    <Fragment key={m}>
-                      <th className={withRemarks ? "acct-month acct-month-lead" : "acct-month"}>
-                        {monthLabel(m)}
-                        {withRemarks && <span className="acct-col-sub">amount</span>}
-                      </th>
-                      {withRemarks && <th className="acct-note-head">remark</th>}
-                    </Fragment>
+                  <th id={`${tableId}-name-column`} rowSpan={2} scope="col">{nameHeader}</th>
+                  {months.map((month) => (
+                    <th key={month} id={`${tableId}-${month}-group`} scope="colgroup" colSpan={withRemarks ? 2 : 1} className={styles.monthGroup}>
+                      {monthLabel(month)}
+                    </th>
                   ))}
-                  {/* A header for the action column, so the button below it is
-                      labelled rather than floating at the end of the row. */}
-                  {rowAction && <th className="acct-action-head">{rowActionLabel}</th>}
+                  {rowAction && <th id={`${tableId}-deposit-column`} rowSpan={2} scope="col" className={styles.actionHeader}>{rowActionLabel}</th>}
                 </tr>
+                {withRemarks && (
+                  <tr>
+                    {months.map((month) => (
+                      <Fragment key={month}>
+                        <th id={`${tableId}-${month}-amount-column`} scope="col" headers={`${tableId}-${month}-group`} className={styles.numericHeader}>Amount</th>
+                        <th id={`${tableId}-${month}-remark-column`} scope="col" headers={`${tableId}-${month}-group`}>Remark</th>
+                      </Fragment>
+                    ))}
+                  </tr>
+                )}
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const id = idOf(row);
+                  const rowId = idOf(row);
                   const name = nameOf(row);
                   return (
-                    <tr key={id}>
-                      <th scope="row" className="acct-sticky">
-                        <div className="acct-person">
-                          <span className="acct-person-name">{name}</span>
-                          {secondaryOf(row) && (
-                            <span className="acct-person-meta">{secondaryOf(row)}</span>
-                          )}
+                    <tr key={rowId}>
+                      <th scope="row" className={styles.personCell} data-label={nameHeader}>
+                        <div
+                          className={styles.person}
+                          title={[name, secondaryOf(row)].filter(Boolean).join(" · ")}
+                        >
+                          <span className={styles.personName}>{name}</span>
+                          {secondaryOf(row) && <>
+                            <span aria-hidden="true" className={styles.personSeparator}> · </span>
+                            <span className={styles.personMeta}>{secondaryOf(row)}</span>
+                          </>}
                         </div>
                       </th>
                       {months.map((m) => (
@@ -357,8 +409,9 @@ function SheetTable({
                             value={row.amounts?.[m]}
                             paidOn={row.paid_on?.[m]}
                             busy={busy}
-                            onSave={(amount) => onSave(id, m, amount, row.notes?.[m] ?? null)}
-                            onClear={() => onClear(id, m)}
+                            onSave={(amount) => onSave(rowId, m, amount, row.notes?.[m] ?? null)}
+                            onClear={() => onClear(rowId, m)}
+                            headers={`${tableId}-${m}-group ${tableId}-${m}-amount-column`}
                           />
                           {withRemarks && (
                             <RemarkCell
@@ -367,7 +420,8 @@ function SheetTable({
                               value={row.amounts?.[m]}
                               note={row.notes?.[m]}
                               busy={busy}
-                              onSave={(next) => onSaveNote(id, m, row.amounts?.[m], next)}
+                              onSave={(next) => onSaveNote(rowId, m, row.amounts?.[m], next)}
+                              headers={`${tableId}-${m}-group ${tableId}-${m}-remark-column`}
                             />
                           )}
                         </Fragment>
@@ -377,16 +431,17 @@ function SheetTable({
                           one month, so it reads as what it is: a separate
                           action, not another column of the grid. */}
                       {rowAction && (
-                        <td className="acct-action-cell">
-                          <button
-                            type="button"
-                            className="acct-row-action"
-                            onClick={() => rowAction({ row, id, name })}
+                        <td className={styles.actionCell} data-label={rowActionLabel} headers={`${tableId}-deposit-column`}>
+                          <Button
+                            variant="outline"
+                            className={styles.depositButton}
+                            onClick={(event) => rowAction({ row, id: rowId, name, trigger: event.currentTarget })}
                             disabled={busy}
                             title={rowActionTitle.replace("{name}", name)}
+                            aria-label={`Record a term deposit for ${name}`}
                           >
                             {rowActionLabel}
-                          </button>
+                          </Button>
                         </td>
                       )}
                     </tr>
@@ -395,9 +450,9 @@ function SheetTable({
               </tbody>
             </table>
           </div>
-        </div>
+        </DataTable>
       )}
-    </>
+    </div>
   );
 }
 
@@ -413,13 +468,26 @@ export default function AdminAccounts() {
   // they are fetched once: the labels are not worth a refetch per grid page.
   const plans = useApi(() => accountsApi.feePlans(), []);
   const [depositFor, setDepositFor] = useState(null);
+  const depositTriggerRef = useRef(null);
+  const restoreDepositFocusRef = useRef(false);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+
+  const closeDeposit = useCallback(() => setDepositFor(null), []);
+
+  useEffect(() => {
+    if (!depositFor && restoreDepositFocusRef.current) {
+      restoreDepositFocusRef.current = false;
+      if (depositTriggerRef.current?.isConnected) depositTriggerRef.current.focus();
+    }
+  }, [depositFor]);
 
   // A deposit writes months beyond the two the grid shows, so the dialog is
   // given the grid's own anchor as its starting point: the admin pages to the
   // month they mean to start from, and the period runs forward from there.
-  function beginDeposit({ id, name, row }) {
+  function beginDeposit({ id, name, row, trigger }) {
+    depositTriggerRef.current = trigger;
+    restoreDepositFocusRef.current = true;
     setDepositFor({
       studentId: id,
       name,
@@ -428,7 +496,7 @@ export default function AdminAccounts() {
   }
 
   function depositSaved(plan) {
-    setDepositFor(null);
+    closeDeposit();
     fees.refetch();
     toast(depositResultText(plan));
   }
@@ -510,25 +578,46 @@ export default function AdminAccounts() {
   return (
     <AdminShell>
       <main className={styles.accounts}>
-      <div className="scr-title">Accounts</div>
-      <div className="scr-sub">
-        Staff salaries and student fees for the last two months, each with a
-        remark you can add or correct. Each table has its own period selector,
-        so you can compare different months side by side. Click an empty cell
-        to record a payment, or use ✎ to correct one. Where a family pays for
-        a term rather than month by month, use Deposit to record the whole
-        period in one go.
-      </div>
+      <PageHeader
+        title="Accounts"
+        subtitle="Record staff salaries and student fees. Click an empty cell to add a payment, use the pencil to correct one, or use Deposit for a whole term."
+        className={styles.pageHeader}
+      />
+      <details className={styles.help}>
+        <summary>How this works</summary>
+        <p>
+          Each table has its own period selector, so you can compare different
+          months side by side. Salary and fee tables show two months at a time.
+          Add or correct a remark beside a payment. A fee deposit records one
+          amount across a selected term; the preview lists the months it will
+          affect and flags any existing entries before you confirm.
+        </p>
+      </details>
 
       {salaries.error && <ErrorBanner message={salaries.error} />}
 
-      {salaries.loading && !salarySheet && <Spinner label="Loading salaries" />}
+      {salaries.loading && !salarySheet && <Skeleton lines={4} label="Loading salaries" />}
 
       {salarySheet && (
-        <>
-            <section className="card white">
-              <div className="scr-title-row">
-                <div className={`section-label ${styles.sectionLabel}`}>Staff salaries</div>
+        <Card as="section" className={styles.sheetCard}>
+              <SheetTable
+                sheet={salarySheet}
+                id="salary"
+                title="Staff salaries"
+                summary={
+                  <>
+                    <span className={styles.statChip}>
+                      <span>Staff</span><strong>{numberFormatter.format(salarySheet?.rows?.length || 0)}</strong>
+                    </span>
+                    <span className={`${styles.statChip} ${styles.statSuccess}`}>
+                      <span>Paid</span><strong>{money(salarySheet?.total_paid) || "0"}</strong>
+                    </span>
+                    <span className={`${styles.statChip} ${styles.statWarning}`}>
+                      <span>Unpaid months</span><strong>{numberFormatter.format(salarySheet?.total_outstanding_months || 0)}</strong>
+                    </span>
+                  </>
+                }
+                period={
                 <MonthSelector
                   anchor={salaryAnchor}
                   onChange={setSalaryAnchor}
@@ -536,16 +625,7 @@ export default function AdminAccounts() {
                   label="salary period"
                   months={SALARY_MONTHS}
                 />
-              </div>
-              <div className={`scr-sub ${styles.sheetSummary}`}>
-                <span>
-                  {salarySheet?.rows?.length || 0} staff ·{" "}
-                  {money(salarySheet?.total_paid)} paid ·{" "}
-                  {salarySheet?.total_outstanding_months || 0} unpaid months
-                </span>
-              </div>
-              <SheetTable
-                sheet={salarySheet}
+                }
                 nameHeader="Staff"
                 label="staff"
                 singular="staff"
@@ -558,22 +638,35 @@ export default function AdminAccounts() {
                 onSaveNote={(id, m, amount, note) => saveNote("salary", id, m, amount, note)}
                 onClear={(id, m) => clear("salary", id, m)}
                 emptyText="No active staff yet. Add staff under Set up to track salaries."
-                noMatchText="No staff match that search."
               />
-            </section>
-
-        </>
+        </Card>
       )}
 
       {fees.error && <ErrorBanner message={fees.error} />}
 
-      {fees.loading && !feeSheet && <Spinner label="Loading fees" />}
+      {fees.loading && !feeSheet && <Skeleton lines={4} label="Loading fees" />}
 
       {feeSheet && (
         <>
-          <section className="card white">
-              <div className="scr-title-row">
-                <div className={`section-label ${styles.sectionLabel}`}>Student fees</div>
+        <Card as="section" className={styles.sheetCard}>
+              <SheetTable
+                sheet={feeSheet}
+                id="fees"
+                title="Student fees"
+                summary={
+                  <>
+                    <span className={styles.statChip}>
+                      <span>Students</span><strong>{numberFormatter.format(feeSheet?.rows?.length || 0)}</strong>
+                    </span>
+                    <span className={`${styles.statChip} ${styles.statSuccess}`}>
+                      <span>Collected</span><strong>{money(feeSheet?.total_collected) || "0"}</strong>
+                    </span>
+                    <span className={`${styles.statChip} ${styles.statWarning}`}>
+                      <span>With unpaid months</span><strong>{numberFormatter.format(feeSheet?.outstanding_count || 0)}</strong>
+                    </span>
+                  </>
+                }
+                period={
                 <MonthSelector
                   anchor={feeAnchor}
                   onChange={setFeeAnchor}
@@ -585,16 +678,7 @@ export default function AdminAccounts() {
                   // readable out there.
                   allowFuture
                 />
-              </div>
-              <div className={`scr-sub ${styles.sheetSummary}`}>
-                <span>
-                  {feeSheet?.rows?.length || 0} students ·{" "}
-                  {money(feeSheet?.total_collected)} collected ·{" "}
-                  {feeSheet?.outstanding_count || 0} with unpaid months
-                </span>
-              </div>
-              <SheetTable
-                sheet={feeSheet}
+                }
                 nameHeader="Student"
                 label="students"
                 singular="student"
@@ -610,9 +694,8 @@ export default function AdminAccounts() {
                 rowActionLabel="Deposit"
                 rowActionTitle="Record a deposit for {name}"
                 emptyText="No active students yet. Add students under Set up to track fees."
-                noMatchText="No students match that search."
               />
-            </section>
+        </Card>
 
             {depositFor && plans.data && (
               <FeeDepositDialog
@@ -620,7 +703,7 @@ export default function AdminAccounts() {
                 plans={plans.data.plans}
                 anchor={feeAnchor}
                 busy={busy}
-                onClose={() => setDepositFor(null)}
+                onClose={closeDeposit}
                 onSaved={depositSaved}
               />
             )}
