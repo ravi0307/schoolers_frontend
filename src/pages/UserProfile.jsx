@@ -167,6 +167,11 @@ export default function UserProfile() {
   const displayName = data?.display_name || user?.name || user?.username || "Your account";
   const role = data?.role || user?.role;
   const logo = resolveMediaUrl(data?.school_logo_url || user?.schoolLogoUrl);
+  // An admin account is often created before the staff row it acts for, so the
+  // role alone does not mean there is a register or a payslip behind it. With
+  // no linked person the self-report endpoint answers 403, so the summary is
+  // not mounted at all rather than rendering that refusal as a page error.
+  const hasStaffRecord = Boolean(data?.linked_person_id);
 
   return (
     <Shell>
@@ -229,7 +234,7 @@ export default function UserProfile() {
 
           <PasswordForm />
 
-          {STAFF_LINKED_ROLES.has(role) && <StaffSelfSummary />}
+          {STAFF_LINKED_ROLES.has(role) && hasStaffRecord && <StaffSelfSummary />}
 
           <button
             className="btn ghost profile-back"

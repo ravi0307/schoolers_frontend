@@ -1922,6 +1922,10 @@ test("the profile page lays its cards out in a grid, not one tall stack", () => 
   const css = source("src/styles/global.css");
   assert.match(css, /\.profile-grid \{[^}]*display: grid/);
   assert.match(css, /\.profile-grid \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  // The cards fill the content width: a max-width cap left them narrower than
+  // the page title above them on a wide screen.
+  assert.match(css, /\.profile-grid \{[^}]*width: 100%/);
+  assert.doesNotMatch(css, /\.profile-grid \{[^}]*max-width/);
   assert.match(css, /@media \(max-width: 860px\) \{\s*\.profile-grid, \.profile-summary \{ grid-template-columns: minmax\(0, 1fr\); \}/);
   // A grid item defaults to min-width:auto, so the salary table's min-width
   // would widen the track and overflow the page instead of scrolling.

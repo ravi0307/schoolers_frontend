@@ -150,7 +150,23 @@ test("the summary is its own component so only staff-linked roles fetch it", () 
   // parent and master have no staff row, so the fetch must never run for them.
   assert.doesNotMatch(page, /new Set\(\[[^\]]*"parent"/);
   assert.doesNotMatch(page, /new Set\(\[[^\]]*"master"/);
-  assert.match(page, /\{STAFF_LINKED_ROLES\.has\(role\) && <StaffSelfSummary \/>\}/);
+  // The role alone is not enough: an admin can exist before its staff row, so
+  // the linked record has to be present before the fetch is made.
+  assert.match(page, /const hasStaffRecord = Boolean\(data\?\.linked_person_id\)/);
+  assert.match(
+    page,
+    /\{STAFF_LINKED_ROLES\.has\(role\) && hasStaffRecord && <StaffSelfSummary \/>\}/
+  );
+});
+
+test("an account with no linked staff row shows neither a summary nor its 403", () => {
+  // The self-report endpoint refuses an unmatched account with this detail. It
+  // is not an error the reader can act on, so the message must never surface as
+  // a banner: the page skips the mount, and the component refuses the render.
+  const component = source("src/components/profile/StaffSelfSummary.jsx");
+  assert.match(component, /isn't linked to a staff record/);
+  assert.match(component, /const notLinked = \/isn't linked to a staff record\/\.test\(error \|\| ""\)/);
+  assert.match(component, /if \(notLinked\) return null/);
 });
 
 test("the summary page filters by month and pages the salary window", () => {

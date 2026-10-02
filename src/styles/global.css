@@ -216,7 +216,7 @@ body {
    whole grid collapses to one column on a phone, where the markup already
    reads in that order. */
 .profile-grid {
-  display: grid; gap: 16px; max-width: 1080px; width: 100%; margin: 0 auto;
+  display: grid; gap: 16px; width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
 }
@@ -237,9 +237,11 @@ body {
 /* Four short columns fit a half-width card comfortably, so the generic table
    min-width would only add a scrollbar where there is nothing to scroll to. */
 .profile-grid .data-table { min-width: 380px; }
-/* A form stretched across a 1000px row is unreadable; capped, it still fills
-   the grid cell on a phone. */
-.password-form { max-width: 460px; width: 100%; }
+/* Fill the grid column so the password card's edges line up with the account
+   card beside it and the pay card below it. The grid already keeps a column a
+   readable half-width on a wide screen and full width on a phone, so a cap here
+   only pulled the card out of line. */
+.password-form { width: 100%; }
 .profile-account .profile-identity {
   border-bottom: 1px solid var(--line); margin-bottom: 4px; padding-bottom: 14px;
 }

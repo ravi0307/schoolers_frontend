@@ -219,6 +219,13 @@ export default function StaffSelfSummary() {
     [attendanceMonth, salaryEnd]
   );
 
+  // A staff-linked role the server cannot match to a staff row answers 403 with
+  // this detail. That is an absence of a register, not a failed load, so it is
+  // shown as nothing rather than as an error. The page already skips the mount
+  // when the account has no linked person; this guards a stale cached session.
+  const notLinked = /isn't linked to a staff record/.test(error || "");
+  if (notLinked) return null;
+
   function pageSalary(direction) {
     const anchor = salaryPageAnchor(data?.salary, direction);
     if (anchor) setSalaryEnd(anchor);
