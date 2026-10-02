@@ -8,6 +8,8 @@ import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitive
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
+import { BusFront } from "lucide-react";
+import styles from "./AdminRoutes.module.css";
 
 function parseTime(value) {
   const match = String(value || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -235,15 +237,15 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
     (student) => !assignedStudentIds.has(String(student.student_id ?? student.id))
   );
   return (
-    <>
-      <button className="btn ghost sm" onClick={onBack} style={{ marginBottom: 14 }}>← Back to Routes</button>
+    <main className={styles.page}>
+      <button className={`btn ghost sm ${styles.back}`} onClick={onBack}>← Back to Routes</button>
       <div className="scr-title">{routeSummary.name}</div>
-      <div className="route-assignment">
+      <div className={styles.routeAssignment}>
         <div className="scr-sub">{routeSummary.vehicle || "Van"} · Driver: {routeSummary.driver_name || "Not assigned"}</div>
         <button className="btn ghost sm" type="button" onClick={openRouteEditor}>Edit</button>
       </div>
       {routeEditOpen && (
-        <form className="card white route-assignment-form" onSubmit={updateRouteAssignment}>
+        <form className={`card white ${styles.routeAssignmentForm}`} onSubmit={updateRouteAssignment}>
           <div className="grid2">
             <div className="field">
               <label>Vehicle</label>
@@ -385,7 +387,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
       ) : (
         <button className="btn gold block" onClick={() => setStudentForm(true)}>+ Add Student on Route</button>
       )}
-    </>
+    </main>
   );
 }
 
@@ -529,14 +531,15 @@ export default function AdminRoutes() {
 
   return (
     <AdminShell>
+      <main className={styles.page}>
       <div className="scr-title">Commute Management</div>
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
         <>
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 18px", borderBottom: "1px solid #dfeaf1" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#334155" }}>
+        <div className={`card ${styles.routeList}`}>
+          <div className={styles.routeListHead}>
+            <div className={styles.listHeader}>
               Route
             </div>
             {!formOpen && (
@@ -545,17 +548,17 @@ export default function AdminRoutes() {
               </button>
             )}
           </div>
-          <div style={{ padding: "0 18px" }}>
+          <div className={styles.routeListBody}>
             {data && data.length ? (
               routePager.pageItems.map((r) => (
-                <div key={r.route_id} className="listitem" onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
-                  <div className="avatar r">🚌</div>
+                <button key={r.route_id} type="button" className={`listitem ${styles.routeItem}`} onClick={() => setSelected(r)}>
+                  <div className="avatar r"><BusFront size={18} aria-hidden="true" /></div>
                   <div className="meta">
                     <b>{r.name}</b>
                     <span>{r.driver_name}</span>
                   </div>
                   <Pill tone={r.status === "On route" ? "ok" : "mute"}>{r.status}</Pill>
-                </div>
+                </button>
               ))
             ) : (
               <Empty>No routes yet.</Empty>
@@ -563,14 +566,14 @@ export default function AdminRoutes() {
             <Pagination {...routePager} />
           </div>
         </div>
-        <div style={{ marginTop: 18 }}>
-          <div className="card white" style={{ minHeight: 220, padding: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 14, color: "#334155", textTransform: "uppercase", letterSpacing: "0.08em" }}>Vehicle</div>
+        <section className={styles.vehicleSection}>
+          <div className={`card white ${styles.vehicleCard}`}>
+            <div className={styles.vehicleHeader}>
+              <div className={styles.sectionHeading}>Vehicle</div>
               <button className="btn ghost sm" type="button" onClick={() => setVehicleFormOpen((open) => !open)}>+ Add Vehicle</button>
             </div>
             {vehicleFormOpen && (
-                <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #dfeaf1" }}>
+                <div className={styles.vehicleEditor}>
                   <div className="grid2">
                     <div className="field"><label>Vehicle number</label><input value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} /></div>
                     <div className="field"><label>Vehicle type</label><input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Bus" /></div>
@@ -582,22 +585,22 @@ export default function AdminRoutes() {
                   </div>
                 </div>
               )}
-            <div style={{ maxHeight: 300, overflowY: vehicleRecords.length > 10 ? "auto" : "visible" }}>
+            <div className={vehicleRecords.length > 10 ? styles.vehicleScroll : undefined}>
               {vehicleRecords.length ? vehiclePager.pageItems.map((record) => (
-                  <div key={record.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #dfeaf1" }}>
+                  <div key={record.id} className={styles.vehicleRow}>
                     {editingVehicleId === record.id ? (
                       <>
-                        <input value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} placeholder="Vehicle number" style={{ flex: 1, minWidth: 0 }} />
-                        <input value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" style={{ flex: 1, minWidth: 0 }} />
-                        <input value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" style={{ flex: 1, minWidth: 0 }} />
+                        <input className={styles.vehicleInput} value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} placeholder="Vehicle number" />
+                        <input className={styles.vehicleInput} value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" />
+                        <input className={styles.vehicleInput} value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" />
                         <button className="btn primary sm" type="button" onClick={() => updateVehicle(record.id)}>Save</button>
                         <button className="btn ghost sm" type="button" onClick={() => setEditingVehicleId(null)}>Cancel</button>
                       </>
                     ) : (
                       <>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, color: "#0f172a" }}>{record.number}</div>
-                          <div style={{ fontSize: 12, color: "#64748b" }}>Type: {record.type} · Registration: {record.registration}</div>
+                        <div className={styles.vehicleInfo}>
+                          <div className={styles.vehicleName}>{record.number}</div>
+                          <div className={styles.vehicleMeta}>Type: {record.type} · Registration: {record.registration}</div>
                         </div>
                         <button className="btn ghost sm" type="button" onClick={() => {
                           setEditingVehicleId(record.id);
@@ -615,12 +618,12 @@ export default function AdminRoutes() {
               <Pagination {...vehiclePager} />
             </div>
           </div>
-        </div>
+        </section>
         </>
       )}
 
       {formOpen && (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+        <form className={`card white ${styles.routeCreate}`} onSubmit={submit}>
           <div className="field"><label>Route name</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="grid2">
             <div className="field">
@@ -652,6 +655,7 @@ export default function AdminRoutes() {
           </div>
         </form>
       )}
+      </main>
     </AdminShell>
   );
 }

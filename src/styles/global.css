@@ -186,9 +186,6 @@
   margin: 0 0 18px;
   overflow-wrap: anywhere;
 }
-.route-assignment { display: flex; align-items: flex-start; gap: 12px; }
-.route-assignment .scr-sub { flex: 1; }
-.route-assignment-form { margin-top: 10px; }
 .section-label {
   font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
   color: var(--ink-soft); font-weight: 700; margin: 20px 0 10px;
