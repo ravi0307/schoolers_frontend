@@ -1204,30 +1204,33 @@ test("both new admin pages are routed and reachable", () => {
 
 test("a paid amount shows the date it was paid, formatted not raw", () => {
   // The API returns paid_on next to every amount; the grid must show the
-  // "when" under the "how much" so an admin can see at a glance whether the
-  // September figure was paid in September. The date is humanised through
-  // formatDay ("28 Sep 2026"), never printed as the raw "2026-09-28".
+  // "when" beside "how much" on mobile, with the full date available through
+  // the tooltip. Neither renders the raw ISO date.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /formatDay/);
   assert.match(page, /paidOn=\{row\.paid_on\?\.\[m\]\}/);
-  assert.match(page, /\{formatDay\(paidOn\)\}/);
+  assert.match(page, /formatDay\(paidOn\)/);
   assert.doesNotMatch(page, /\{paidOn\}/, "the ISO date must not reach the DOM raw");
   // The figure is the rightmost thing in the cell, so the paid date below it
   // shares its right edge (ledger alignment). If the hover buttons came after
   // it, the invisible-buttons slot would push the number off the date's edge.
-  const actionsAt = page.indexOf('className="acct-cell-actions"');
-  const valueAt = page.indexOf('className="acct-value"');
+  const actionsAt = page.indexOf("className={styles.cellActions}");
+  const valueAt = page.indexOf("className={styles.amountValue}");
   assert.ok(actionsAt !== -1 && valueAt !== -1, "the paid cell must have actions and a value");
   assert.ok(actionsAt < valueAt, "actions must sit before the figure, keeping the right edge aligned");
   assertContains("src/pages/admin/AdminAccounts.module.css", [
-    /:global\(\.acct-paid\)\s*\{[^}]*color:\s*var\(--color-text-muted\)/s,
+    /\.paid\s*\{[^}]*color:\s*var\(--surface-muted-text\)/s,
+    /\.amountValue\s*\{[^}]*font-variant-numeric:\s*tabular-nums/s,
   ]);
 });
 
-test("the accounts grid keeps the person column visible while months scroll", () => {
+test("the accounts grid uses a fixed layout without forcing desktop horizontal scrolling", () => {
   assertContains("src/pages/admin/AdminAccounts.module.css", [
-    /:global\(\.acct-sticky\)\s*\{[^}]*position:\s*sticky/s,
-    /:global\(\.acct-table\)\s*\{[^}]*min-width/s,
+    /\.sheetCard \.table\s*\{[^}]*table-layout:\s*fixed/s,
+    /\.nameColumn\s*\{[^}]*width:\s*20%/s,
+    /\.amountColumn\s*\{[^}]*width:\s*12%/s,
+    /\.salaryTable \.remarkColumn\s*\{[^}]*width:\s*28%/s,
+    /\.feeTable \.remarkColumn\s*\{[^}]*width:\s*22%/s,
   ]);
 });
 
@@ -1276,18 +1279,15 @@ test("each grid pairs every month with an editable remark", () => {
   // Both grids ask for remarks, each with its own save path. Counted at the two
   // call sites rather than in the file, because the shared table reads the prop
   // several times itself.
-  const grids = [...page.matchAll(/<SheetTable[\s\S]*?\/>/g)].map((m) => m[0]);
-  assert.equal(grids.length, 2, "one table per grid");
-  for (const grid of grids) {
-    assert.match(grid, /withRemarks/, "every grid pairs a month with its remark");
-  }
+  assert.match(page, /title="Staff salaries"[\s\S]*?withRemarks/, "the staff grid pairs each month with a remark");
+  assert.match(page, /title="Student fees"[\s\S]*?withRemarks/, "the student grid pairs each month with a remark");
   assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\("salary", id, m, amount, note\)\}/);
   assert.match(page, /onSaveNote=\{\(id, m, amount, note\) => saveNote\("fee", id, m, amount, note\)\}/);
   // The remark shown is the one the server stored for that month.
   assert.match(page, /note=\{row\.notes\?\.\[m\]\}/);
   // And it is editable, not a read-only label.
   assert.match(page, /onClick=\{begin\}/);
-  assert.match(page, /\{note \|\| "Add a remark"\}/);
+  assert.match(page, /Add a remark/);
 });
 
 test("editing a figure keeps the remark standing beside it", () => {
@@ -1298,7 +1298,7 @@ test("editing a figure keeps the remark standing beside it", () => {
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(
     page,
-    /onSave=\{\(amount\) => onSave\(id, m, amount, row\.notes\?\.\[m\] \?\? null\)\}/,
+    /onSave=\{\(amount\) => onSave\(rowId, m, amount, row\.notes\?\.\[m\] \?\? null\)\}/,
     "an amount edit must re-send the remark already on the row",
   );
   assert.match(page, /onSave=\{\(id, m, amount, note\) => save\("fee", id, m, amount, note\)\}/);
@@ -1314,7 +1314,7 @@ test("a remark is saved onto the payment it belongs to, without restamping it", 
   // correction. And the paid date is left out: a remark edit is not a second
   // payment and must not rewrite the day the money actually moved.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /onSave=\{\(next\) => onSaveNote\(id, m, row\.amounts\?\.\[m\], next\)\}/);
+  assert.match(page, /onSave=\{\(next\) => onSaveNote\(rowId, m, row\.amounts\?\.\[m\], next\)\}/);
   assert.match(page, /accountsApi\.recordSalary\(\{ staff_id: id, month, amount, note \}\)/);
   assert.doesNotMatch(page, /recordSalary\(\{ staff_id: id, month, amount, note, paid_on/, "an edit must not resend a paid date");
   assert.doesNotMatch(page, /recordFee\(\{ student_id: id, month, amount, note, paid_on/, "an edit must not resend a paid date");
@@ -1348,7 +1348,8 @@ test("every rendered amount passes through the thousands formatter", () => {
   // nobody trusts.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /function money\(value\)/);
-  assert.match(page, /replace\(\/\\B\(\?=\(\\d\{3\}\)\+\(\?!\\d\)\)\/g, ","\)/);
+  assert.match(page, /new Intl\.NumberFormat\(undefined/);
+  assert.match(page, /numberFormatter\.format\(amount\)/);
   // A raw amount may be handed to a cell as a prop, but must never be printed
   // directly: the only two places a number reaches the DOM are the cell and
   // the total row, and both wrap it in money(). An amount inside a handler
@@ -1384,12 +1385,11 @@ test("each accounts grid can search and sort its own people", () => {
   assert.match(page, /const \[query, setQuery\] = useState\(""\)/);
   assert.match(page, /const \[sort, setSort\] = useState\("name"\)/);
   assert.match(page, /filterAndSortRows\(\{ rows: allRows, months, query, sort, nameOf, secondaryOf \}\)/);
-  // SheetTable is rendered once per grid, and each call supplies its own label
-  // and empty-search copy, so the two cannot share one search box.
+  // SheetTable is rendered once per grid, and each call supplies its own label,
+  // so the two cannot share one search box.
   assert.match(page, /label="staff"/);
   assert.match(page, /label="students"/);
-  assert.match(page, /noMatchText="No staff match that search\."/);
-  assert.match(page, /noMatchText="No students match that search\."/);
+  assert.match(page, /No \{singular\} match/);
 });
 
 test("the accounts grids scroll vertically with a sticky header", () => {
@@ -1398,11 +1398,13 @@ test("the accounts grids scroll vertically with a sticky header", () => {
   const utils = source("src/utils/accountsTable.js");
   assert.match(utils, /export const VISIBLE_ROWS = 8/);
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /className="table-scroll acct-vertical"/);
-  assert.match(page, /scrollHintText\(rows\.length\)/, "the grid says how many rows are below the fold");
+  assert.match(page, /className=\{styles\.tableScroll\}/);
+  assert.doesNotMatch(page, /scrollHintText\(rows\.length\)/);
+  assert.match(page, /peopleCountLabel\(\{ matched: rows\.length/);
   assertContains("src/pages/admin/AdminAccounts.module.css", [
-    /:global\(\.acct-vertical\)\s*\{[^}]*overflow:\s*auto/s,
-    /:global\(\.acct-vertical \.acct-table thead th\)\s*\{[^}]*position:\s*sticky/s,
+    /\.tableScroll\s*\{[^}]*overflow:\s*auto/s,
+    /\.sheetCard \.table thead th\s*\{[^}]*position:\s*sticky/s,
+    /--account-table-min-height:\s*15rem/,
   ]);
 });
 
@@ -1411,7 +1413,7 @@ test("the scroll box has a responsive tokenized height without inline styles", (
   const page = source("src/pages/admin/AdminAccounts.jsx");
   const module = source("src/pages/admin/AdminAccounts.module.css");
   assert.doesNotMatch(page, /style\.[a-zA-Z]+\s*=/);
-  assert.match(module, /max-height:\s*24rem/);
+  assert.match(module, /max-height:\s*max\(var\(--account-table-min-height\), calc\(\(100dvh \+ var\(--account-table-viewport-overflow\)\) \/ 2\)\)/);
   // And a narrowed grid must not stay scrolled past its own new end.
   assert.match(page, /box\.scrollTop = 0/);
 });
@@ -1436,12 +1438,13 @@ test("editing and clearing are both reachable without hover", () => {
   // Hover-revealed actions are unusable on touch, so the stylesheet also
   // exposes them when there is no hover.
   assertContains("src/pages/admin/AdminAccounts.module.css", [
-    /@media\s*\(hover:\s*none\)\s*\{[^}]*:global\(\.acct-cell-actions\)\s*\{\s*opacity:\s*1/s,
+    /@media\s*\(hover:\s*none\)\s*\{[^}]*\.cellActions\s*\{\s*opacity:\s*1/s,
   ]);
   // And the cell offers an empty-state target, so an unpaid month can be
   // filled in without knowing the hover trick.
   const page = source("src/pages/admin/AdminAccounts.jsx");
-  assert.match(page, /className="acct-empty"/);
+  assert.match(page, /className=\{styles\.recordButton\}/);
+  assert.match(page, /aria-label=\{`Record payment for \$\{rowName\}, \$\{monthLabel\(month\)\}`\}/);
   assert.match(page, /onClick=\{begin\}/);
 });
 

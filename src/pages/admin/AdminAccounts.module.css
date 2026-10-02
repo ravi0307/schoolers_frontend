@@ -1,306 +1,839 @@
 .accounts {
-  display: grid;
-  gap: var(--space-4);
-  min-width: 0;
-  color: var(--color-text-on-dark);
   --ink-soft: var(--color-text-muted-on-dark);
-}
-
-.accounts :global(.card) {
+  --account-control-height: 2.25rem;
+  --account-touch-height: 2.75rem;
+  --account-compact-height: 1.75rem;
+  --account-row-height: 2.25rem;
+  --account-border-width: 0.0625rem;
+  --account-row-padding-block: var(--space-1);
+  --account-row-padding-inline: var(--space-3);
+  --account-input-search-width: 13.75rem;
+  --account-input-search-min-width: 10rem;
+  --account-table-min-height: 15rem;
+  --account-table-viewport-overflow: 4rem;
+  color: var(--color-text-on-dark);
+  display: grid;
+  gap: var(--space-3);
   min-width: 0;
 }
 
-.sectionLabel {
-  margin-top: 0;
+.pageHeader {
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: 0;
 }
 
-.sheetSummary {
-  margin-bottom: var(--space-3);
+.pageHeader > div {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
 }
 
-.accounts :global(.acct-table) {
-  min-width: 45rem;
-}
-
-.accounts :global(.acct-table th),
-.accounts :global(.acct-table td) {
+.pageHeader :global(.scr-title) {
+  font-size: var(--font-size-xl);
+  margin: 0;
   white-space: nowrap;
 }
 
-.accounts :global(.acct-sticky) {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 11.875rem;
-  background: var(--color-surface-raised);
-}
-
-.accounts :global(.acct-table tbody .acct-sticky) {
-  font-weight: var(--font-weight-semibold);
-}
-
-.accounts :global(.acct-table .acct-month) {
-  text-align: right;
-}
-
-.accounts :global(.acct-table .acct-cell) {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.accounts :global(.acct-person) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.accounts :global(.acct-person-name) {
-  font-weight: var(--font-weight-semibold);
-}
-
-.accounts :global(.acct-person-meta) {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-regular);
-}
-
-.accounts :global(.acct-empty) {
-  min-width: 2.125rem;
-  padding: var(--space-1) var(--space-2);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-}
-
-.accounts :global(.acct-empty:hover) {
-  border-color: var(--color-text-muted);
-  color: var(--color-text);
-}
-
-.accounts :global(.acct-amount) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}
-
-.accounts :global(.acct-value) {
-  font-variant-numeric: tabular-nums;
-}
-
-.accounts :global(.acct-cell-actions) {
-  display: flex;
-  gap: var(--space-1);
-  opacity: 0;
-}
-
-.accounts :global(.acct-amount:hover .acct-cell-actions),
-.accounts :global(.acct-amount:focus-within .acct-cell-actions) {
-  opacity: 1;
-}
-
-.accounts :global(.acct-cell-actions button) {
-  padding: var(--space-1);
-  border: 0;
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--font-size-xs);
-  line-height: 1;
-}
-
-.accounts :global(.acct-cell-actions button:hover) {
-  color: var(--color-text);
-}
-
-.accounts :global(.acct-paid) {
-  display: block;
-  margin-top: var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-regular);
-  line-height: 1;
-}
-
-.accounts :global(.acct-cell-editing) {
-  background: var(--color-surface);
-}
-
-.accounts :global(.acct-input) {
-  max-width: 6.875rem;
-  padding: var(--space-1) var(--space-2);
-  text-align: right;
-  font-size: var(--font-size-sm);
-}
-
-.accounts :global(.acct-col-sub) {
-  display: block;
-  margin-top: var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.accounts :global(.acct-month-lead) {
-  border-right: 1px solid var(--color-border);
-}
-
-.accounts :global(.acct-table .acct-note-head) {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: 0.04em;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.accounts :global(.acct-table .acct-note-cell) {
-  min-width: 11.875rem;
-  text-align: left;
-}
-
-.accounts :global(.acct-note) {
-  display: block;
-  width: 100%;
-  max-width: 15rem;
+.pageHeader :global(.scr-sub) {
+  flex: 1 1 30rem;
+  margin: 0;
+  max-width: none;
   overflow: hidden;
-  padding: var(--space-1) var(--space-2);
-  border: 1px dashed transparent;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-normal);
-  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.accounts :global(.acct-note:hover) {
-  border-color: var(--color-border);
-  background: var(--color-surface-raised);
-}
-
-.accounts :global(.acct-note-blank) {
-  color: var(--color-text-muted);
+.help {
+  color: var(--color-text-on-dark);
   font-size: var(--font-size-sm);
+  margin: 0;
 }
 
-.accounts :global(.acct-input-note) {
-  width: 100%;
-  max-width: 15rem;
-  text-align: left;
-}
-
-.accounts :global(.acct-action-cell) {
-  text-align: right;
-}
-
-.accounts :global(.acct-action-head) {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.04em;
-  text-align: right;
-  text-transform: uppercase;
-}
-
-.accounts :global(.acct-row-action) {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+.help summary {
+  color: var(--color-text-muted-on-dark);
   cursor: pointer;
-  font: inherit;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  min-height: var(--account-compact-height);
+  padding-block: var(--space-1);
+  width: fit-content;
+}
+
+.help summary:focus-visible,
+.searchInput:focus-visible,
+.sortSelect:focus-visible,
+.period :global(.week-selector-pick):focus-visible,
+.recordButton:focus-visible,
+.cellActions button:focus-visible,
+.remarkButton:focus-visible,
+.depositButton:focus-visible {
+  outline: var(--account-border-width) solid var(--color-focus);
+  outline-offset: var(--space-1);
+}
+
+.help summary:focus-visible {
+  outline-color: var(--color-focus-on-dark);
+}
+
+.help p {
+  color: var(--color-text-on-dark);
+  margin: 0;
+  max-width: 90ch;
+}
+
+.sheetCard {
+  color: var(--color-text);
+  --ink-soft: var(--color-text-muted);
+  --surface-muted-text: var(--color-text-muted);
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.sheetContent {
+  min-width: 0;
+}
+
+.cardHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  min-width: 0;
+}
+
+.headingGroup {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.cardTitle {
+  color: var(--color-text);
+  flex: 0 0 auto;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-tight);
+  margin: 0;
   white-space: nowrap;
 }
 
-.accounts :global(.acct-row-action:hover:not(:disabled)) {
-  border-color: var(--color-focus);
-  color: var(--color-text);
-}
-
-.accounts :global(.acct-row-action:disabled) {
-  cursor: default;
-  opacity: 0.45;
-}
-
-.accounts :global(.acct-controls) {
-  display: flex;
+.sheetSummary {
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-3);
+  color: var(--surface-muted-text);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
 }
 
-.accounts :global(.acct-search) {
-  flex: 1 1 11.875rem;
-  min-width: 9.375rem;
-  max-width: 20rem;
-  padding: var(--space-2) var(--space-3);
-  font: inherit;
-}
-
-.accounts :global(.acct-sort) {
-  padding: var(--space-2);
-  border: 1px solid var(--color-input-border);
-  border-radius: var(--radius-md);
-  background: var(--color-input-bg);
+.statChip {
+  align-items: center;
+  background: var(--color-surface-raised);
+  border: var(--account-border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
   color: var(--color-text);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--font-size-sm);
-}
-
-.accounts :global(.acct-count),
-.accounts :global(.acct-scroll-hint) {
-  color: var(--color-text-muted);
+  display: inline-flex;
   font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  line-height: var(--line-height-tight);
+  min-height: var(--account-compact-height);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
 }
 
-.accounts :global(.acct-scroll-hint) {
-  font-style: italic;
+.statChip strong {
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
 }
 
-.accounts :global(.acct-vertical) {
-  max-height: 24rem;
+.statSuccess strong {
+  color: var(--color-success);
+}
+
+.statWarning strong {
+  color: var(--color-warning);
+}
+
+.headerControls {
+  align-items: center;
+  display: grid;
+  flex: 0 1 auto;
+  gap: var(--space-2);
+  grid-template-columns:
+    minmax(var(--account-input-search-min-width), var(--account-input-search-width))
+    minmax(9rem, 11rem)
+    minmax(7rem, auto)
+    minmax(5rem, auto)
+    auto;
+  min-width: 0;
+}
+
+.searchControl {
+  align-items: center;
+  display: flex;
+  flex: 0 1 var(--account-input-search-width);
+  min-width: var(--account-input-search-min-width);
+  position: relative;
+}
+
+.searchControl > svg {
+  color: var(--surface-muted-text);
+  left: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.searchControl > div,
+.headerControls > :global(div) {
+  margin: 0;
+  min-width: 0;
+}
+
+.headerControls > :global(div) select {
+  height: var(--account-control-height);
+  min-width: 0;
+  width: 100%;
+}
+
+.searchControl label,
+.headerControls > :global(div) > label {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: var(--account-border-width);
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: var(--account-border-width);
+}
+
+.searchInput,
+.sortSelect {
+  background: var(--color-input-bg);
+  border: var(--account-border-width) solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  height: var(--account-control-height);
+  min-width: 0;
+  padding-inline: var(--space-2);
+  width: 100%;
+}
+
+.searchInput {
+  padding-left: var(--space-8);
+}
+
+.sortSelect {
+  width: 100%;
+}
+
+.period,
+.period :global(.week-selector) {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+}
+
+.sheetCard .period :global(.week-selector-pick) {
+  background: var(--color-input-bg);
+  border: var(--account-border-width) solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  height: var(--account-control-height);
+  min-width: 0;
+  padding-inline: var(--space-2);
+  width: auto;
+}
+
+.sheetCard .period :global(.btn) {
+  font-size: var(--font-size-xs);
+  height: var(--account-control-height);
+  min-height: var(--account-control-height);
+  padding: 0 var(--space-2);
+}
+
+.sheetCard .depositButton {
+  font-size: var(--font-size-xs);
+  height: var(--account-compact-height);
+  min-height: var(--account-compact-height);
+  padding: 0 var(--space-2);
+}
+
+.count {
+  color: var(--surface-muted-text);
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.tableRegion {
+  min-width: 0;
+}
+
+.tableScroll {
+  max-height: max(var(--account-table-min-height), calc((100dvh + var(--account-table-viewport-overflow)) / 2));
   overflow: auto;
 }
 
-.accounts :global(.acct-vertical .acct-table thead th) {
+.sheetCard .table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.sheetCard .table th,
+.sheetCard .table td {
+  overflow: hidden;
+  padding: var(--account-row-padding-block) var(--account-row-padding-inline);
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.sheetCard .table thead th {
+  background: var(--color-surface);
+  color: var(--surface-muted-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   position: sticky;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
   top: 0;
   z-index: 2;
 }
 
+.sheetCard .table thead tr:first-child th {
+  border-bottom: 0;
+  height: var(--account-compact-height);
+}
+
+.sheetCard .table thead tr:nth-child(2) th {
+  top: var(--account-compact-height);
+  height: var(--account-compact-height);
+}
+
+.sheetCard .table thead tr:first-child th[rowspan] {
+  height: calc(var(--account-compact-height) * 2);
+}
+
+.sheetCard .table .monthGroup {
+  border-left: var(--account-border-width) solid var(--color-border);
+  text-align: center;
+}
+
+.sheetCard .table .numericHeader,
+.sheetCard .table td.amountCell {
+  text-align: right;
+}
+
+.sheetCard .table td.amountCell {
+  border-left: var(--account-border-width) solid var(--color-border);
+}
+
+.sheetCard .table td.actionCell {
+  text-align: right;
+}
+
+.sheetCard .table .numericHeader,
+.sheetCard .table thead tr:nth-child(2) th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.sheetCard .table .actionHeader {
+  text-align: right;
+}
+
+.sheetCard .table tbody tr {
+  height: var(--account-row-height);
+}
+
+.sheetCard .table tbody tr > * {
+  border-bottom: var(--account-border-width) solid var(--color-border);
+}
+
+.sheetCard .table tbody th {
+  background: transparent;
+}
+
+.sheetCard .table tbody th,
+.sheetCard .table tbody td {
+  height: var(--account-row-height);
+}
+
+.nameColumn {
+  width: 20%;
+}
+
+.salaryTable .remarkColumn {
+  width: 28%;
+}
+
+.feeTable .remarkColumn {
+  width: 22%;
+}
+
+.amountColumn {
+  width: 12%;
+}
+
+.remarkColumn {
+  max-width: 22%;
+}
+
+.actionColumn {
+  width: 12%;
+}
+
+.personCell {
+  font-weight: var(--font-weight-regular);
+  text-align: left;
+}
+
+.person {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personName {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.personMeta {
+  color: var(--surface-muted-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.sheetCard .table td.amountCell,
+.sheetCard .table td.remarkCell,
+.sheetCard .table td.actionCell {
+  overflow: visible;
+}
+
+.amountCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.amount {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  justify-content: flex-end;
+  max-width: 100%;
+  position: relative;
+}
+
+.amountValue {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.paid {
+  color: var(--surface-muted-text);
+  display: none;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.cellActions {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+  opacity: 0;
+}
+
+.amount:hover .cellActions,
+.amount:focus-within .cellActions,
+.cellActions:focus-within {
+  opacity: 1;
+}
+
+.cellActions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--surface-muted-text);
+  cursor: pointer;
+  display: inline-flex;
+  height: var(--account-compact-height);
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  width: var(--account-compact-height);
+}
+
+.cellActions button:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-text);
+}
+
+.recordButton,
+.depositButton {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+  height: var(--account-compact-height);
+  justify-content: center;
+  min-width: var(--account-compact-height);
+  position: relative;
+  white-space: nowrap;
+}
+
+.recordButton {
+  background: transparent;
+  border: var(--account-border-width) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  padding-inline: var(--space-1);
+}
+
+.recordButton:hover {
+  background: var(--color-neutral-100);
+  border-color: var(--color-border);
+}
+
+.remarkCell {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+.remarkButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  height: var(--account-compact-height);
+  max-width: 100%;
+  padding: 0;
+  position: relative;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.remarkButton span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remarkButton:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.remarkBlank {
+  color: var(--surface-muted-text);
+}
+
+.amountInput {
+  background: var(--color-input-bg);
+  border: var(--account-border-width) solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  height: var(--account-compact-height);
+  min-width: 0;
+  padding-inline: var(--space-2);
+  text-align: right;
+  width: 100%;
+}
+
+.remarkInput {
+  text-align: left;
+}
+
+.cellEditing {
+  background: var(--color-surface-raised);
+}
+
+.actionCell {
+  text-align: right;
+}
+
+.visuallyHidden {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: var(--account-border-width);
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: var(--account-border-width);
+}
+
 @media (hover: none) {
-  .accounts :global(.acct-cell-actions) {
+  .cellActions {
     opacity: 1;
   }
 }
 
+@media (pointer: coarse) {
+  .recordButton::before,
+  .remarkButton::before,
+  .cellActions button::before,
+  .depositButton::before {
+    content: "";
+    inset: 50% auto auto 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    height: var(--account-touch-height);
+    width: var(--account-touch-height);
+  }
+}
+
+@media (max-width: 64rem) {
+  .cardHeader {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .headingGroup {
+    flex-basis: 100%;
+  }
+
+  .headerControls {
+    flex: 1 1 100%;
+    grid-template-columns:
+      minmax(var(--account-input-search-min-width), 1fr)
+      minmax(9rem, 11rem)
+      minmax(7rem, auto)
+      minmax(5rem, auto)
+      auto;
+    justify-content: end;
+  }
+}
+
 @media (max-width: 48rem) {
-  .accounts :global(.acct-controls) {
+  .tableScroll {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .sheetCard .table,
+  .sheetCard .table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .sheetCard .table colgroup {
+    display: none;
+  }
+
+  .sheetCard .table thead {
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    height: var(--account-border-width);
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: var(--account-border-width);
+  }
+
+  .sheetCard .table tbody tr {
+    background: var(--color-surface-raised);
+    border: var(--account-border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: grid;
+    gap: var(--space-1);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-bottom: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .sheetCard .table tbody tr > * {
+    border: 0;
+    height: auto;
+    min-width: 0;
+    overflow: visible;
+    padding: var(--space-1);
+    white-space: normal;
+  }
+
+  .sheetCard .table tbody th.personCell {
+    grid-column: 1 / -1;
+    padding-bottom: var(--space-2);
+  }
+
+  .person {
+    white-space: nowrap;
+  }
+
+  .personName,
+  .personMeta {
+    display: inline;
+  }
+
+  .sheetCard .table tbody td.amountCell {
+    align-items: center;
+    display: flex;
+    grid-column: 1;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .sheetCard .table tbody td.remarkCell {
+    align-items: center;
+    display: flex;
+    grid-column: 2;
+    justify-content: flex-end;
+    text-align: right;
+    overflow: visible;
+  }
+
+  .amountCell::before {
+    color: var(--surface-muted-text);
+    content: attr(data-label);
+    flex: 0 1 auto;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    margin-right: var(--space-1);
+  }
+
+  .remarkCell::before {
+    content: none;
+  }
+
+  .amount {
+    flex: 0 1 auto;
+  }
+
+  .paid {
+    display: inline;
+  }
+
+  .cellActions {
+    opacity: 1;
+  }
+
+  .remarkButton {
+    max-width: 100%;
+  }
+
+  .sheetCard .table tbody td.actionCell {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .depositButton {
+    height: var(--account-compact-height);
+  }
+}
+
+@media (max-width: 40rem) {
+  .accounts {
+    gap: var(--space-2);
+  }
+
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .pageHeader > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+  }
+
+  .pageHeader :global(.scr-sub) {
+    max-width: 100%;
+  }
+
+  .sheetCard {
+    padding: var(--space-3);
+  }
+
+  .cardHeader {
+    gap: var(--space-2);
+  }
+
+  .headingGroup {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .sheetSummary {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .statChip {
+    flex: 0 0 auto;
+  }
+
+  .headerControls {
     align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
   }
 
-  .accounts :global(.acct-search) {
-    flex-basis: 100%;
-    max-width: none;
+  .searchControl,
+  .headerControls > :global(div),
+  .period,
+  .sheetCard .period :global(.week-selector) {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
   }
 
-  .accounts :global(.acct-count),
-  .accounts :global(.acct-scroll-hint) {
-    flex-basis: 100%;
+  .searchInput,
+  .sortSelect,
+  .sheetCard .period :global(.week-selector-pick) {
+    height: var(--account-touch-height);
+    width: 100%;
+  }
+
+  .headerControls > :global(div) select {
+    height: var(--account-touch-height);
+  }
+
+  .sheetCard .period :global(.week-selector) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .count {
+    align-self: flex-end;
+    margin: 0;
   }
 }
