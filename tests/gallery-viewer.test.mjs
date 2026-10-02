@@ -240,12 +240,12 @@ test("an album is removable only when the user owns every photo in it", () => {
 // GalleryView wiring
 // ---------------------------------------------------------------------------
 
-test("an expanded album is not gated behind delete permission", () => {
-  // The reported bug. Only admins pass canDelete, so gating the expanded panel
-  // on it left parents and teachers clicking an album with nothing happening.
+test("opening an album uses a separate dialog, not inline expansion", () => {
   const text = source("src/components/gallery/GalleryView.jsx");
-  assert.doesNotMatch(text, /isExpanded\s*&&\s*canDelete/);
-  assert.match(text, /\{isExpanded\s*&&\s*\(\s*<div className="album-detail">/);
+  assert.doesNotMatch(text, /expandedAlbum|setExpandedAlbum|isExpanded/);
+  assert.match(text, /setOpenAlbumKey\(card\.key\)/);
+  assert.match(text, /className="album-dialog-overlay"/);
+  assert.match(text, /className="album-detail"/);
 });
 
 test("manage controls are gated per item, not by role alone", () => {
@@ -260,16 +260,17 @@ test("manage controls are gated per item, not by role alone", () => {
 
 test("both album items and single tiles open the full-size viewer", () => {
   const text = source("src/components/gallery/GalleryView.jsx");
-  assert.match(text, /openViewer\(card\.items,\s*itemIndex\)/);
+  assert.match(text, /openViewer\(openAlbum\.items,\s*itemIndex\)/);
   assert.match(text, /openViewer\(\[it\],\s*0\)/);
   assert.match(text, /<MediaLightbox/);
 });
 
-test("the album heading is reachable by keyboard, not by mouse alone", () => {
+test("the album heading is keyboard reachable and opens a labelled dialog", () => {
   const text = source("src/components/gallery/GalleryView.jsx");
   assert.match(text, /className="gallery-album-head"[\s\S]{0,200}?role="button"/);
   assert.match(text, /className="gallery-album-head"[\s\S]{0,300}?tabIndex=\{0\}/);
-  assert.match(text, /className="gallery-album-head"[\s\S]{0,400}?aria-expanded=\{isExpanded\}/);
+  assert.match(text, /className="gallery-album-head"[\s\S]{0,400}?aria-haspopup="dialog"/);
+  assert.match(text, /aria-modal="true"[\s\S]{0,100}?aria-labelledby="gallery-album-title"/);
 });
 
 test("removing an album goes through mediaIdsOf, not a single id", () => {

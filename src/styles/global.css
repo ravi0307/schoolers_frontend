@@ -985,7 +985,6 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
   padding: 10px 12px 12px;
-  border-top: 1px solid #e5e7eb;
 }
 .album-item {
   position: relative;
@@ -1031,9 +1030,67 @@ body {
   outline: 2px solid var(--ruled-blue);
   outline-offset: -2px;
 }
-.album-head-row + .gallery-album-head,
 .gallery-album-head {
   cursor: pointer;
+}
+
+/* ---- Album media popup ---- */
+.album-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(1, 28, 64, 0.72);
+  backdrop-filter: blur(3px);
+}
+.album-dialog {
+  width: min(900px, 100%);
+  max-height: min(82vh, 760px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-light);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.album-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-light);
+}
+.album-dialog-heading { min-width: 0; }
+.album-dialog-heading h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.album-dialog-heading span { color: var(--ink-soft); font-size: 12px; }
+.album-dialog-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(1, 28, 64, .65);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.album-dialog .album-detail {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 16px;
 }
 
 /* ---- Full-size media viewer ---- */
@@ -1047,6 +1104,11 @@ body {
   padding: 56px 64px;
   background: rgba(1, 28, 64, 0.82);
   backdrop-filter: blur(3px);
+}
+@media (max-width: 600px) {
+  .album-dialog-overlay { padding: 12px; }
+  .album-dialog { max-height: 88vh; }
+  .album-dialog .album-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
 }
 .media-viewer-figure {
   margin: 0;
