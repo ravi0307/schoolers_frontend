@@ -209,15 +209,42 @@ body {
 }
 .card.white { background: var(--paper-light); }
 
-/* Profile: identity header, then a label/value list, then the password form. */
-/* Wide enough for the salary table; the cards below stay narrower so the
-   identity block and details do not stretch into a sparse band. */
-.profile-details-wrap { max-width: 720px; }
-.profile-identity, .profile-details { max-width: 620px; }
-/* The attendance/salary summary card sits under the details and is the one
-   block that uses the full width. */
-.profile-summary { margin-top: 18px; }
-.profile-summary .section-label { margin-top: 0; }
+/* Profile: two columns, two rows.
+   Row 1 is account-and-details beside change-password; row 2 is the attendance
+   summary beside the pay summary and its history. Everything is equal-width
+   halves so the two sections in a row can be compared side by side, and the
+   whole grid collapses to one column on a phone, where the markup already
+   reads in that order. */
+.profile-grid {
+  display: grid; gap: 16px; max-width: 1080px; width: 100%; margin: 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+/* A grid item defaults to min-width:auto, so the salary table's min-width would
+   push the whole track wide and overflow the page instead of scrolling. */
+.profile-grid > * { min-width: 0; }
+/* The attendance and pay sections span the page grid and then split it again,
+   so they sit side by side under the row above rather than under one column. */
+.profile-summary {
+  display: grid; gap: 16px; grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.profile-summary > * { min-width: 0; }
+@media (max-width: 860px) {
+  .profile-grid, .profile-summary { grid-template-columns: minmax(0, 1fr); }
+}
+/* Four short columns fit a half-width card comfortably, so the generic table
+   min-width would only add a scrollbar where there is nothing to scroll to. */
+.profile-grid .data-table { min-width: 380px; }
+/* A form stretched across a 1000px row is unreadable; capped, it still fills
+   the grid cell on a phone. */
+.password-form { max-width: 460px; width: 100%; }
+.profile-account .profile-identity {
+  border-bottom: 1px solid var(--line); margin-bottom: 4px; padding-bottom: 14px;
+}
+.profile-summary .section-label, .profile-account .section-label,
+.password-form .section-label { margin-top: 0; }
 .profile-filter {
   align-items: center; display: flex; flex-wrap: wrap; gap: 10px;
   margin: 10px 0 4px;
@@ -227,6 +254,8 @@ body {
 .profile-pager { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .profile-salary-note { color: var(--ink-soft); font-size: 12px; }
 .profile-rule { border: none; border-top: 1px solid var(--line); margin: 20px 0 6px; }
+/* A button as a grid item would otherwise stretch to the full column. */
+.profile-back { justify-self: start; }
 .profile-identity { display: flex; align-items: center; gap: 14px; }
 .profile-avatar {
   width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden;

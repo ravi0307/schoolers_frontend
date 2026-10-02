@@ -134,18 +134,6 @@ export function salaryCanPageNewer(salary, now = currentMonth()) {
   return salaryPageAnchor(salary, "newer", now) !== window[window.length - 1];
 }
 
-/**
- * The marked days on screen.
- *
- * The own-record endpoint returns the whole register as `days`; the admin
- * report returns a 30-day tail as `recent`. Reading both here keeps the
- * profile page from silently rendering nothing if a payload ever uses the
- * admin's name for the same list.
- */
-export function attendanceDays(attendance) {
-  return attendance?.days ?? attendance?.recent ?? [];
-}
-
 /** "Sep 2026" when a month is on screen, "All time" when nothing is filtered. */
 export function attendanceScopeLabel(attendance) {
   return attendance?.month ? monthLabel(attendance.month) : "All time";

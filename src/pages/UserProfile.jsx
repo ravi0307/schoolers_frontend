@@ -113,7 +113,7 @@ function PasswordForm() {
   }
 
   return (
-    <form className="card white" onSubmit={submit} style={{ maxWidth: 460 }}>
+    <form className="card white password-form" onSubmit={submit}>
       <div className="section-label">Change password</div>
       <div className="field">
         <label htmlFor="profile-current-password">Current password</label>
@@ -181,46 +181,50 @@ export default function UserProfile() {
       <ErrorBanner message={error} />
 
       {!loading && !error && (
-        <div className="profile-details-wrap">
-          <div className="card white profile-identity">
-            <div className="profile-avatar">
-              {logo ? (
-                <img
-                  src={logo}
-                  alt={`${data?.school_name || "School"} logo`}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-                  }}
-                />
-              ) : null}
-              <span hidden={!!logo} aria-hidden="true">
-                {(data?.school_name || displayName)
-                  .split(/\s+/)
-                  .filter((w) => /[a-z0-9]/i.test(w))
-                  .slice(0, 2)
-                  .map((w) => w[0].toUpperCase())
-                  .join("")}
-              </span>
-            </div>
-            <div>
-              <div className="profile-identity-name">{displayName}</div>
-              <div className="profile-identity-role">{ROLE_LABEL[role] || role}</div>
-            </div>
-          </div>
+        <div className="profile-grid">
+          <div className="card white profile-account">
+            <div className="section-label">Your account</div>
 
-          <div className="card white profile-details">
-            <DetailRow label="Name" value={displayName} />
-            <DetailRow label="Username" value={data?.username || user?.username || "—"} />
-            <DetailRow
-              label="Email"
-              value={data?.email || "No email address on file"}
-            />
-            <DetailRow
-              label="School"
-              value={data?.school_name || "Not tied to a school"}
-            />
-            <DetailRow label="Role" value={ROLE_LABEL[role] || role || "—"} />
+            <div className="profile-identity">
+              <div className="profile-avatar">
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt={`${data?.school_name || "School"} logo`}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.removeAttribute("hidden");
+                    }}
+                  />
+                ) : null}
+                <span hidden={!!logo} aria-hidden="true">
+                  {(data?.school_name || displayName)
+                    .split(/\s+/)
+                    .filter((w) => /[a-z0-9]/i.test(w))
+                    .slice(0, 2)
+                    .map((w) => w[0].toUpperCase())
+                    .join("")}
+                </span>
+              </div>
+              <div>
+                <div className="profile-identity-name">{displayName}</div>
+                <div className="profile-identity-role">{ROLE_LABEL[role] || role}</div>
+              </div>
+            </div>
+
+            <div className="profile-details">
+              <DetailRow label="Name" value={displayName} />
+              <DetailRow label="Username" value={data?.username || user?.username || "—"} />
+              <DetailRow
+                label="Email"
+                value={data?.email || "No email address on file"}
+              />
+              <DetailRow
+                label="School"
+                value={data?.school_name || "Not tied to a school"}
+              />
+              <DetailRow label="Role" value={ROLE_LABEL[role] || role || "—"} />
+            </div>
           </div>
 
           <PasswordForm />
@@ -228,9 +232,8 @@ export default function UserProfile() {
           {STAFF_LINKED_ROLES.has(role) && <StaffSelfSummary />}
 
           <button
-            className="btn ghost"
+            className="btn ghost profile-back"
             onClick={() => navigate(home)}
-            style={{ marginTop: 16 }}
           >
             Back
           </button>
