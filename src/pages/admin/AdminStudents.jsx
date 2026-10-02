@@ -10,6 +10,7 @@ import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
+import styles from "./AdminStudents.module.css";
 
 function getValue(obj, keys) {
   for (const key of keys) {
@@ -189,31 +190,23 @@ export default function AdminStudents() {
               const parentEmergencyValue = getValue(s, ["parent_emergency_number", "guardian_emergency_number"]) || "Not provided";
 
               return (
-                <div key={s.student_id} style={{ borderBottom: "1px solid #e5e7eb", paddingBottom: isExpanded ? 8 : 0, marginBottom: isExpanded ? 8 : 0 }}>
+                <div key={s.student_id} className={styles.studentEntry}>
                   <div
-                    className="listitem"
+                    className={`listitem ${styles.studentRow}`}
                     onClick={() => toggleExpanded(s.student_id)}
-                    style={{
-                      cursor: "pointer",
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "12px 14px",
-                    }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
+                    <div className={styles.studentPrimary}>
                       <div className="avatar">{initials(s.name)}</div>
-                      <div style={{ fontWeight: 700, marginLeft: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div className={styles.studentName}>
                         {s.name}
                       </div>
                     </div>
 
-                    <div style={{ flex: 1, textAlign: "center", color: "#374151", fontWeight: 500 }}>
+                    <div className={styles.studentAdmission}>
                       {s.admission_no}
                     </div>
 
-                    <div className="cta-row" style={{ gap: 8, minWidth: 220, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+                    <div className={`cta-row ${styles.studentActions}`} onClick={(e) => e.stopPropagation()}>
                       <Pill tone={s.present_today ? "ok" : "warn"}>{s.present_today ? "Present" : "Absent"}</Pill>
                       <button
                         className="btn ghost sm"
@@ -242,7 +235,7 @@ export default function AdminStudents() {
                   </div>
 
                   {editingStudentId === s.student_id && (
-                    <div className="card white" style={{ margin: "8px 0 10px" }}>
+                    <div className={`card white ${styles.editCard}`}>
                       <div className="field">
                         <label>Student name</label>
                         <input value={editName} onChange={(e) => setEditName(e.target.value)} />
@@ -323,16 +316,16 @@ export default function AdminStudents() {
                   )}
 
                   {isExpanded && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
-                      <div style={{ fontWeight: 700, marginBottom: 12 }}>Student Details</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                    <div className={styles.studentDetails}>
+                      <div className={styles.studentsHeading}>Student Details</div>
+                      <div className={styles.detailsGrid}>
                         {s.photo_url ? (
-                          <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                          <div className={`${styles.detailItem} ${styles.detailWide}`}>
+                            <div className={styles.detailLabel}>
                               Photo
                             </div>
-                            <a href={resolveMediaUrl(s.photo_url)} target="_blank" rel="noreferrer" style={{ width: "fit-content" }}>
-                              <img src={resolveMediaUrl(s.photo_url)} alt={s.name} style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                            <a href={resolveMediaUrl(s.photo_url)} target="_blank" rel="noreferrer" className={styles.photoLink}>
+                              <img src={resolveMediaUrl(s.photo_url)} alt={s.name} className={styles.studentPhoto} />
                             </a>
                           </div>
                         ) : null}
@@ -350,24 +343,24 @@ export default function AdminStudents() {
                           ["Parent Email", parentEmailValue],
                           ["Parent Emergency Number", parentEmergencyValue],
                         ].map(([label, value]) => (
-                          <div key={label} style={{ display: "grid", gap: 4 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                          <div key={label} className={styles.detailItem}>
+                            <div className={styles.detailLabel}>
                               {label}
                             </div>
-                            <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
+                            <div className={styles.detailValue}>{value}</div>
                           </div>
                         ))}
-                        <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
-                          <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                        <div className={`${styles.detailItem} ${styles.detailWide}`}>
+                          <div className={styles.detailLabel}>
                             Documents
                           </div>
-                          <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>
+                          <div className={styles.detailValue}>
                             {Array.isArray(s.documents) && s.documents.length ? (
                               s.documents.map((doc) => {
                                 const name = doc.split("/").pop() || doc;
                                 return (
                                   <div key={doc}>
-                                    <a href={resolveMediaUrl(doc)} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8" }}>{name}</a>
+                                    <a href={resolveMediaUrl(doc)} target="_blank" rel="noreferrer" className={styles.documentLink}>{name}</a>
                                   </div>
                                 );
                               })
@@ -376,11 +369,11 @@ export default function AdminStudents() {
                             )}
                           </div>
                         </div>
-                        <div style={{ gridColumn: "1 / -1", display: "grid", gap: 4 }}>
-                          <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+                        <div className={`${styles.detailItem} ${styles.detailWide}`}>
+                          <div className={styles.detailLabel}>
                             Parent Address
                           </div>
-                          <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{parentAddressValue}</div>
+                          <div className={styles.detailValue}>{parentAddressValue}</div>
                         </div>
                       </div>
                     </div>
@@ -396,7 +389,7 @@ export default function AdminStudents() {
       )}
 
       {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Full name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
@@ -474,7 +467,7 @@ export default function AdminStudents() {
           </div>
         </form>
       ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Student</button>
+        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Student</button>
       )}
     </AdminShell>
   );

@@ -1,0 +1,11 @@
+.loading { align-items: center; display: flex; gap: var(--space-3); justify-content: center; }
+.indicator {
+  animation: spin 700ms linear infinite;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-full);
+  height: 1.125rem;
+  width: 1.125rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .indicator { animation-duration: 2s; } }

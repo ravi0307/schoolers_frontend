@@ -1,6 +1,11 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu, UserRound, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { resolveMediaUrl } from "../../api/client";
+import styles from "./WebLayout.module.css";
+
+const PortalShellContext = createContext(false);
 
 /**
  * Turn a nav array into a render list, inserting a heading whenever the
@@ -35,7 +40,75 @@ const PROFILE_PATH = {
 export default function WebLayout({ navItems, portalLabel, children }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const profilePath = PROFILE_PATH[user?.role] || "/";
+  const parentShellMounted = useContext(PortalShellContext);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches
+  );
+  const toggleRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const [schoolLogoFailed, setSchoolLogoFailed] = useState(false);
+
+  useEffect(() => {
+    if (parentShellMounted) return undefined;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const onChange = (event) => {
+      setIsMobile(event.matches);
+      if (!event.matches) setDrawerOpen(false);
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [parentShellMounted]);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => setSchoolLogoFailed(false), [user?.schoolLogoUrl]);
+
+  useEffect(() => {
+    if (!isMobile || !drawerOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const toggleButton = toggleRef.current;
+    document.body.style.overflow = "hidden";
+    const focusable = () =>
+      sidebarRef.current?.querySelectorAll(
+        'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      ) || [];
+    const firstFocusable = focusable()[0];
+    firstFocusable?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = Array.from(focusable());
+      if (!items.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      if (toggleButton?.isConnected) toggleButton.focus();
+    };
+  }, [drawerOpen, isMobile]);
+
+  if (parentShellMounted) return children ?? <Outlet />;
 
   // School branding sits above the portal label for every role scoped to a
   // school (admin, teacher, parent, pilot). Master has no school of its own,
@@ -61,75 +134,119 @@ export default function WebLayout({ navItems, portalLabel, children }) {
     : "";
 
   return (
-    <div className="web-shell">
-      <div className="sidebar">
-        <div className="sidebar-head">
-        <div className="brand">
-          {schoolName ? (
-            <div className="school-brand">
-              {schoolLogo ? (
-                <img
-                  className="school-logo"
-                  src={schoolLogo}
-                  alt={`${schoolName} logo`}
-                  onError={(e) => {
-                    // A stale or missing file must not leave a broken image
-                    // icon; fall back to the monogram.
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-                  }}
-                />
-              ) : null}
-              <span className="school-monogram" hidden={!!schoolLogo}>
-                {initials}
-              </span>
-              <span className="school-name">{schoolName}</span>
+    <PortalShellContext.Provider value>
+      <div className={`${styles.shell} web-shell`}>
+        {isMobile && (
+          <header className={styles.mobileHeader}>
+            <button
+              ref={toggleRef}
+              type="button"
+              className={styles.menuButton}
+              aria-label={drawerOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={drawerOpen}
+              aria-controls="portal-sidebar"
+              onClick={() => setDrawerOpen((open) => !open)}
+            >
+              {drawerOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            </button>
+            <span className={styles.mobileBrand}>{schoolName || "Schoolers"}</span>
+            <span className={styles.mobilePortal}>{portalLabel}</span>
+          </header>
+        )}
+        {isMobile && drawerOpen && (
+          <button
+            type="button"
+            className={styles.backdrop}
+            aria-label="Close navigation menu"
+            onClick={() => setDrawerOpen(false)}
+          />
+        )}
+        <aside
+          ref={sidebarRef}
+          id="portal-sidebar"
+          className={`${styles.sidebar} sidebar ${drawerOpen ? styles.sidebarOpen : ""}`}
+          aria-label="Primary navigation"
+          aria-hidden={isMobile && !drawerOpen}
+          aria-modal={isMobile && drawerOpen ? "true" : undefined}
+          role={isMobile ? "dialog" : undefined}
+          inert={isMobile && !drawerOpen}
+        >
+          <div className={`${styles.sidebarHead} sidebar-head`}>
+            <button
+              type="button"
+              className={styles.drawerClose}
+              aria-label="Close navigation menu"
+              onClick={() => {
+                setDrawerOpen(false);
+                toggleRef.current?.focus();
+              }}
+            >
+              <X aria-hidden="true" />
+            </button>
+            <div className="brand">
+              {schoolName ? (
+                <div className="school-brand">
+                  {schoolLogo && !schoolLogoFailed ? (
+                    <img
+                      className="school-logo"
+                      src={schoolLogo}
+                      alt={`${schoolName} logo`}
+                      onError={() => setSchoolLogoFailed(true)}
+                    />
+                  ) : null}
+                  <span className="school-monogram" hidden={!!schoolLogo && !schoolLogoFailed}>{initials}</span>
+                  <span className="school-name">{schoolName}</span>
+                </div>
+              ) : (
+                <b>Schoolers</b>
+              )}
             </div>
-          ) : (
-            <b>Schoolers</b>
-          )}
-        </div>
-        {/* Directly under the school name: the greeting is about the person, so
-            it reads as part of the identity block rather than a nav label. */}
-        {firstName && <div className="sidebar-welcome">Welcome {firstName}</div>}
-        <div className="portal-label">{portalLabel}</div>
-        </div>
-        <nav>
-          {buildNavEntries(navItems).map((entry) =>
-            entry.type === "group" ? (
-              <div key={entry.key} className="sidebar-group">
-                {entry.label}
-              </div>
-            ) : (
-              <NavLink
-                key={entry.key}
-                to={entry.item.to}
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <span>{entry.item.icon}</span> {entry.item.label}
-              </NavLink>
-            )
-          )}
-        </nav>
-        {/* Sits outside <nav> so it stays pinned above Sign Out rather than
-            joining the role's nav list, which is a fixed portal order. */}
-        <NavLink
-          to={profilePath}
-          className={({ isActive }) => (isActive ? "profile-link active" : "profile-link")}
-        >
-          <span>👤</span> My Profile
-        </NavLink>
-        <button
-          className="signout"
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-        >
-          Sign Out
-        </button>
+            {firstName && <div className="sidebar-welcome">Welcome {firstName}</div>}
+            <div className="portal-label">{portalLabel}</div>
+          </div>
+          <nav aria-label="Portal">
+            {buildNavEntries(navItems).map((entry) =>
+              entry.type === "group" ? (
+                <div key={entry.key} className="sidebar-group">{entry.label}</div>
+              ) : (
+                <NavLink
+                  key={entry.key}
+                  to={entry.item.to}
+                  onClick={() => setDrawerOpen(false)}
+                  className={({ isActive }) => (isActive ? "active" : "")}
+                >
+                  <entry.item.icon className={styles.navIcon} aria-hidden="true" />
+                  <span>{entry.item.label}</span>
+                </NavLink>
+              )
+            )}
+          </nav>
+          <footer className={styles.footer}>
+            <NavLink
+              to={profilePath}
+              onClick={() => setDrawerOpen(false)}
+              className={({ isActive }) => `${styles.profileLink} profile-link${isActive ? " active" : ""}`}
+            >
+              <UserRound className={styles.navIcon} aria-hidden="true" />
+              <span>My Profile</span>
+            </NavLink>
+            <button
+              type="button"
+              className={`${styles.signout} signout`}
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+            >
+              <LogOut className={styles.navIcon} aria-hidden="true" />
+              <span>Sign Out</span>
+            </button>
+          </footer>
+        </aside>
+        <main id="main-content" tabIndex={-1} className={`${styles.content} web-content`}>
+          {children ?? <Outlet />}
+        </main>
       </div>
-      <div className="web-content">{children}</div>
-    </div>
+    </PortalShellContext.Provider>
   );
 }

@@ -1,23 +1,28 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as academicsApi from "../../api/academics";
 import * as timetableApi from "../../api/timetable";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { ErrorBanner } from "../../components/ui/Primitives";
 import DurationSelect from "../../components/ui/DurationSelect";
 import WeekSelector from "../../components/ui/WeekSelector";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import DataTable from "../../components/ui/DataTable";
+import EmptyState from "../../components/ui/EmptyState";
+import LoadingState from "../../components/ui/LoadingState";
+import PageHeader from "../../components/ui/PageHeader";
 import TimetableWeekHeader from "../../components/ui/TimetableWeekHeader";
 import { apiErrorMessage } from "../../api/client";
 import {
   TIMETABLE_DAYS as DAYS,
   toTimeInput,
   displayTime,
-  isValidTimeRange,
   buildCreatePeriodPayload,
   buildUpdateEntryPayload,
-  getEntryTime,
   startOfWeekIso,
   buildWeekColumns,
   mergeWeekColumns,
@@ -115,7 +120,11 @@ export default function AdminTimetable() {
     })),
     [weekStart, holidayByWeekday]
   );
-  const { data: classTimetables, loading: classTimetablesLoading } = useApi(
+  const {
+    data: classTimetables,
+    loading: classTimetablesLoading,
+    error: classTimetablesError,
+  } = useApi(
     () => Promise.all((classes || []).map(async (item) => ({
       classId: item.class_id,
       entries: await timetableApi.classTimetable(item.class_id),
@@ -201,7 +210,7 @@ export default function AdminTimetable() {
   // Subject index: subject -> set of teachers already teaching it for this school.
   // Teachers with no entry teaching a given subject are still "valid" — we only
   // block by time/day, not by subject assignment.
-  function teacherIsBusy(teacherId, day, start, end) {
+  const teacherIsBusy = useCallback((teacherId, day, start, end) => {
     if (!day || !start || !end) return false;
     const [sh, sm] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
@@ -213,7 +222,7 @@ export default function AdminTimetable() {
     const slots = [];
     if (day === "ALL") {
       for (const [key, ranges] of teacherBusyIndex.entries()) {
-        const [tid, d] = key.split("|");
+        const [tid] = key.split("|");
         if (String(tid) !== String(teacherId)) continue;
         ranges.forEach((r) => slots.push(r));
       }
@@ -221,7 +230,7 @@ export default function AdminTimetable() {
       (teacherBusyIndex.get(`${teacherId}|${day}`) || []).forEach((r) => slots.push(r));
     }
     return slots.some(([bs, be]) => startMin < be && endMin > bs);
-  }
+  }, [teacherBusyIndex]);
 
   // Returns the first day (and the conflicting entry) on which the chosen
   // class already has a period overlapping the given start/end times. Used
@@ -268,18 +277,12 @@ export default function AdminTimetable() {
     return null;
   }
 
-  function minutesToHHMM(mins) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-
   const availableTeachersForNew = useMemo(() => {
     return (teachers || []).map((teacher) => ({
       ...teacher,
       busy: teacherIsBusy(teacher.teacher_id, newDayOfWeek, newStartTime, newEndTime),
     }));
-  }, [teachers, newDayOfWeek, newStartTime, newEndTime, teacherBusyIndex]);
+  }, [teachers, newDayOfWeek, newStartTime, newEndTime, teacherIsBusy]);
 
   const availableTeachersForEdit = useMemo(() => {
     if (!editingEntry) return [];
@@ -295,7 +298,7 @@ export default function AdminTimetable() {
         busy: teacherIsBusy(teacher.teacher_id, editingEntry.day_of_week, effectiveStart, effectiveEnd),
       };
     });
-  }, [teachers, editingEntry, editStartTime, editEndTime, periodById, teacherBusyIndex]);
+  }, [teachers, editingEntry, editStartTime, editEndTime, teacherIsBusy]);
 
   function openViewer(entry) {
     setViewingEntry(entry);
@@ -353,10 +356,6 @@ export default function AdminTimetable() {
     } finally {
       setRemoving(false);
     }
-  }
-
-  function entryTime(entry) {
-    return getEntryTime(entry, periodById);
   }
 
   // Resolve a timetable entry's start/end times to normalized "HH:MM" keys for
@@ -508,18 +507,17 @@ export default function AdminTimetable() {
 
   return (
     <AdminShell>
-      <div className="scr-title-row">
-        <div className="scr-title-text">
-          <div className="scr-title">Manage Timetable</div>
-          <div className="scr-sub">View the weekly schedule for each class</div>
-        </div>
-        <WeekSelector weekStart={weekStart} onChange={setWeekStart} busy={loading} />
-      </div>
+      <PageHeader
+        className="scr-title-row"
+        title="Manage Timetable"
+        subtitle="View the weekly schedule for each class"
+        action={<WeekSelector weekStart={weekStart} onChange={setWeekStart} busy={loading} />}
+      />
 
       <div className="section-label">Classes</div>
-      <div className="section-sub">Weekly timetable summary — click a class to manage its periods</div>
+      <div className="section-sub">Weekly timetable summary — choose a class to manage its periods</div>
       {classesLoading || classTimetablesLoading ? (
-        <Spinner />
+        <LoadingState />
       ) : (
         <div className="timetable-class-grid">
           {(classes || []).map((item) => {
@@ -538,33 +536,40 @@ export default function AdminTimetable() {
               if (start) entryMap.set(`${entry.day_of_week}|${start}`, entry);
             });
             const selected = String(selectedClassId) === String(item.class_id);
+            const periodCount = timetableEntries.length;
+            const selectClass = () => {
+              setSelectedClassId(String(item.class_id));
+              closeEditor();
+              closeViewer();
+            };
             return (
-              <button
+              <article
                 className={`timetable-class-card${selected ? " selected" : ""}`}
-                type="button"
                 key={item.class_id}
-                onClick={() => {
-                  setSelectedClassId(String(item.class_id));
-                  closeEditor();
-                  closeViewer();
-                }}
               >
-                <span className="timetable-class-card-title">{item.name}</span>
-                <span className="timetable-class-card-meta">
-                  {timetable?.entries?.length || 0} periods scheduled
-                </span>
-                <span className="timetable-class-preview">
+                <div className="timetable-class-card-heading">
+                  <span className="timetable-class-card-title">{item.name}</span>
+                  <span className="timetable-class-card-meta">
+                    {periodCount} {periodCount === 1 ? "period" : "periods"} scheduled
+                  </span>
+                </div>
+                <div className="timetable-class-preview">
                   {timeSlots.length ? (
-                    <div className="card white timetable-weekly-summary-card">
+                    <div className="timetable-weekly-summary-card">
                       <span className="timetable-weekly-summary-title">Weekly summary</span>
-                      <table className="timetable-preview-table">
+                      <DataTable
+                        label={`${item.name} weekly timetable summary`}
+                        className="timetable-summary-scroll"
+                      >
+                        <table className="timetable-preview-table">
                         <thead>
                           <tr>
-                            <th className="time-col-header">Time</th>
+                            <th className="time-col-header" scope="col">Time</th>
                             {summaryColumns.map(({ day, date, holiday }) => (
                               <th
                                 key={day}
                                 className={holiday ? "timetable-day-holiday" : undefined}
+                                scope="col"
                                 title={
                                   holiday
                                     ? `${holiday} - ${formatHolidayDate(date)}`
@@ -604,22 +609,30 @@ export default function AdminTimetable() {
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                        </table>
+                      </DataTable>
                     </div>
                   ) : (
                     <span className="timetable-preview-empty">No entries yet</span>
                   )}
-                </span>
-                <span className="timetable-class-card-action">
+                </div>
+                <Button
+                  variant="outline"
+                  className="timetable-class-card-action"
+                  type="button"
+                  onClick={selectClass}
+                  aria-pressed={selected}
+                >
                   {selected ? "Selected" : "View timetable"}
-                </span>
-              </button>
+                  {!selected && <ArrowRight aria-hidden="true" size={16} />}
+                </Button>
+              </article>
             );
           })}
         </div>
       )}
       {!classesLoading && !classTimetablesLoading && !(classes || []).length && (
-        <Empty>No classes available.</Empty>
+        <EmptyState>No classes available.</EmptyState>
       )}
       {selectedClassId && (
         <div className="selected-timetable-label">
@@ -630,10 +643,10 @@ export default function AdminTimetable() {
         </div>
       )}
 
-      {classesLoading && <Spinner />}
-      <ErrorBanner message={classesError || error} />
+      <ErrorBanner message={classesError || classTimetablesError || error} />
       {!classesLoading && !classesError && selectedClassId && !loading && !error && (
-        <div className="card white" style={{ overflowX: "auto" }}>
+        <Card className="card white timetable-table-shell">
+          <DataTable label="Class timetable" className="table-scroll timetable-table-scroll">
           {entries?.length ? (
             <table className="data-table">
               <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} caption="Period" />
@@ -647,8 +660,7 @@ export default function AdminTimetable() {
                   {weekColumns.map((column) => (
                     <td
                       key={column.day}
-                      style={{ verticalAlign: "top" }}
-                      className={column.isHoliday ? "timetable-day-holiday" : undefined}
+                      className={`timetable-day-cell${column.isHoliday ? " timetable-day-holiday" : ""}`}
                     >
                       {column.entries.map((entry) => (
                         <button
@@ -677,16 +689,12 @@ export default function AdminTimetable() {
               </tbody>
             </table>
           ) : (
-            <Empty>No timetable entries for this class.</Empty>
+            <EmptyState>No timetable entries for this class.</EmptyState>
           )}
-        </div>
+          </DataTable>
+        </Card>
       )}
 
-      {!selectedClassId && (
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-soft)", margin: "0 0 8px" }}>
-          Weekly timetable summary — select a class to manage periods
-        </div>
-      )}
       {selectedClassId && !viewingEntry && !editingEntry && !showAddPeriod && (
         <div className="add-period-toolbar">
           <button
@@ -701,7 +709,7 @@ export default function AdminTimetable() {
       )}
 
       {selectedClassId && showAddPeriod && (
-        <form className="card white" onSubmit={addPeriod} style={{ marginBottom: 14 }}>
+        <form className="card white timetable-form" onSubmit={addPeriod}>
           <div className="grid4">
             <div className="field">
               <label>Days</label>
@@ -728,7 +736,7 @@ export default function AdminTimetable() {
                 value={newEndTime}
                 readOnly
                 tabIndex={-1}
-                style={{ background: "var(--paper)", color: "var(--ink-soft)" }}
+                className="calculated-time"
               />
             </div>
             <div className="field">
@@ -780,7 +788,7 @@ export default function AdminTimetable() {
       )}
 
       {viewingEntry && !editingEntry && (
-        <div className="card white" style={{ marginTop: 14 }}>
+        <div className="card white timetable-form">
           <div className="section-label">Period details</div>
           <div className="grid3">
             <div className="field">
@@ -867,7 +875,7 @@ export default function AdminTimetable() {
       )}
 
       {editingEntry && (
-        <form className="card white" onSubmit={saveEntry} style={{ marginTop: 14 }}>
+        <form className="card white timetable-form" onSubmit={saveEntry}>
           <div className="section-label">Edit timetable entry</div>
           <div className="grid3">
             <div className="field">
@@ -892,7 +900,7 @@ export default function AdminTimetable() {
                 value={editEndTime}
                 readOnly
                 tabIndex={-1}
-                style={{ background: "var(--paper)", color: "var(--ink-soft)" }}
+                className="calculated-time"
               />
             </div>
             <div className="field">

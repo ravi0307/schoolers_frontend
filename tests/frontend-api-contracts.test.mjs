@@ -16,6 +16,64 @@ function assertContains(file, patterns) {
   }
 }
 
+function tokenColor(styles, name) {
+  const value = styles.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
+  assert.ok(value, `missing hex color token ${name}`);
+  return value;
+}
+
+function contrastRatio(first, second) {
+  const luminance = (hex) => {
+    const channels = [1, 3, 5].map((offset) => {
+      const value = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const values = [luminance(first), luminance(second)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+
+test("design tokens meet body-text contrast on light and dark surfaces", () => {
+  const styles = source("src/styles/tokens.css");
+  const value = (name) => tokenColor(styles, name);
+  const lightSurfaces = ["--color-surface", "--color-surface-raised"].map(value);
+  const darkSurfaces = ["--color-background", "--color-primary"].map(value);
+  for (const surface of lightSurfaces) {
+    for (const text of ["--color-text", "--color-text-muted", "--color-danger"]) {
+      assert.ok(contrastRatio(value(text), surface) >= 4.5, `${text} lacks AA contrast on ${surface}`);
+    }
+  }
+  for (const surface of darkSurfaces) {
+    for (const text of ["--color-text-on-dark", "--color-text-muted-on-dark"]) {
+      assert.ok(contrastRatio(value(text), surface) >= 4.5, `${text} lacks AA contrast on ${surface}`);
+    }
+    assert.ok(contrastRatio(value("--color-focus-on-dark"), surface) >= 3, `dark focus color lacks 3:1 contrast on ${surface}`);
+  }
+  for (const surface of lightSurfaces) {
+    assert.ok(contrastRatio(value("--color-focus"), surface) >= 3, `focus color lacks 3:1 contrast on ${surface}`);
+  }
+});
+
+test("admin staff, student, and class pages use tokenized responsive CSS modules", () => {
+  const pages = [
+    ["src/pages/admin/AdminStaff.jsx", "src/pages/admin/AdminStaff.module.css"],
+    ["src/pages/admin/AdminStudents.jsx", "src/pages/admin/AdminStudents.module.css"],
+    ["src/pages/admin/AdminClasses.jsx", "src/pages/admin/AdminClasses.module.css"],
+  ];
+
+  for (const [pagePath, stylesPath] of pages) {
+    const page = source(pagePath);
+    const styles = source(stylesPath);
+    assert.match(page, /import styles from "\.\/Admin(?:Staff|Students|Classes)\.module\.css"/);
+    assert.doesNotMatch(page, /style=\{\{/i, `${pagePath} should not use inline style objects`);
+    assert.doesNotMatch(page, /#[0-9a-fA-F]{3,8}\b/, `${pagePath} should not hard-code colors`);
+    assert.match(styles, /var\(--(?:color|space|font|radius)-/, `${stylesPath} should use design tokens`);
+    assert.match(styles, /@media/, `${stylesPath} should include a responsive layout`);
+    assert.doesNotMatch(styles, /#[0-9a-fA-F]{3,8}\b|!important/, `${stylesPath} should not reintroduce hard-coded colors or overrides`);
+  }
+});
+
 test("every frontend API module is wired to its required backend surface", () => {
   assertContains("src/api/auth.js", [
     /\/auth\/login/,
@@ -48,6 +106,20 @@ test("every frontend API module is wired to its required backend surface", () =>
     /\/timetable\/class\/\$\{classId\}\/period/,
     /\/timetable\/entry\/\$\{entryId\}/,
   ]);
+});
+
+test("admin and teacher portals use shared outlet layouts", () => {
+  const app = source("src/App.jsx");
+  assert.match(app, /path="\/admin"/);
+  assert.match(app, /<AdminShell \/>/);
+  assert.match(app, /path="\/teacher"/);
+  assert.match(app, /<TeacherShell \/>/);
+  const layout = source("src/components/layout/WebLayout.jsx");
+  assert.match(layout, /import \{ NavLink, Outlet,/);
+  assert.match(layout, /\{children \?\? <Outlet \/>\}/);
+  assert.match(layout, /aria-expanded=\{drawerOpen\}/);
+  assert.match(layout, /event\.key === "Escape"/);
+  assert.match(layout, /event\.key !== "Tab"/);
 });
 
 test("academics API exposes subject deactivation and reactivation (soft delete)", () => {
@@ -85,7 +157,10 @@ test("key frontend workflows remain represented by application routes", () => {
     master: ["schools", "schools/:schoolId", "system-health"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
-    assert.ok(app.includes(`path="/${role}/*"`), `route group /${role} is not registered`);
+    const portalRoute = ["teacher", "admin"].includes(role)
+      ? `path="/${role}"`
+      : `path="/${role}/*"`;
+    assert.ok(app.includes(portalRoute), `route group /${role} is not registered`);
     for (const route of routes) {
       assert.ok(app.includes(`path="${route}"`), `route /${role}/${route} is not registered`);
     }
@@ -479,7 +554,7 @@ test("teacher timetable is read-only while admin keeps write controls", () => {
 test("teacher broadcasts follow the admin flow on a dedicated Broadcast page", () => {
   assertContains("src/components/layout/TeacherShell.jsx", [
     /to: "\/teacher\/broadcast"/,
-    /icon: "📣"/,
+    /icon:\s*Megaphone/,
     /label: "Broadcast"/,
   ]);
   assertContains("src/App.jsx", [/import TeacherBroadcast from/, /path="broadcast" element=\{<TeacherBroadcast \/>\}/]);
@@ -559,12 +634,11 @@ test("gallery uploads media to the school and renders photos and videos", () => 
   ]);
   assertContains("src/components/gallery/GalleryView.jsx", [
     /resolveMediaUrl/,
-    /media_kind === "video"/,
-    /<video/,
-    /<img/,
+    /kind=\{it\.media_kind\}/,
     /uploadGalleryMedia/,
     /deleteGalleryMedia/,
   ]);
+  assertContains("src/components/gallery/GalleryMedia.jsx", [/kind === "video"/, /<video/, /<img/]);
   // Fileless media are dropped by the helper that builds the cards.
   assert.match(source("src/utils/galleryAlbums.js"), /if \(!item\?\.file_url\) return/);
 });
@@ -595,6 +669,13 @@ test("gallery role matrix keeps write controls off the read-only and teacher pag
   assertContains("src/components/gallery/GalleryView.jsx", [
     /canUpload = false,\s*canManage = false/,
     /empty = "No gallery media yet\."/,
+    /<GalleryMedia/,
+    /className="album-item-meta"/,
+  ]);
+  assertContains("src/components/gallery/GalleryMedia.jsx", [
+    /setFailed\(true\)/,
+    /Preview unavailable/,
+    /kind === "video"/,
   ]);
 });
 
@@ -659,18 +740,22 @@ test("gallery drops fileless media, then renders thumbnails that open in the vie
   ]);
   assertContains("src/components/gallery/GalleryView.jsx", [
     /buildGalleryCards\(data\)/,
-    /media_kind === "video"/,
-    /<video/,
-    /preload="metadata"/,
-    /<img/,
-    /loading="lazy"/,
-    /alt=\{it\.title\}/,
+    /kind=\{it\.media_kind\}/,
     /resolveMediaUrl\(it\.file_url\)/,
     /key=\{it\.media_id\}/,
     /gallery-tile-meta/,
     /it\.posted_by/,
     /formatDateTime\(it\.created_at\)/,
     /toLocaleString\(\)/,
+  ]);
+  assertContains("src/components/gallery/GalleryMedia.jsx", [
+    /kind === "video"/,
+    /<video/,
+    /preload="metadata"/,
+    /<img/,
+    /loading="lazy"/,
+    /alt=\{alt \|\| "Gallery media"\}/,
+    /Preview unavailable/,
   ]);
   // controls belong to the viewer now, so a tile stays a clean click target.
   assertContains("src/components/gallery/MediaLightbox.jsx", [
@@ -979,7 +1064,7 @@ test("a missing or broken logo falls back to a monogram", () => {
   assert.match(layout, /className="school-monogram"/);
   assert.match(layout, /onError=/, "a 404 or stale file must not leave a broken image icon");
   // A school name is still shown when there is no logo at all.
-  assert.match(layout, /hidden=\{!!schoolLogo\}/);
+  assert.match(layout, /hidden=\{!!schoolLogo && !schoolLogoFailed\}/);
 });
 
 test("a user with no school keeps the product brand", () => {
@@ -990,21 +1075,17 @@ test("a user with no school keeps the product brand", () => {
 });
 
 test("the header is pinned so it survives a long nav", () => {
-  const css = source("src/styles/global.css");
-  const head = /\.sidebar-head\s*\{([^}]*)\}/.exec(css);
+  const css = source("src/components/layout/WebLayout.module.css");
+  const head = /\.shell \.sidebar \.sidebarHead\s*\{([^}]*)\}/.exec(css);
   assert.ok(head, "there is no .sidebar-head rule");
   assert.match(head[1], /position:\s*sticky/, "the school header must be sticky");
-  // The sidebar is its own scroll container (overflow-y: auto), so without
-  // sticky the name scrolls away once the nav is taller than the viewport --
-  // which the admin nav (13 routes) is.
-  assert.match(css, /\.sidebar\s*\{[^}]*overflow-y:\s*auto/);
-  // Nav content must scroll underneath the header rather than past a
-  // floating block, so the header needs an opaque background and a z-index.
-  assert.match(head[1], /background:\s*var\(--chalk-green\)/);
-  assert.match(head[1], /z-index:\s*\d/);
-  // `top` must cancel the sidebar's padding-top, or the header pins 22px
-  // too low and leaves a gap.
-  assert.match(head[1], /top:\s*-22px/);
+  assert.match(
+    css,
+    /@media \(max-width: 1023px\)[\s\S]*?\.sidebar\s*\{[^}]*overflow-y:\s*auto/
+  );
+  assert.match(head[1], /background:\s*var\(--color-primary\)/);
+  assert.match(head[1], /z-index:\s*2/);
+  assert.match(head[1], /top:\s*calc\(-1 \* var\(--space-6\)\)/);
 });
 
 test("all five role shells share the branding header", () => {
@@ -1478,7 +1559,7 @@ test("no accounts month control is typed, not chosen from a list", () => {
   assert.doesNotMatch(source(PICKER), /type="date"/, "the window is whole months, not days");
   assert.match(source(PICKER), /<select[\s\S]*className="week-selector-pick"/);
   // The week selector is a different control and keeps its date input.
-  assertContains("src/components/ui/WeekSelector.jsx", [/type="date"/]);
+  assertContains("src/components/ui/WeekNavigator.jsx", [/type="date"/]);
 });
 
 test("the month dropdown offers the twelve months and the year dropdown a year list", () => {
@@ -1833,10 +1914,14 @@ test("the profile page shows the caller's own details read-only", () => {
 test("the profile page changes only the password, and demands the current one", () => {
   assertContains("src/pages/UserProfile.jsx", [
     /authApi\.changePassword\(form\.currentPassword, form\.newPassword\)/,
-    /type="password"/,
     /autoComplete="current-password"/,
     /newPassword\.length < 8/,
     /newPassword !== confirmPassword/,
+  ]);
+  assertContains("src/components/ui/PasswordInput.jsx", [
+    /visible \? "text" : "password"/,
+    /aria-pressed=\{visible\}/,
+    /aria-describedby=\{hint \? `\$\{id\}-hint` : undefined\}/,
   ]);
 });
 
@@ -1850,7 +1935,10 @@ test("every role has a profile route under its own portal", () => {
     ["master", "master"],
   ]) {
     assert.match(app, new RegExp(`path="profile" element=\\{<UserProfile />\\}`), `${role} is missing a profile route`);
-    assert.match(app, new RegExp(`path="/${prefix}/\\*"`), `${role} has no portal route to hang it on`);
+    const portalRoute = ["teacher", "admin"].includes(role)
+      ? `path="/${prefix}"`
+      : `path="/${prefix}/*"`;
+    assert.ok(app.includes(portalRoute), `${role} has no portal route to hang it on`);
   }
 });
 
@@ -1872,7 +1960,7 @@ test("the profile link sits above Sign Out in both layouts", () => {
     );
     // Compare rendered positions, not the first textual hit: a comment
     // mentioning Sign Out would otherwise decide the order.
-    const signOutAt = /^\s*Sign Out\s*$/m.exec(text)?.index ?? -1;
+    const signOutAt = /<span>Sign Out<\/span>/.exec(text)?.index ?? -1;
     assert.ok(profileAt !== -1 && signOutAt !== -1, `${layout} is missing a footer control`);
     assert.ok(
       profileAt < signOutAt,
@@ -1937,11 +2025,11 @@ test("the account and details are one card, with the password form beside it", (
   // The identity header is a heading for the details list, not a separate
   // card -- two cards stacked on the left column just adds a seam.
   const page = source("src/pages/UserProfile.jsx");
-  assert.match(page, /<div className="card white profile-account">/);
+  assert.match(page, /<Card className="card white profile-account">/);
   assertContains("src/pages/UserProfile.jsx", [/<div className="section-label">Your account<\/div>/]);
   assert.match(page, /<div className="profile-identity">/);
-  assert.match(page, /<div className="profile-details">/);
-  assertContains("src/pages/UserProfile.jsx", [/<form className="card white password-form"/]);
+  assert.match(page, /<DescriptionList/);
+  assertContains("src/pages/UserProfile.jsx", [/<Card as="form" className="card white password-form"/]);
   // Order is what places them: account then password, in the first grid row.
   // `<PasswordForm />` rather than "password-form", which also matches the
   // component's own definition further up the file.

@@ -1,4 +1,21 @@
 import WebLayout from "../layout/WebLayout";
+import {
+  BarChart3,
+  Bell,
+  BookOpen,
+  Bus,
+  CalendarDays,
+  CalendarClock,
+  ClipboardList,
+  GraduationCap,
+  House,
+  Image,
+  Megaphone,
+  PartyPopper,
+  Users,
+  Wallet,
+  Globe,
+} from "lucide-react";
 
 /*
  * Grouped by purpose and ordered by dependency within each group.
@@ -25,25 +42,25 @@ import WebLayout from "../layout/WebLayout";
  * "Public" is the outward-facing site, so it stays last.
  */
 const NAV = [
-  { to: "/admin/dashboard", icon: "🏠", label: "Dashboard", group: "Overview" },
+  { to: "/admin/dashboard", icon: House, label: "Dashboard", group: "Overview" },
 
-  { to: "/admin/routes", icon: "🚌", label: "Commute", group: "Day to day" },
-  { to: "/admin/broadcast", icon: "📣", label: "Broadcast", group: "Day to day" },
-  { to: "/admin/leave", icon: "📅", label: "Leave Requests", group: "Day to day" },
-  { to: "/admin/gallery", icon: "🖼️", label: "Gallery", group: "Day to day" },
-  { to: "/admin/notifications", icon: "🔔", label: "Notifications", group: "Day to day" },
+  { to: "/admin/routes", icon: Bus, label: "Commute", group: "Day to day" },
+  { to: "/admin/broadcast", icon: Megaphone, label: "Broadcast", group: "Day to day" },
+  { to: "/admin/leave", icon: CalendarDays, label: "Leave Requests", group: "Day to day" },
+  { to: "/admin/gallery", icon: Image, label: "Gallery", group: "Day to day" },
+  { to: "/admin/notifications", icon: Bell, label: "Notifications", group: "Day to day" },
 
-  { to: "/admin/staff", icon: "👥", label: "Staff", group: "Set up" },
-  { to: "/admin/subjects", icon: "📚", label: "Subjects", group: "Set up" },
-  { to: "/admin/classes", icon: "📋", label: "Classes", group: "Set up" },
-  { to: "/admin/students", icon: "🧑‍🎓", label: "Students", group: "Set up" },
-  { to: "/admin/timetable", icon: "🗓️", label: "Manage Timetable", group: "Set up" },
-  { to: "/admin/holidays", icon: "🎉", label: "Holidays", group: "Set up" },
+  { to: "/admin/staff", icon: Users, label: "Staff", group: "Set up" },
+  { to: "/admin/subjects", icon: BookOpen, label: "Subjects", group: "Set up" },
+  { to: "/admin/classes", icon: ClipboardList, label: "Classes", group: "Set up" },
+  { to: "/admin/students", icon: GraduationCap, label: "Students", group: "Set up" },
+  { to: "/admin/timetable", icon: CalendarClock, label: "Manage Timetable", group: "Set up" },
+  { to: "/admin/holidays", icon: PartyPopper, label: "Holidays", group: "Set up" },
 
-  { to: "/admin/accounts", icon: "💰", label: "Accounts", group: "Accounts and Reporting" },
-  { to: "/admin/reports", icon: "📊", label: "Reporting", group: "Accounts and Reporting" },
+  { to: "/admin/accounts", icon: Wallet, label: "Accounts", group: "Accounts and Reporting" },
+  { to: "/admin/reports", icon: BarChart3, label: "Reporting", group: "Accounts and Reporting" },
 
-  { to: "/admin/website", icon: "🌐", label: "School Website", group: "Public" },
+  { to: "/admin/website", icon: Globe, label: "School Website", group: "Public" },
 ];
 
 export default function AdminShell({ children }) {

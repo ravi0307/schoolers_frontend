@@ -265,12 +265,14 @@ test("both album items and single tiles open the full-size viewer", () => {
   assert.match(text, /<MediaLightbox/);
 });
 
-test("the album heading is keyboard reachable and opens a labelled dialog", () => {
+test("the album heading is a keyboard button and opens a labelled dialog", () => {
   const text = source("src/components/gallery/GalleryView.jsx");
-  assert.match(text, /className="gallery-album-head"[\s\S]{0,200}?role="button"/);
-  assert.match(text, /className="gallery-album-head"[\s\S]{0,300}?tabIndex=\{0\}/);
+  assert.match(text, /<button[\s\S]{0,200}?className="gallery-album-head"/);
+  assert.match(text, /<button\s+type="button"\s+className="gallery-album-head"/);
   assert.match(text, /className="gallery-album-head"[\s\S]{0,400}?aria-haspopup="dialog"/);
   assert.match(text, /aria-modal="true"[\s\S]{0,100}?aria-labelledby="gallery-album-title"/);
+  assert.match(text, /items\.at\(-1\)\.focus\(\)/);
+  assert.match(text, /album-dialog-close"\)\?\.focus\(\)/);
 });
 
 test("removing an album goes through mediaIdsOf, not a single id", () => {
@@ -344,7 +346,7 @@ test("the viewer stops the page scrolling behind it and restores it on close", (
 
 test("a video plays inside the viewer, not in the grid", () => {
   const text = source("src/components/gallery/MediaLightbox.jsx");
-  assert.match(text, /<video className="media-viewer-media"[^>]*controls/);
+  assert.match(text, /<video[\s\S]*?className="media-viewer-media"[\s\S]*?controls/);
   // The grid tile must stay a plain click target, so it carries no controls.
   const view = source("src/components/gallery/GalleryView.jsx");
   assert.doesNotMatch(view, /<video[^>]*className="(?:album-)?media"[^>]*controls/);

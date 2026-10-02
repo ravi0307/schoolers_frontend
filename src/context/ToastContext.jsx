@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef } from "react";
+import Toast from "../components/ui/Toast";
 
 const ToastContext = createContext(null);
 
@@ -15,7 +16,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={showToast}>
       {children}
-      {message && <div className="toast">{message}</div>}
+      {message && <Toast>{message}</Toast>}
     </ToastContext.Provider>
   );
 }
