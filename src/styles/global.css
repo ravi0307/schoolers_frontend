@@ -907,6 +907,32 @@ body {
 }
 .gallery-tile-remove:hover { background: var(--red-pen); }
 
+/* Edit sits left of remove; both are absolutely placed inside their tile. */
+.gallery-tile-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+.gallery-tile-actions .gallery-tile-remove,
+.gallery-tile-actions .gallery-tile-edit {
+  position: static;
+}
+.gallery-tile-edit {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(1, 28, 64, .65);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+.gallery-tile-edit:hover { background: var(--gold); color: var(--ink); }
+
 /* ---- Album (stacked media) ---- */
 .gallery-album {
   position: relative;

@@ -6,7 +6,10 @@ export default function TeacherGallery() {
     <TeacherShell>
       <div className="scr-title">Gallery</div>
       <div className="scr-sub">Share photos and videos with parents and the school</div>
-      <GalleryView canUpload />
+      {/* canUpload: teachers may add to the gallery. canManage: they may edit
+          and remove their own uploads — controls appear per item, since
+          another teacher's photos stay read-only for them. */}
+      <GalleryView canUpload canManage />
     </TeacherShell>
   );
 }
