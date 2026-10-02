@@ -234,9 +234,9 @@ test("a deposit is a per-student action on the row it belongs to", () => {
   // child?") in front of one the grid has already answered.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   assert.match(page, /rowAction=\{beginDeposit\}/);
-  assert.match(page, /function beginDeposit\(\{ id, name, row \}\)/);
+  assert.match(page, /function beginDeposit\(\{ id, name, row, trigger \}\)/);
   assert.match(page, /studentId: id/);
-  assert.match(page, /onClick=\{\(\) => rowAction\(\{ row, id, name \}\)\}/);
+  assert.match(page, /onClick=\{\(event\) => rowAction\(\{ row, id: rowId, name, trigger: event\.currentTarget \}\)\}/);
   // And only the fee grid has it: a salary is not deposited for a term.
   const salaryGrid = page.slice(page.indexOf("nameHeader=\"Staff\""), page.indexOf("nameHeader=\"Student\""));
   assert.doesNotMatch(salaryGrid, /rowAction=/, "only the fee grid offers a deposit");
@@ -248,23 +248,23 @@ test("the deposit action sits at the far right, in a column of its own", () => {
   // under the name it read as part of who the student is.
   const page = source("src/pages/admin/AdminAccounts.jsx");
   const body = page.slice(page.indexOf("<tbody>"), page.indexOf("</tbody>"));
-  const action = body.indexOf("acct-action-cell");
+  const action = body.indexOf("styles.actionCell");
   const lastMonth = body.lastIndexOf("RemarkCell");
   assert.ok(action > -1, "the row needs its own action cell");
   assert.ok(action > lastMonth, "the action must come after the month cells, not before them");
-  assert.doesNotMatch(body, /acct-person[\s\S]{0,200}acct-row-action/,
+  assert.doesNotMatch(body, /styles\.person[\s\S]{0,200}styles\.depositButton/,
     "the button must not sit inside the person cell");
   // And it is labelled, so the button is not a floating control at the end of a
   // row with nothing to say what it does.
-  assert.match(page, /\{rowAction && <th className="acct-action-head">\{rowActionLabel\}<\/th>\}/);
+  assert.match(page, /rowAction && <th id=\{.*?rowSpan=\{2\} scope="col" className=\{styles\.actionHeader\}>\{rowActionLabel\}<\/th>/);
   assert.match(page, /rowActionLabel="Deposit"/);
   assert.match(page, /rowActionTitle="Record a deposit for \{name\}"/);
   // The full name belongs in the tooltip, not in the button: a column of
   // "Deposit for Aarav Sharma" would be unreadable at any width.
   assert.doesNotMatch(page, /rowActionLabel="Deposit for \{name\}"/);
   assertContains("src/pages/admin/AdminAccounts.module.css", [
-    /:global\(\.acct-action-cell\)\s*\{[^}]*text-align:\s*right/s,
-    /:global\(\.acct-action-head\)\s*\{[^}]*text-align:\s*right/s,
+    /\.actionCell\s*\{[^}]*text-align:\s*right/s,
+    /\.table \.actionHeader\s*\{[^}]*text-align:\s*right/s,
   ]);
 });
 
@@ -322,11 +322,22 @@ test("the preview names the state of every month, so nothing is ambiguous", () =
 test("the dialog is dismissible and reachable by keyboard", () => {
   // A modal the admin cannot leave traps them in it, and Escape is the reflex.
   const dialog = source("src/components/accounts/FeeDepositDialog.jsx");
-  assert.match(dialog, /e\.key === "Escape"\) onClose\(\)/);
+  assert.match(dialog, /e\.key === "Escape"[\s\S]*?onClose\(\)/);
+  assert.match(dialog, /e\.key !== "Tab"/);
+  assert.match(dialog, /last\.focus\(\)/);
+  assert.match(dialog, /first\.focus\(\)/);
   assert.match(dialog, /aria-modal="true"/);
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-pressed=\{plan === choice\.plan\}/, "the chosen period is announced");
   assert.match(dialog, /disabled=\{busy \|\| saving\}/);
+});
+
+test("closing a deposit restores focus to the row trigger", () => {
+  const page = source("src/pages/admin/AdminAccounts.jsx");
+  assert.match(page, /trigger: event\.currentTarget/);
+  assert.match(page, /depositTriggerRef\.current = trigger/);
+  assert.match(page, /depositTriggerRef\.current\.focus\(\)/);
+  assert.match(page, /onClose=\{closeDeposit\}/);
 });
 
 test("the preview and the write send the same fields, under the names the service reads", () => {

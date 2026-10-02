@@ -76,10 +76,35 @@ export default function FeeDepositDialog({ student, plans, anchor, busy, onClose
 
   useEffect(() => {
     function onKey(e) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+      const box = boxRef.current;
+      if (!box) return;
+      const focusable = [...box.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        e.preventDefault();
+        box.focus();
+      } else if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === box)) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", onKey);
-    boxRef.current?.focus();
+    const firstField = boxRef.current?.querySelector(
+      'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+    );
+    (firstField || boxRef.current)?.focus();
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
