@@ -5,6 +5,7 @@ import ParentShell from "../components/layout/ParentShell";
 import TeacherShell from "../components/layout/TeacherShell";
 import PilotShell from "../components/layout/PilotShell";
 import MasterShell from "../components/layout/MasterShell";
+import StaffSelfSummary from "../components/profile/StaffSelfSummary";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useApi } from "../hooks/useApi";
@@ -59,6 +60,15 @@ function BareShell({ children }) {
   return <div className="web-content">{children}</div>;
 }
 
+/**
+ * Roles with a staff row, and therefore an attendance register and a payslip.
+ *
+ * A parent and a master admin have no staff record: a parent's own attendance
+ * would be a child's, and the master is above every school rather than in one.
+ * They are excluded here so the summary never mounts for them.
+ */
+const STAFF_LINKED_ROLES = new Set(["admin", "teacher", "staff", "pilot"]);
+
 function validate({ currentPassword, newPassword, confirmPassword }) {
   if (!currentPassword) return "Enter your current password";
   if (newPassword.length < 8) return "The new password must be at least 8 characters";
@@ -103,7 +113,7 @@ function PasswordForm() {
   }
 
   return (
-    <form className="card white" onSubmit={submit} style={{ maxWidth: 460 }}>
+    <form className="card white password-form" onSubmit={submit}>
       <div className="section-label">Change password</div>
       <div className="field">
         <label htmlFor="profile-current-password">Current password</label>
@@ -157,6 +167,11 @@ export default function UserProfile() {
   const displayName = data?.display_name || user?.name || user?.username || "Your account";
   const role = data?.role || user?.role;
   const logo = resolveMediaUrl(data?.school_logo_url || user?.schoolLogoUrl);
+  // An admin account is often created before the staff row it acts for, so the
+  // role alone does not mean there is a register or a payslip behind it. With
+  // no linked person the self-report endpoint answers 403, so the summary is
+  // not mounted at all rather than rendering that refusal as a page error.
+  const hasStaffRecord = Boolean(data?.linked_person_id);
 
   return (
     <Shell>
@@ -171,54 +186,59 @@ export default function UserProfile() {
       <ErrorBanner message={error} />
 
       {!loading && !error && (
-        <div className="profile-details-wrap">
-          <div className="card white profile-identity">
-            <div className="profile-avatar">
-              {logo ? (
-                <img
-                  src={logo}
-                  alt={`${data?.school_name || "School"} logo`}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-                  }}
-                />
-              ) : null}
-              <span hidden={!!logo} aria-hidden="true">
-                {(data?.school_name || displayName)
-                  .split(/\s+/)
-                  .filter((w) => /[a-z0-9]/i.test(w))
-                  .slice(0, 2)
-                  .map((w) => w[0].toUpperCase())
-                  .join("")}
-              </span>
-            </div>
-            <div>
-              <div className="profile-identity-name">{displayName}</div>
-              <div className="profile-identity-role">{ROLE_LABEL[role] || role}</div>
-            </div>
-          </div>
+        <div className="profile-grid">
+          <div className="card white profile-account">
+            <div className="section-label">Your account</div>
 
-          <div className="card white profile-details">
-            <DetailRow label="Name" value={displayName} />
-            <DetailRow label="Username" value={data?.username || user?.username || "—"} />
-            <DetailRow
-              label="Email"
-              value={data?.email || "No email address on file"}
-            />
-            <DetailRow
-              label="School"
-              value={data?.school_name || "Not tied to a school"}
-            />
-            <DetailRow label="Role" value={ROLE_LABEL[role] || role || "—"} />
+            <div className="profile-identity">
+              <div className="profile-avatar">
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt={`${data?.school_name || "School"} logo`}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.removeAttribute("hidden");
+                    }}
+                  />
+                ) : null}
+                <span hidden={!!logo} aria-hidden="true">
+                  {(data?.school_name || displayName)
+                    .split(/\s+/)
+                    .filter((w) => /[a-z0-9]/i.test(w))
+                    .slice(0, 2)
+                    .map((w) => w[0].toUpperCase())
+                    .join("")}
+                </span>
+              </div>
+              <div>
+                <div className="profile-identity-name">{displayName}</div>
+                <div className="profile-identity-role">{ROLE_LABEL[role] || role}</div>
+              </div>
+            </div>
+
+            <div className="profile-details">
+              <DetailRow label="Name" value={displayName} />
+              <DetailRow label="Username" value={data?.username || user?.username || "—"} />
+              <DetailRow
+                label="Email"
+                value={data?.email || "No email address on file"}
+              />
+              <DetailRow
+                label="School"
+                value={data?.school_name || "Not tied to a school"}
+              />
+              <DetailRow label="Role" value={ROLE_LABEL[role] || role || "—"} />
+            </div>
           </div>
 
           <PasswordForm />
 
+          {STAFF_LINKED_ROLES.has(role) && hasStaffRecord && <StaffSelfSummary />}
+
           <button
-            className="btn ghost"
+            className="btn ghost profile-back"
             onClick={() => navigate(home)}
-            style={{ marginTop: 16 }}
           >
             Back
           </button>
