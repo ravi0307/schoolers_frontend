@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "npm run test:flow && vite build",
     "lint": "oxlint",
+    "test:portal-ui": "playwright test --config=playwright.portal.config.js",
     "preview": "vite preview",
-    "test:flow": "node --test tests/timetable-flow.test.mjs tests/site-flow.test.mjs tests/password-reset-flow.test.mjs tests/frontend-api-contracts.test.mjs tests/holiday-week-flow.test.mjs tests/holiday-range.test.mjs tests/staff-attendance-flow.test.mjs tests/accounts-flow.test.mjs tests/accounts-table.test.mjs tests/fee-deposit.test.mjs tests/broadcast-author.test.mjs tests/gallery-viewer.test.mjs tests/student-report.test.mjs tests/student-report-pdf.test.mjs tests/staff-report.test.mjs tests/staff-report-pdf.test.mjs tests/staff-self-summary.test.mjs tests/staff-portal.test.mjs tests/parent-report.test.mjs tests/report-dialog-accessibility.test.mjs tests/dashboard-ui.test.mjs tests/admin-subjects-ui.test.mjs tests/admin-reports-ui.test.mjs tests/admin-holidays-ui.test.mjs tests/admin-leave-ui.test.mjs tests/admin-broadcast-ui.test.mjs tests/admin-accounts-ui.test.mjs tests/admin-routes-ui.test.mjs tests/action-button-alignment.test.mjs tests/support-flow.test.mjs"
+    "test:flow": "node --test tests/timetable-flow.test.mjs tests/site-flow.test.mjs tests/password-reset-flow.test.mjs tests/frontend-api-contracts.test.mjs tests/holiday-week-flow.test.mjs tests/holiday-range.test.mjs tests/staff-attendance-flow.test.mjs tests/accounts-flow.test.mjs tests/accounts-table.test.mjs tests/fee-deposit.test.mjs tests/broadcast-author.test.mjs tests/gallery-viewer.test.mjs tests/student-report.test.mjs tests/student-report-pdf.test.mjs tests/staff-report.test.mjs tests/staff-report-pdf.test.mjs tests/staff-self-summary.test.mjs tests/staff-portal.test.mjs tests/parent-report.test.mjs tests/portal-ui-consistency.test.mjs tests/report-dialog-accessibility.test.mjs tests/dashboard-ui.test.mjs tests/admin-subjects-ui.test.mjs tests/admin-reports-ui.test.mjs tests/admin-holidays-ui.test.mjs tests/admin-leave-ui.test.mjs tests/admin-broadcast-ui.test.mjs tests/admin-accounts-ui.test.mjs tests/admin-routes-ui.test.mjs tests/action-button-alignment.test.mjs tests/support-flow.test.mjs"
   },
   "dependencies": {
     "axios": "^1.19.0",
@@ -20,6 +21,7 @@
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",

@@ -1,0 +1,208 @@
+.studentCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.journeyCard {
+  padding: var(--space-4);
+}
+
+.journeyHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.journeyPulse {
+  width: var(--space-3);
+  height: var(--space-3);
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  box-shadow: 0 0 0 0 rgb(var(--color-success-rgb) / 50%);
+  animation: journey-pulse 1.6s infinite;
+}
+
+@keyframes journey-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(var(--color-success-rgb) / 50%); }
+  70% { box-shadow: 0 0 0 0.5625rem rgb(var(--color-success-rgb) / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--color-success-rgb) / 0%); }
+}
+
+.journeyNext {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.journeyNext b {
+  color: var(--color-text);
+}
+
+.progressCaption {
+  margin-bottom: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.stopTimeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineStop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+}
+
+.timelineStop:last-child {
+  border-bottom: 0;
+}
+
+.timelineStop .meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.timelineStop .meta b {
+  display: block;
+  font-size: var(--font-size-sm);
+}
+
+.timelineStop .meta span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.reached .meta b {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.current {
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+}
+
+.timelineNode {
+  display: flex;
+  width: var(--space-8);
+  height: var(--space-8);
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+}
+
+.timelineDot {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.timelineTick {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  color: var(--color-neutral-0);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.current .timelineNode,
+.current .timelineDot {
+  background: var(--color-secondary);
+}
+
+.upcoming .timelineDot {
+  background: var(--color-border);
+}
+
+.studentInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.studentName {
+  font-size: var(--font-size-md);
+  overflow-wrap: anywhere;
+}
+
+.admissionNumber {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.progress {
+  display: block;
+  width: 100%;
+  height: var(--space-2);
+  margin: var(--space-4) 0 var(--space-2);
+  border: none;
+  appearance: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  color: var(--color-success);
+  accent-color: var(--color-success);
+  overflow: hidden;
+}
+
+.progress::-webkit-progress-bar {
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.progress::-webkit-progress-value {
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  transition: width var(--transition-normal);
+}
+
+.progress::-moz-progress-bar {
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+}
+
+.journeyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journeyPulse {
+    animation: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .studentCard {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .studentCard > :last-child {
+    margin-left: calc(var(--space-8) + var(--space-1));
+  }
+
+  .journeyHead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

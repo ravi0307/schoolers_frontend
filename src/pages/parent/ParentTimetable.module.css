@@ -1,0 +1,24 @@
+.tableCard {
+  padding: var(--space-3);
+}
+
+.timetableCell {
+  vertical-align: top;
+}
+
+.timetableEntry {
+  display: block;
+  margin-bottom: var(--space-1);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.entrySubject {
+  font-weight: var(--font-weight-bold);
+}
+
+.entryTime {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}

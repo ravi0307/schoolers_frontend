@@ -1,9 +1,14 @@
 import { useState } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import FormField from "../../components/ui/FormField";
+import styles from "./ParentBarter.module.css";
 import { useApi } from "../../hooks/useApi";
 import * as barterApi from "../../api/barter";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner } from "../../components/ui/Primitives";
+import EmptyState from "../../components/ui/EmptyState";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
@@ -38,9 +43,16 @@ export default function ParentBarter() {
   }
 
   return (
-    <ParentShell>
-      <div className="scr-title">Barter</div>
-      <div className="scr-sub">Buy, sell or swap used goods within your school</div>
+    <>
+      <PageHeader
+        title="Barter"
+        subtitle="Buy, sell or swap used goods within your school"
+        action={!formOpen && (
+          <Button variant="primary" onClick={() => setFormOpen(true)}>
+            List an Item
+          </Button>
+        )}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
 
@@ -49,15 +61,15 @@ export default function ParentBarter() {
           <div className="grid2">
             {data && data.length ? (
               pager.pageItems.map((b) => (
-                <div key={b.listing_id} className="card white">
-                  <b style={{ fontSize: 12.5 }}>{b.title}</b>
-                  <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+                <Card key={b.listing_id} className={`card white ${styles.listingCard}`}>
+                  <b className={styles.listingTitle}>{b.title}</b>
+                  <div className={styles.listingMeta}>
                     {b.price} · {b.listed_by}
                   </div>
-                </div>
+                </Card>
               ))
             ) : (
-              <Empty>No listings yet.</Empty>
+              <EmptyState>No listings yet.</EmptyState>
             )}
           </div>
           <Pagination {...pager} />
@@ -65,29 +77,23 @@ export default function ParentBarter() {
       )}
 
       {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 12 }}>
-          <div className="field">
-            <label>Item title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. School bag" />
-          </div>
-          <div className="field">
-            <label>Price</label>
-            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. ₹200 or Free" />
-          </div>
+        <Card as="form" className={`card white ${styles.formCard}`} onSubmit={submit}>
+          <FormField id="barter-title" label="Item title" required>
+            <input id="barter-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. School bag" />
+          </FormField>
+          <FormField id="barter-price" label="Price">
+            <input id="barter-price" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. ₹200 or Free" />
+          </FormField>
           <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
+            <Button variant="primary" type="submit" disabled={submitting}>
               {submitting ? "Publishing..." : "Publish Listing"}
-            </button>
-            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>
+            </Button>
+            <Button variant="outline" type="button" onClick={() => setFormOpen(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
-        </form>
-      ) : (
-        <button className="btn gold block" style={{ marginTop: 12 }} onClick={() => setFormOpen(true)}>
-          + List an Item
-        </button>
-      )}
-    </ParentShell>
+        </Card>
+      ) : null}
+    </>
   );
 }

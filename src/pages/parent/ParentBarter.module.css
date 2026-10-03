@@ -1,0 +1,21 @@
+.listingCard,
+.formCard {
+  min-width: 0;
+}
+
+.listingTitle {
+  display: block;
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.listingMeta {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.formCard {
+  margin-top: var(--space-3);
+}

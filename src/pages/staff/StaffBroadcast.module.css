@@ -1,0 +1,93 @@
+.formCard,
+.filters {
+  margin-top: var(--space-4);
+}
+
+.broadcastRow {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.broadcastAvatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.broadcastAvatar svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.broadcastMeta {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.broadcastName,
+.broadcastMessage,
+.broadcastDetails {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broadcastDetails {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.rowActions {
+  flex: none;
+}
+
+.compactButton {
+  min-height: 2.25rem;
+}
+
+.expandedBody {
+  flex-basis: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  --surface-text-muted: var(--color-text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.broadcastColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.broadcastColumn {
+  min-width: 0;
+}
+
+.sectionHeading {
+  margin-top: 0;
+}
+
+.broadcastList {
+  max-height: 32rem;
+  padding: var(--space-2) var(--space-4);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 48rem) {
+  .broadcastColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

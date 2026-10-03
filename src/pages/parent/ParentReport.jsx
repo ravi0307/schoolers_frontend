@@ -1,10 +1,13 @@
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import DataTable from "../../components/ui/DataTable";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
 import * as attendanceApi from "../../api/attendance";
 import * as marksApi from "../../api/marks";
-import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Pill } from "../../components/ui/Primitives";
+import EmptyState from "../../components/ui/EmptyState";
 import styles from "./ParentReport.module.css";
 
 const amountFormat = new Intl.NumberFormat(undefined, {
@@ -31,12 +34,12 @@ function dateLabel(value) {
 
 function ReportTable({ headers, children }) {
   return (
-    <div className="table-scroll">
+    <DataTable label={`${headers.join(" ")} report table`}>
       <table className="data-table">
-        <thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
+        <thead><tr>{headers.map((header) => <th key={header} scope="col">{header}</th>)}</tr></thead>
         <tbody>{children}</tbody>
       </table>
-    </div>
+    </DataTable>
   );
 }
 
@@ -70,15 +73,17 @@ export default function ParentReport() {
   const loading = attendance.loading || marks.loading || fees.loading;
 
   return (
-    <ParentShell>
-      <div className="scr-title">My Report</div>
-      <div className="scr-sub">{selectedChild ? `${selectedChild.name} · attendance, fees and marks` : ""}</div>
+    <>
+      <PageHeader
+        title="My Report"
+        subtitle={selectedChild ? `${selectedChild.name} · attendance, fees and marks` : ""}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={errors} />
 
       {!loading && !errors && selectedChild && (
         <div className={styles.reportGrid}>
-          <section className={`card white ${styles.reportCard}`}>
+          <Card as="section" className={`card white ${styles.reportCard}`}>
             <div className="section-label">Attendance</div>
             <div className="cta-row">
               <Pill>{presentCount} present</Pill>
@@ -86,7 +91,7 @@ export default function ParentReport() {
               <Pill>{markedCount} days marked</Pill>
               <Pill>{percentage === null ? "—" : `${percentage}%`} present</Pill>
             </div>
-            {!markedCount ? <Empty>No attendance records yet.</Empty> : (
+            {!markedCount ? <EmptyState>No attendance records yet.</EmptyState> : (
               <ReportTable headers={["Date", "Status"]}>
                 {[...(attendance.data || [])].sort((a, b) => String(b.date).localeCompare(String(a.date))).map((day) => (
                   <tr key={day.attendance_id || day.date}>
@@ -96,15 +101,14 @@ export default function ParentReport() {
                 ))}
               </ReportTable>
             )}
-          </section>
-
-          <section className={`card white ${styles.reportCard}`}>
+          </Card>
+          <Card as="section" className={`card white ${styles.reportCard}`}>
             <div className="section-label">Fees deposited</div>
             <div className="cta-row">
               <Pill>{amountFormat.format(totalFees)} deposited</Pill>
               <Pill>{feeRows.length} months paid</Pill>
             </div>
-            {!feeRows.length ? <Empty>No fee deposits recorded yet.</Empty> : (
+            {!feeRows.length ? <EmptyState>No fee deposits recorded yet.</EmptyState> : (
               <ReportTable headers={["Month", "Amount", "Paid on", "Remark"]}>
                 {feeRows.map((row) => (
                   <tr key={row.month}>
@@ -116,11 +120,10 @@ export default function ParentReport() {
                 ))}
               </ReportTable>
             )}
-          </section>
-
-          <section className={`card white ${styles.reportCard}`}>
+          </Card>
+          <Card as="section" className={`card white ${styles.reportCard}`}>
             <div className="section-label">Marks</div>
-            {!markRows.length ? <Empty>No marks recorded yet.</Empty> : (
+            {!markRows.length ? <EmptyState>No marks recorded yet.</EmptyState> : (
               <ReportTable headers={["Subject", "Term", "Score"]}>
                 {markRows.map((row) => (
                   <tr key={row.mark_id || `${row.subject_id}-${row.term}`}>
@@ -131,9 +134,9 @@ export default function ParentReport() {
                 ))}
               </ReportTable>
             )}
-          </section>
+          </Card>
         </div>
       )}
-    </ParentShell>
+    </>
   );
 }

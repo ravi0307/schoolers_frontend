@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import { ImagePlus } from "lucide-react";
 import { FONT_SIZE_OPTIONS, sanitizeRichText } from "./richText";
+import styles from "./RichTextEditor.module.css";
 
-export default function RichTextEditor({ value, onChange, minHeight = 150 }) {
+export default function RichTextEditor({ id, value, onChange, minHeight = 150 }) {
   const editorRef = useRef(null);
   const imageInputRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const sanitizedValue = sanitizeRichText(value);
   const [activeFormats, setActiveFormats] = useState({});
+  const [defaultTextColor] = useState(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim()
+  );
+  const contentHeight = minHeight <= 60
+    ? styles.contentCompact
+    : minHeight <= 80
+      ? styles.contentShort
+      : minHeight <= 90
+        ? styles.contentMedium
+        : styles.contentDefault;
 
   function updateActiveFormats() {
     const selection = window.getSelection();
@@ -92,55 +104,43 @@ export default function RichTextEditor({ value, onChange, minHeight = 150 }) {
     reader.readAsDataURL(file);
   }
 
-  function toolbarButtonStyle(command) {
-    const active = !!activeFormats[command];
-    return {
-      background: active ? "var(--chalk-green)" : "transparent",
-      color: active ? "var(--paper-light)" : "var(--ink)",
-      borderColor: active ? "var(--chalk-green)" : "var(--line)",
-      boxShadow: active ? "0 0 0 2px rgba(2, 56, 89, .16)" : "none",
-    };
-  }
-
   return (
-    <div style={{ border: "1.5px solid var(--line)", borderRadius: 9, overflow: "hidden", background: "var(--paper-light)" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8, borderBottom: "1px solid var(--line)", background: "var(--paper)" }}>
-        <button className="btn ghost sm" style={toolbarButtonStyle("bold")} aria-pressed={!!activeFormats.bold} title="Bold" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("bold")}><b>B</b></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("italic")} aria-pressed={!!activeFormats.italic} title="Italic" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("italic")}><i>I</i></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("underline")} aria-pressed={!!activeFormats.underline} title="Underline" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("underline")}><u>U</u></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("unorderedList")} aria-pressed={!!activeFormats.unorderedList} title="Bulleted list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertUnorderedList")}>• List</button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("orderedList")} aria-pressed={!!activeFormats.orderedList} title="Numbered list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertOrderedList")}>1. List</button>
-        <label
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "0 7px", border: "1.5px solid var(--line)", borderRadius: 9, color: "var(--ink)", fontSize: 11.5 }}
-          onMouseDown={(event) => event.preventDefault()}
-        >
+    <div className={styles.editor}>
+      <div className={styles.toolbar}>
+        <button className={`${styles.toolButton} ${activeFormats.bold ? styles.active : ""}`} aria-pressed={!!activeFormats.bold} title="Bold" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("bold")}><b>B</b></button>
+        <button className={`${styles.toolButton} ${activeFormats.italic ? styles.active : ""}`} aria-pressed={!!activeFormats.italic} title="Italic" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("italic")}><i>I</i></button>
+        <button className={`${styles.toolButton} ${activeFormats.underline ? styles.active : ""}`} aria-pressed={!!activeFormats.underline} title="Underline" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("underline")}><u>U</u></button>
+        <button className={`${styles.toolButton} ${activeFormats.unorderedList ? styles.active : ""}`} aria-pressed={!!activeFormats.unorderedList} title="Bulleted list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertUnorderedList")}>• List</button>
+        <button className={`${styles.toolButton} ${activeFormats.orderedList ? styles.active : ""}`} aria-pressed={!!activeFormats.orderedList} title="Numbered list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertOrderedList")}>1. List</button>
+        <label className={styles.colorControl} onMouseDown={(event) => event.preventDefault()}>
           Color
           <input
             type="color"
-            defaultValue="#0B2338"
+            defaultValue={defaultTextColor}
             title="Text color"
             aria-label="Text color"
             onChange={(event) => format("foreColor", event.target.value)}
-            style={{ width: 24, height: 24, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
           />
         </label>
         <select
+          className={styles.fontSize}
           aria-label="Font size"
           defaultValue="3"
           onMouseDown={(event) => event.stopPropagation()}
           onChange={(event) => format("fontSize", event.target.value)}
-          style={{ width: 110, padding: "6px 8px", border: "1.5px solid var(--line)", borderRadius: 9, background: "var(--paper-light)", color: "var(--ink)", fontSize: 11.5 }}
         >
           {FONT_SIZE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
-        <button className="btn ghost sm" title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}>🖼️ Image</button>
-        <button className="btn ghost sm" title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
+        <button className={styles.toolButton} title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}><ImagePlus aria-hidden="true" /> Image</button>
+        <button className={styles.toolButton} title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
         <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={insertImage} hidden />
       </div>
       <div
+        id={id}
         ref={editorRef}
+        className={`${styles.content} ${contentHeight}`}
         contentEditable
         role="textbox"
         aria-multiline="true"
@@ -149,7 +149,6 @@ export default function RichTextEditor({ value, onChange, minHeight = 150 }) {
         onPaste={handlePaste}
         onKeyUp={saveSelection}
         onMouseUp={saveSelection}
-        style={{ minHeight, padding: "10px 12px", outline: "none", fontSize: 13.5, lineHeight: 1.5, overflowWrap: "anywhere" }}
       >
         {null}
       </div>

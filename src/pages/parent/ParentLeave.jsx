@@ -1,10 +1,14 @@
 import { useState } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import FormField from "../../components/ui/FormField";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as leaveApi from "../../api/leave";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, Empty, Pill } from "../../components/ui/Primitives";
+import { Spinner, Pill } from "../../components/ui/Primitives";
+import EmptyState from "../../components/ui/EmptyState";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
@@ -48,35 +52,34 @@ export default function ParentLeave() {
   }
 
   return (
-    <ParentShell>
-      <div className="scr-title">Leave Request</div>
-      <div className="scr-sub">{selectedChild ? `For ${selectedChild.name} · sent to School Admin` : ""}</div>
+    <>
+      <PageHeader
+        title="Leave Request"
+        subtitle={selectedChild ? `For ${selectedChild.name} · sent to School Admin` : ""}
+      />
 
-      <form className="card" onSubmit={submit}>
+      <Card as="form" className="card" onSubmit={submit}>
         <div className="grid2">
-          <div className="field">
-            <label>From</label>
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>To</label>
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-          </div>
+          <FormField id="leave-from" label="From" required>
+            <input id="leave-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          </FormField>
+          <FormField id="leave-to" label="To" required>
+            <input id="leave-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          </FormField>
         </div>
-        <div className="field">
-          <label>Reason</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Family function" />
-        </div>
-        <button className="btn primary" type="submit" disabled={submitting}>
+        <FormField id="leave-reason" label="Reason">
+          <textarea id="leave-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Family function" />
+        </FormField>
+        <Button variant="primary" type="submit" disabled={submitting}>
           {submitting ? "Sending..." : "Submit Request"}
-        </button>
-      </form>
+        </Button>
+      </Card>
 
       <div className="section-label">Your requests</div>
       {loading ? (
         <Spinner />
       ) : (
-        <div className="card">
+        <Card className="card">
           {mine.length ? (
             pager.pageItems.map((l) => (
               <div key={l.leave_id} className="listitem">
@@ -90,11 +93,11 @@ export default function ParentLeave() {
               </div>
             ))
           ) : (
-            <Empty>No leave requests yet.</Empty>
+            <EmptyState>No leave requests yet.</EmptyState>
           )}
           <Pagination {...pager} />
-        </div>
+        </Card>
       )}
-    </ParentShell>
+    </>
   );
 }
