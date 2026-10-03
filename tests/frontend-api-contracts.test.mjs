@@ -101,6 +101,12 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/media.js", [/\/media/]);
   assertContains("src/api/uploads.js", [/\/schools\/\$\{schoolId\}\/upload/, /\/documents\/upload/, /School ID is required/]);
   assertContains("src/api/systemHealth.js", [/\/health/, /\/health\/services/]);
+  assertContains("src/api/support.js", [
+    /\/support\/tickets/,
+    /\/support\/tickets\/\$\{ticketId\}/,
+    /\/support\/tickets\/\$\{ticketId\}\/messages/,
+    /\/support\/tickets\/\$\{ticketId\}\/status/,
+  ]);
   assertContains("src/api/timetable.js", [
     /\/timetable\/class\/\$\{classId\}/,
     /\/timetable\/class\/\$\{classId\}\/period/,
@@ -152,9 +158,9 @@ test("key frontend workflows remain represented by application routes", () => {
   const routeGroups = {
     parent: ["home", "pickdrop", "attendance", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
-    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications"],
+    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave"],
-    master: ["schools", "schools/:schoolId", "system-health"],
+    master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
     const portalRoute = ["teacher", "admin"].includes(role)
@@ -912,6 +918,7 @@ const ADMIN_NAV = [
   "/admin/leave",
   "/admin/gallery",
   "/admin/notifications",
+  "/admin/support",
   "/admin/staff",
   "/admin/subjects",
   "/admin/classes",
