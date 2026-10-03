@@ -6,6 +6,7 @@ import { TeacherProvider } from "./context/TeacherContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import AdminShell from "./components/layout/AdminShell";
 import TeacherShell from "./components/layout/TeacherShell";
+import StaffShell from "./components/layout/StaffShell";
 
 import Login from "./pages/Login";
 import PublicWebsite from "./pages/PublicWebsite";
@@ -19,6 +20,7 @@ import ParentLeave from "./pages/parent/ParentLeave";
 import ParentBarter from "./pages/parent/ParentBarter";
 import ParentGallery from "./pages/parent/ParentGallery";
 import ParentTimetable from "./pages/parent/ParentTimetable";
+import ParentReport from "./pages/parent/ParentReport";
 
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
@@ -26,6 +28,10 @@ import TeacherMarks from "./pages/teacher/TeacherMarks";
 import TeacherTimetable from "./pages/teacher/TeacherTimetable";
 import TeacherBroadcast from "./pages/teacher/TeacherBroadcast";
 import TeacherGallery from "./pages/teacher/TeacherGallery";
+
+import StaffBroadcast from "./pages/staff/StaffBroadcast";
+import StaffGallery from "./pages/staff/StaffGallery";
+import StaffReport from "./pages/staff/StaffReport";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClasses from "./pages/admin/AdminClasses";
@@ -62,6 +68,7 @@ function RootRedirect() {
     admin: "/admin/dashboard",
     pilot: "/pilot/pickdrop",
     master: "/master/schools",
+    staff: "/staff/broadcast",
   }[user.role];
   return <Navigate to={home || "/login"} replace />;
 }
@@ -89,6 +96,7 @@ export default function App() {
                       <Route path="attendance" element={<ParentAttendance />} />
                       <Route path="timetable" element={<ParentTimetable />} />
                       <Route path="marks" element={<ParentMarks />} />
+                      <Route path="report" element={<ParentReport />} />
                       <Route path="leave" element={<ParentLeave />} />
                       <Route path="barter" element={<ParentBarter />} />
                       <Route path="gallery" element={<ParentGallery />} />
@@ -120,6 +128,23 @@ export default function App() {
               <Route path="gallery" element={<TeacherGallery />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
+            </Route>
+
+            {/* Staff */}
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute roles={["staff"]}>
+                  <StaffShell />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="broadcast" replace />} />
+              <Route path="broadcast" element={<StaffBroadcast />} />
+              <Route path="gallery" element={<StaffGallery />} />
+              <Route path="report" element={<StaffReport />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="*" element={<Navigate to="/staff/broadcast" replace />} />
             </Route>
 
             {/* Admin */}

@@ -158,12 +158,13 @@ test("key frontend workflows remain represented by application routes", () => {
   const routeGroups = {
     parent: ["home", "pickdrop", "attendance", "timetable", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
+    staff: ["broadcast", "gallery", "report"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave"],
     master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
-    const portalRoute = ["teacher", "admin"].includes(role)
+    const portalRoute = ["teacher", "admin", "staff"].includes(role)
       ? `path="/${role}"`
       : `path="/${role}/*"`;
     assert.ok(app.includes(portalRoute), `route group /${role} is not registered`);
@@ -352,7 +353,7 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
       // Ownership is decided by the author's user id in the shared helper, not
       // by comparing the sender's display name against the signed-in user's.
       /splitBroadcastsByAuthor\(filteredBroadcasts, user\)/,
-      /\{editable &&/,
+      /\{(?:editable|canManage) &&/,
     ]);
     // The name comparison that put every message in Received is gone, and with
     // it the local sender-name helper it needed.
@@ -957,6 +958,7 @@ const SET_UP_SEQUENCE = [
 const FLAT_NAV_SHELLS = [
   "src/components/layout/ParentShell.jsx",
   "src/components/layout/TeacherShell.jsx",
+  "src/components/layout/StaffShell.jsx",
   "src/components/layout/PilotShell.jsx",
   "src/components/layout/MasterShell.jsx",
 ];

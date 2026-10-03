@@ -8,6 +8,9 @@ export const salarySheet = (months = 6, end) =>
 export const feeSheet = (months = 6, end) =>
   client.get("/accounts/fees", { params: { months, end } }).then((r) => r.data);
 
+export const studentFeeHistory = (studentId) =>
+  client.get(`/accounts/fees/student/${studentId}`).then((r) => r.data);
+
 export const recordSalary = (payload) =>
   client.post("/accounts/salaries", payload).then((r) => r.data);
 

@@ -11,6 +11,7 @@ const ROLE_HOME = {
   admin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",
+  staff: "/staff/broadcast",
 };
 
 export default function Login() {
@@ -105,7 +106,7 @@ export default function Login() {
       <div className="login-card">
         <h2 style={{ margin: "0 0 4px" }}>Schoolers Sign In</h2>
         <p style={{ color: "var(--ink-soft)", fontSize: 12.5, margin: "0 0 20px" }}>
-          Parent · Teacher · School Admin · Pilot · Master Admin
+          Parent · Teacher · School Admin · Staff · Pilot · Master Admin
         </p>
         {error && <div className="error-banner">{error}</div>}
         {!showForgotPassword ? (
