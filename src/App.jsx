@@ -41,6 +41,7 @@ import AdminWebsite from "./pages/admin/AdminWebsite";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminSupport from "./pages/admin/AdminSupport";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -49,6 +50,7 @@ import PilotLeave from "./pages/pilot/PilotLeave";
 import MasterSchools from "./pages/master/MasterSchools";
 import MasterSchoolDetail from "./pages/master/MasterSchoolDetail";
 import MasterSystemHealth from "./pages/master/MasterSystemHealth";
+import MasterSupport from "./pages/master/MasterSupport";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -143,6 +145,7 @@ export default function App() {
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="support" element={<AdminSupport />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Route>
@@ -172,6 +175,7 @@ export default function App() {
                     <Route path="schools" element={<MasterSchools />} />
                     <Route path="schools/:schoolId" element={<MasterSchoolDetail />} />
                     <Route path="system-health" element={<MasterSystemHealth />} />
+                    <Route path="support" element={<MasterSupport />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/master/schools" replace />} />
                   </Routes>
