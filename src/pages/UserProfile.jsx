@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AdminShell from "../components/layout/AdminShell";
 import ParentShell from "../components/layout/ParentShell";
 import TeacherShell from "../components/layout/TeacherShell";
+import StaffShell from "../components/layout/StaffShell";
 import PilotShell from "../components/layout/PilotShell";
 import MasterShell from "../components/layout/MasterShell";
 import StaffSelfSummary from "../components/profile/StaffSelfSummary";
@@ -50,6 +51,7 @@ const ROLE_LABEL = {
 const SHELLS = {
   parent: ParentShell,
   teacher: TeacherShell,
+  staff: StaffShell,
   admin: AdminShell,
   pilot: PilotShell,
   master: MasterShell,
@@ -58,6 +60,7 @@ const SHELLS = {
 const HOME_BY_ROLE = {
   parent: "/parent/home",
   teacher: "/teacher/dashboard",
+  staff: "/staff/broadcast",
   admin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",

@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import AdminShell from "../../components/layout/AdminShell";
+import { useLocation } from "react-router-dom";
+import StaffShell from "../../components/layout/StaffShell";
 import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
 import * as communicationApi from "../../api/communication";
 import * as academicsApi from "../../api/academics";
+import * as transportApi from "../../api/transport";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -11,7 +13,6 @@ import { apiErrorMessage } from "../../api/client";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import { richTextToPlainText, sanitizeRichText } from "../../components/ui/richText";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
-import styles from "./AdminBroadcast.module.css";
 
 function formatDate(value) {
   if (!value) return "";
@@ -31,16 +32,18 @@ function senderNameOf(item) {
   return item.sender_name || item.senderName || item.from_name || "Unknown sender";
 }
 
-
-export default function AdminBroadcast() {
+export default function StaffBroadcast() {
+  const location = useLocation();
   const { user } = useAuth();
   const { data, loading, error, refetch } = useApi(() => communicationApi.listBroadcasts(), []);
   const { data: classes } = useApi(() => academicsApi.listClasses(), []);
+  const { data: routes } = useApi(() => transportApi.listRoutes(), []);
   const toast = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [editingBroadcastId, setEditingBroadcastId] = useState(null);
   const [scope, setScope] = useState("school");
   const [classId, setClassId] = useState("");
+  const [routeId, setRouteId] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -53,6 +56,10 @@ export default function AdminBroadcast() {
   const classNames = useMemo(
     () => new Map((classes || []).map((item) => [String(item.class_id ?? item.id), item.name])),
     [classes]
+  );
+  const routeNames = useMemo(
+    () => new Map((routes || []).map((item) => [String(item.route_id ?? item.id), item.name])),
+    [routes]
   );
 
   const filteredBroadcasts = useMemo(() => {
@@ -90,52 +97,78 @@ export default function AdminBroadcast() {
   const postedPager = usePagination(postedBroadcasts);
   const receivedPager = usePagination(receivedBroadcasts);
 
+  function audienceOf(item) {
+    if (item.scope === "class") {
+      return `Class: ${classNames.get(String(item.class_id)) || "Unknown class"}`;
+    }
+    if (item.scope === "route") {
+      const name = routeNames.get(String(item.route_id));
+      if (name) return `Route: ${name}`;
+      return item.route_id ? `Route #${item.route_id}` : "Route";
+    }
+    if (item.scope === "pilot") return "Pilots";
+    return "Entire school";
+  }
+
   function renderBroadcastRow(item, editable) {
-    const canManage = user?.role === "admin" || editable;
-    const className = classNames.get(String(item.class_id));
     const createdAt = createdAtOf(item);
-    const audience =
-      item.scope === "class"
-        ? `Class: ${className || "Unknown class"}`
-        : item.scope === "pilot"
-          ? "Pilots"
-          : item.scope === "route"
-            ? `Route${item.route_id ? ` #${item.route_id}` : ""}`
-            : "Entire school";
     const isExpanded = expandedBroadcastId === item.broadcast_id;
     return (
       <div
         key={item.broadcast_id}
-        className={`listitem ${styles.broadcastRow}`}
+        className="listitem"
         onClick={() => setExpandedBroadcastId(isExpanded ? null : item.broadcast_id)}
+        style={{ cursor: "pointer", flexWrap: "wrap", alignItems: "flex-start", overflow: "hidden" }}
       >
         <div className="avatar y">📣</div>
-        <div className={`meta ${styles.broadcastMeta}`}>
-          <b className={styles.sender}>
+        <div className="meta" style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          <b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {senderNameOf(item)}
           </b>
-          <span className={styles.message}>
+          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {richTextToPlainText(item.message)}
           </span>
-          <span className={styles.broadcastSummary}>
-            {roleNameOf(item)} · {audience} · {createdAt ? formatDate(createdAt) : "Date unavailable"}
+          <span style={{ display: "block", marginTop: 4, color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {roleNameOf(item)} · {audienceOf(item)} · {createdAt ? formatDate(createdAt) : "Date unavailable"}
           </span>
         </div>
-        {canManage && (
-          <div className={styles.rowActions}>
-            <button className="btn ghost sm" type="button" onClick={(event) => {
-              event.stopPropagation();
-              startEdit(item);
-            }}>Edit</button>
-            <button className="btn danger sm" type="button" onClick={(event) => {
-              event.stopPropagation();
-              setPendingDelete(item);
-            }}>Delete</button>
+        {editable && (
+          <div className="cta-row">
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                startEdit(item);
+              }}
+            >
+              Edit
+            </button>
+            <button
+              className="btn danger sm"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setPendingDelete(item);
+              }}
+            >
+              Delete
+            </button>
           </div>
         )}
         {isExpanded && (
           <div
-            className={styles.expandedMessage}
+            style={{
+              flexBasis: "100%",
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 8,
+              background: "#eef7fa",
+              color: "#0f172a",
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            }}
             onClick={(event) => event.stopPropagation()}
             dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.message) }}
           />
@@ -149,6 +182,7 @@ export default function AdminBroadcast() {
     setEditingBroadcastId(null);
     setScope("school");
     setClassId("");
+    setRouteId("");
     setMessage("");
   }
 
@@ -156,9 +190,16 @@ export default function AdminBroadcast() {
     setEditingBroadcastId(item.broadcast_id);
     setScope(item.scope || "school");
     setClassId(item.class_id ? String(item.class_id) : "");
+    setRouteId(item.route_id ? String(item.route_id) : "");
     setMessage(item.message || "");
     setFormOpen(true);
     setExpandedBroadcastId(null);
+  }
+
+  function changeScope(nextScope) {
+    setScope(nextScope);
+    if (nextScope !== "class") setClassId("");
+    if (nextScope !== "route") setRouteId("");
   }
 
   async function submit(event) {
@@ -169,6 +210,10 @@ export default function AdminBroadcast() {
     }
     if (scope === "class" && !classId) {
       toast("Select a class");
+      return;
+    }
+    if (scope === "route" && !routeId) {
+      toast("Select a route");
       return;
     }
 
@@ -182,6 +227,7 @@ export default function AdminBroadcast() {
         await communicationApi.createBroadcast({
           scope,
           class_id: scope === "class" ? Number(classId) : null,
+          route_id: scope === "route" ? Number(routeId) : null,
           message: sanitizedMessage,
         });
         toast("Broadcast sent");
@@ -212,9 +258,12 @@ export default function AdminBroadcast() {
   }
 
   return (
-    <AdminShell>
+    <StaffShell>
       <div className="scr-title">Broadcast</div>
       <div className="scr-sub">Send announcements to the school community</div>
+      {location.state?.accessDenied && (
+        <ErrorBanner message="That page is not available to staff. You have been returned to Broadcast." />
+      )}
       {loading && <Spinner />}
       <ErrorBanner message={error} />
 
@@ -225,30 +274,40 @@ export default function AdminBroadcast() {
       )}
 
       {formOpen && (
-        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+        <form className="card white" onSubmit={submit} style={{ marginTop: 14 }}>
           {!editingBroadcastId && (
             <div className="grid2">
-            <div className="field">
-              <label>Audience</label>
-              <select value={scope} onChange={(event) => {
-                setScope(event.target.value);
-                if (event.target.value !== "class") setClassId("");
-              }}>
-                <option value="school">Entire school</option>
-                <option value="class">Specific class</option>
-              </select>
-            </div>
-            {scope === "class" && (
               <div className="field">
-                <label>Class</label>
-                <select required value={classId} onChange={(event) => setClassId(event.target.value)}>
-                  <option value="">Select class</option>
-                  {(classes || []).map((item) => (
-                    <option key={item.class_id} value={item.class_id}>{item.name}</option>
-                  ))}
+                <label>Audience</label>
+                <select value={scope} onChange={(event) => changeScope(event.target.value)}>
+                  <option value="school">Entire school</option>
+                  <option value="class">Specific class</option>
+                  <option value="route">Specific route</option>
+                  <option value="pilot">Pilots</option>
                 </select>
               </div>
-            )}
+              {scope === "class" && (
+                <div className="field">
+                  <label>Class</label>
+                  <select required value={classId} onChange={(event) => setClassId(event.target.value)}>
+                    <option value="">Select class</option>
+                    {(classes || []).map((item) => (
+                      <option key={item.class_id} value={item.class_id}>{item.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {scope === "route" && (
+                <div className="field">
+                  <label>Route</label>
+                  <select required value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+                    <option value="">Select route</option>
+                    {(routes || []).map((item) => (
+                      <option key={item.route_id} value={item.route_id}>{item.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
           <div className="field">
@@ -266,56 +325,60 @@ export default function AdminBroadcast() {
 
       {!loading && !error && (
         <>
-        <div className={`card white ${styles.filterCard}`}>
-          <div className="grid2">
-            <div className="field">
-              <label>Search broadcasts</label>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search sender, message, or class"
-              />
+          <div className="card white" style={{ marginTop: 14 }}>
+            <div className="grid2">
+              <div className="field">
+                <label>Search broadcasts</label>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search sender, message, or class"
+                />
+              </div>
+              <div className="field">
+                <label>Filter by audience</label>
+                <select value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
+                  <option value="all">All audiences</option>
+                  <option value="school">Entire school</option>
+                  <option value="class">Specific class</option>
+                  <option value="route">Specific route</option>
+                  <option value="pilot">Pilots</option>
+                  <option value="role_teacher">Teachers</option>
+                  <option value="role_admin">School Admin</option>
+                </select>
+              </div>
             </div>
             <div className="field">
-              <label>Filter by audience</label>
-              <select value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
-                <option value="all">All audiences</option>
-                <option value="school">Entire school</option>
-                <option value="class">Specific class</option>
-                <option value="role_pilot">Pilots</option>
-                <option value="role_teacher">Teachers</option>
-                <option value="role_admin">School Admin</option>
+              <label>Sort by creation date</label>
+              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
               </select>
             </div>
           </div>
-          <div className="field">
-            <label>Sort by creation date</label>
-            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-          </div>
-        </div>
-        <div className={styles.broadcastColumns}>
-          <div className={styles.broadcastColumn}>
-            <div className={`section-label ${styles.columnHeading}`}>Posted (Outgoing)</div>
-            <div className={`card ${styles.broadcastList}`}>
-              {postedBroadcasts.length
-                ? postedPager.pageItems.map((item) => renderBroadcastRow(item, true))
-                : <Empty>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</Empty>}
-              <Pagination {...postedPager} />
+          <div
+            className="grid2"
+            style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, alignItems: "start", marginTop: 18 }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div className="section-label" style={{ marginTop: 0 }}>Posted (Outgoing)</div>
+              <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+                {postedBroadcasts.length
+                  ? postedPager.pageItems.map((item) => renderBroadcastRow(item, true))
+                  : <Empty>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</Empty>}
+                <Pagination {...postedPager} />
+              </div>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div className="section-label" style={{ marginTop: 0 }}>Received (Incoming)</div>
+              <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+                {receivedBroadcasts.length
+                  ? receivedPager.pageItems.map((item) => renderBroadcastRow(item, false))
+                  : <Empty>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</Empty>}
+                <Pagination {...receivedPager} />
+              </div>
             </div>
           </div>
-          <div className={styles.broadcastColumn}>
-            <div className={`section-label ${styles.columnHeading}`}>Received (Incoming)</div>
-            <div className={`card ${styles.broadcastList}`}>
-              {receivedBroadcasts.length
-                ? receivedPager.pageItems.map((item) => renderBroadcastRow(item, false))
-                : <Empty>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</Empty>}
-              <Pagination {...receivedPager} />
-            </div>
-          </div>
-        </div>
         </>
       )}
       <ConfirmDialog
@@ -326,6 +389,6 @@ export default function AdminBroadcast() {
         onConfirm={confirmDelete}
         onCancel={() => !deleting && setPendingDelete(null)}
       />
-    </AdminShell>
+    </StaffShell>
   );
 }
