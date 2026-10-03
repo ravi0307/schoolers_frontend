@@ -18,6 +18,7 @@ import ParentMarks from "./pages/parent/ParentMarks";
 import ParentLeave from "./pages/parent/ParentLeave";
 import ParentBarter from "./pages/parent/ParentBarter";
 import ParentGallery from "./pages/parent/ParentGallery";
+import ParentTimetable from "./pages/parent/ParentTimetable";
 
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
@@ -86,6 +87,7 @@ export default function App() {
                       <Route path="home" element={<ParentHome />} />
                       <Route path="pickdrop" element={<ParentPickDrop />} />
                       <Route path="attendance" element={<ParentAttendance />} />
+                      <Route path="timetable" element={<ParentTimetable />} />
                       <Route path="marks" element={<ParentMarks />} />
                       <Route path="leave" element={<ParentLeave />} />
                       <Route path="barter" element={<ParentBarter />} />
