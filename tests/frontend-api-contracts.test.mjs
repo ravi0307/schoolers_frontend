@@ -317,24 +317,16 @@ test("parent pick & drop is strictly read-only", () => {
   ]);
 });
 
-test("pilot pages render web layout on wide screens and mobile on phones", () => {
+test("pilot and parent shells use the shared drawer-based web layout on every screen", () => {
   assertContains("src/hooks/useIsWide.js", [/min-width: \$\{breakpoint\}px/]);
-  assertContains("src/components/layout/PilotShell.jsx", [
-    /WebLayout/,
-    /MobileLayout/,
-    /portalLabel="PILOT PORTAL"/,
-    /useIsWide\(\)/,
-  ]);
-});
-
-test("parent pages render web layout on wide screens and mobile on phones", () => {
-  assertContains("src/components/layout/ParentShell.jsx", [
-    /WebLayout/,
-    /MobileLayout/,
-    /portalLabel="PARENT PORTAL"/,
-    /useIsWide\(\)/,
-    /TABS/,
-  ]);
+  for (const file of ["src/components/layout/PilotShell.jsx", "src/components/layout/ParentShell.jsx"]) {
+    const shell = source(file);
+    assert.match(shell, /<WebLayout navItems=\{TABS\} portalLabel="(?:PILOT|PARENT) PORTAL">/);
+    assert.doesNotMatch(shell, /MobileLayout/);
+    assert.doesNotMatch(shell, /useIsWide\(\)/);
+  }
+  assertContains("src/components/layout/PilotShell.jsx", [/WebLayout/, /portalLabel="PILOT PORTAL"/]);
+  assertContains("src/components/layout/ParentShell.jsx", [/WebLayout/, /portalLabel="PARENT PORTAL"/, /TABS/]);
 });
 
 test("parent pages keep per-child selection in every layout", () => {

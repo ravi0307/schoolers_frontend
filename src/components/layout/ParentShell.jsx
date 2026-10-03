@@ -1,7 +1,5 @@
 import WebLayout from "../layout/WebLayout";
-import MobileLayout from "../layout/MobileLayout";
 import { useParentContext } from "../../context/ParentContext";
-import { useIsWide } from "../../hooks/useIsWide";
 import { Spinner } from "../ui/Primitives";
 import { Backpack, BarChart3, Bus, CalendarDays, CalendarRange, Check, House, Image, Trophy } from "lucide-react";
 
@@ -19,7 +17,6 @@ const TABS = [
 
 export default function ParentShell({ children }) {
   const { kids, selectedChildId, setSelectedChildId, loading } = useParentContext();
-  const isWide = useIsWide();
 
   const childPicker =
     !loading && kids.length > 1 ? (
@@ -47,12 +44,9 @@ export default function ParentShell({ children }) {
       </>
     );
 
-  if (isWide) {
-    return (
-      <WebLayout navItems={TABS} portalLabel="PARENT PORTAL">
-        {body}
-      </WebLayout>
-    );
-  }
-  return <MobileLayout tabs={TABS}>{body}</MobileLayout>;
+  return (
+    <WebLayout navItems={TABS} portalLabel="PARENT PORTAL">
+      {body}
+    </WebLayout>
+  );
 }
