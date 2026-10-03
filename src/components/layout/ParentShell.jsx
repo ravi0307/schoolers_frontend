@@ -1,6 +1,10 @@
 import WebLayout from "../layout/WebLayout";
+import { Outlet } from "react-router-dom";
 import { useParentContext } from "../../context/ParentContext";
 import { Spinner } from "../ui/Primitives";
+import Card from "../ui/Card";
+import EmptyState from "../ui/EmptyState";
+import styles from "./ParentShell.module.css";
 import { Backpack, BarChart3, Bus, CalendarDays, CalendarRange, Check, House, Image, Trophy } from "lucide-react";
 
 const TABS = [
@@ -20,27 +24,27 @@ export default function ParentShell({ children }) {
 
   const childPicker =
     !loading && kids.length > 1 ? (
-      <div className="card white parent-child-picker">
-        <span>Viewing</span>
-        <select value={selectedChildId || ""} onChange={(e) => setSelectedChildId(Number(e.target.value))}>
+      <Card className={`card white ${styles.childPicker}`}>
+        <label htmlFor="parent-child-select">Viewing</label>
+        <select id="parent-child-select" value={selectedChildId || ""} onChange={(e) => setSelectedChildId(Number(e.target.value))}>
           {kids.map((k) => (
             <option key={k.student_id} value={k.student_id}>
               {k.name} · Class {k.class_id}
             </option>
           ))}
         </select>
-      </div>
+      </Card>
     ) : null;
 
   const body =
     loading ? (
       <Spinner />
     ) : kids.length === 0 ? (
-      <div className="empty">No children linked to this parent account yet.</div>
+      <EmptyState>No children linked to this parent account yet.</EmptyState>
     ) : (
       <>
         {childPicker}
-        {children}
+        {children ?? <Outlet />}
       </>
     );
 

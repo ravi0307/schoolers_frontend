@@ -70,7 +70,8 @@ test("staff gallery reuses the school-wide gallery with per-item ownership", () 
 test("staff report reads the signed-in user's own attendance and salary", () => {
   const page = source("src/pages/staff/StaffReport.jsx");
   assert.match(page, /StaffSelfSummary/, "the report must reuse the self-summary fetch, not an admin lookup");
-  assert.match(page, /StaffShell/, "the report must render inside the staff shell");
+  assert.doesNotMatch(page, /StaffShell/, "route-level StaffShell must be the only staff shell");
+  assert.match(source("src/App.jsx"), /<StaffShell\s*\/>/, "staff routes must use their shared shell");
 });
 
 test("staff may address school, class, route and pilot audiences", () => {

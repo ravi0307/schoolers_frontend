@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AdminShell from "../components/layout/AdminShell";
-import ParentShell from "../components/layout/ParentShell";
 import TeacherShell from "../components/layout/TeacherShell";
 import StaffShell from "../components/layout/StaffShell";
 import PilotShell from "../components/layout/PilotShell";
@@ -49,7 +48,7 @@ const ROLE_LABEL = {
 
 /** Each role's own shell, so the page keeps that portal's nav and branding. */
 const SHELLS = {
-  parent: ParentShell,
+  parent: ParentContent,
   teacher: TeacherShell,
   staff: StaffShell,
   admin: AdminShell,
@@ -69,6 +68,10 @@ const HOME_BY_ROLE = {
 /** A role with no registered shell still renders its details, just without nav. */
 function BareShell({ children }) {
   return <div className="web-content">{children}</div>;
+}
+
+function ParentContent({ children }) {
+  return children;
 }
 
 /**

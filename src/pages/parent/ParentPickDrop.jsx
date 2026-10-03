@@ -1,9 +1,12 @@
 import { useEffect, useMemo } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
-import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Pill, initials } from "../../components/ui/Primitives";
+import EmptyState from "../../components/ui/EmptyState";
+import styles from "./ParentPickDrop.module.css";
 
 const STATUS_META = {
   pending: { label: "Pickup pending", tone: "mute" },
@@ -76,29 +79,27 @@ export default function ParentPickDrop() {
   }, [stops, snapshot?.status]);
 
   return (
-    <ParentShell>
-      <div className="scr-title">Pick &amp; Drop</div>
-      <div className="scr-sub">
-        {selectedChild ? `Live transport status for ${selectedChild.name.split(" ")[0]}` : ""} · updates every 20s
-      </div>
+    <>
+      <PageHeader
+        title="Pick & Drop"
+        subtitle={`${selectedChild ? `Live transport status for ${selectedChild.name.split(" ")[0]}` : ""} · updates every 20s`}
+      />
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
 
       {!loading && !error && snapshot && (
         <>
-          <div className="card white">
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Card className={`card white ${styles.studentCard}`}>
               <div className="avatar">{initials(selectedChild.name)}</div>
-              <div style={{ flex: 1 }}>
-                <b style={{ fontSize: 13.5 }}>{snapshot.student_name}</b>
-                <div style={{ marginTop: 4 }}>{snapshot.admission_no}</div>
+              <div className={styles.studentInfo}>
+                <b className={styles.studentName}>{snapshot.student_name}</b>
+                <div className={styles.admissionNumber}>{snapshot.admission_no}</div>
               </div>
               <Pill tone={STATUS_META[snapshot.status]?.tone || "mute"}>
                 {STATUS_META[snapshot.status]?.label || snapshot.status}
               </Pill>
-            </div>
-          </div>
+          </Card>
 
           {assigned ? (
             <>
@@ -117,21 +118,24 @@ export default function ParentPickDrop() {
 
               <div className="section-label">Live journey</div>
               {journey && (
-                <div className="card journey-card">
+                <Card className={`card ${styles.journeyCard}`}>
                   <JourneyHead status={snapshot.status} journey={journey} />
-                  <div className="journey-progress">
-                    <div className="journey-progress-fill" style={{ width: `${journey.progressPct}%` }} />
-                  </div>
-                  <div className="journey-progress-caption">
+                  <progress
+                    className={styles.progress}
+                    value={journey.progressPct}
+                    max="100"
+                    aria-label="Journey completion"
+                  />
+                  <div className={styles.progressCaption}>
                     {journey.reached.length} of {journey.reached.length + journey.upcoming.length} stops
                   </div>
 
-                  <div className="stop-timeline">
+                  <div className={styles.stopTimeline}>
                     {[...journey.reached, ...journey.upcoming].map((s) => (
                       <StopRow key={s.stop_id} stop={s} reached={journey.reached.includes(s)} current={journey.next && journey.next.stop_id === s.stop_id} />
                     ))}
                   </div>
-                </div>
+                </Card>
               )}
 
               <div className="section-label">Stops</div>
@@ -149,16 +153,16 @@ export default function ParentPickDrop() {
                     </div>
                   ))
                 ) : (
-                  <Empty>No stops set for this route.</Empty>
+                  <EmptyState>No stops set for this route.</EmptyState>
                 )}
               </div>
             </>
           ) : (
-            <Empty>This student has not been assigned a transport route yet.</Empty>
+            <EmptyState>This student has not been assigned a transport route yet.</EmptyState>
           )}
         </>
       )}
-    </ParentShell>
+    </>
   );
 }
 
@@ -177,15 +181,15 @@ function JourneyHead({ status, journey }) {
   );
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div className="journey-heading">
-          <span className="journey-pulse" />
+      <div className={styles.journeyHead}>
+        <div className={styles.journeyHeading}>
+          <span className={styles.journeyPulse} />
           {heading}
         </div>
         {eta}
       </div>
       {next && !complete && (
-        <div className="journey-next">
+        <div className={styles.journeyNext}>
           Next stop: <b>{next.stop_name}</b>
         </div>
       )}
@@ -195,9 +199,9 @@ function JourneyHead({ status, journey }) {
 
 function StopRow({ stop, reached, current }) {
   return (
-    <div className={`timeline-stop ${reached ? "reached" : current ? "current" : "upcoming"}`}>
-      <div className="timeline-node">
-        {reached ? <span className="timeline-tick">✓</span> : <span className="timeline-dot" />}
+    <div className={`${styles.timelineStop} ${styles[reached ? "reached" : current ? "current" : "upcoming"]}`}>
+      <div className={styles.timelineNode}>
+        {reached ? <span className={styles.timelineTick}>✓</span> : <span className={styles.timelineDot} />}
       </div>
       <div className="meta">
         <b>{stop.stop_name}</b>

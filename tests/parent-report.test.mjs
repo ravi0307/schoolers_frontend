@@ -6,6 +6,7 @@ const read = (file) => fs.readFileSync(file, "utf8");
 
 test("parent navigation and routes expose My Report", () => {
   assert.match(read("src/components/layout/ParentShell.jsx"), /\/parent\/report.*My Report/);
+  assert.match(read("src/App.jsx"), /path="\/parent"[\s\S]*?<ParentShell \/>/);
   assert.match(read("src/App.jsx"), /path="report" element=\{<ParentReport \/>\}/);
 });
 
@@ -20,5 +21,5 @@ test("parent report combines the selected child's attendance, marks and fee hist
   for (const section of ["Attendance", "Fees deposited", "Marks"]) {
     assert.ok(page.includes(section), `missing ${section} section`);
   }
-  assert.match(read("src/pages/parent/ParentReport.module.css"), /max-width: 767px/);
+  assert.match(read("src/pages/parent/ParentReport.module.css"), /max-width: 48rem/);
 });

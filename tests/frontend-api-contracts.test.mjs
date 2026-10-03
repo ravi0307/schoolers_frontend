@@ -164,7 +164,7 @@ test("key frontend workflows remain represented by application routes", () => {
     master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
-    const portalRoute = ["teacher", "admin", "staff"].includes(role)
+    const portalRoute = ["teacher", "admin", "staff", "parent"].includes(role)
       ? `path="/${role}"`
       : `path="/${role}/*"`;
     assert.ok(app.includes(portalRoute), `route group /${role} is not registered`);
@@ -309,7 +309,6 @@ test("parent pick & drop is strictly read-only", () => {
   assert.doesNotMatch(page, /updatePickupStatus/, "parents must not flip pilots' status");
   assert.doesNotMatch(page, /\.post\(|\.patch\(|\.delete\(/, "parent page must not mutate route data");
   assertContains("src/pages/parent/ParentPickDrop.jsx", [
-    /ParentShell/,
     /useParentContext\(\)/,
     /selectedChild/,
     /No stops set for this route\./,
@@ -374,9 +373,9 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
     /Announcements & timetable/,
     /TIMETABLE_DAYS as DAYS/,
     /summaryEntryTimes\(entry, periodById\)/,
-    /timetable-weekly-summary-card/,
-    /timetable-preview-table/,
-    /active-cell/,
+    /styles\.timetableCard/,
+    /styles\.timetableTable/,
+    /styles\.activeCell/,
     /displayTime\(start\)/,
     /toTimeInput/,
     /subjectNames\.get\(String\(entry\.subject_id\)\)/,
@@ -390,7 +389,6 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
 
 test("parent timetable page shows the selected child's class week", () => {
   assertContains("src/pages/parent/ParentTimetable.jsx", [
-    /ParentShell/,
     /useParentContext/,
     /selectedChild\?\.class_id/,
     /timetableApi\.classTimetableWeek\(classId, weekStart\)/,
@@ -406,28 +404,31 @@ test("parent timetable page shows the selected child's class week", () => {
 test("parent home groups announcements with the timetable and stretches the gallery beside both", () => {
   assertContains("src/components/ui/BroadcastFeed.jsx", [/bare = false/]);
   const home = source("src/pages/parent/ParentHome.jsx");
-  assert.match(home, /📢 Announcements/);
+  assert.match(home, /<Megaphone/);
   assert.match(home, /limit=\{12\}/);
   assert.match(home, /\bbare\b/);
   // Announcements flow under the quick links, then the timetable joins the same grid.
   assert.ok(
-    home.indexOf('title: "Leave Request"') < home.indexOf("📢 Announcements"),
+    home.indexOf('title: "Leave Request"') < home.indexOf("> Announcements"),
     "announcements must follow the Leave Request card"
   );
   assert.ok(
-    home.indexOf("Announcements & timetable") < home.indexOf("📢 Announcements"),
+    home.indexOf("Announcements & timetable") < home.indexOf("> Announcements"),
     "announcements sit inside the combined section"
   );
   // Timetable is pinned to the left column; gallery spans both rows on the right,
   // so its height equals Announcements + Timetable.
-  assert.match(home, /gridTemplateRows: "auto auto"/);
-  assert.match(home, /gridColumn: 1/, "timetable must sit on the left column");
-  assert.match(home, /gridColumn: 2, gridRow: "1 \/ 3"/, "gallery must span announcements + timetable rows");
-  assert.match(home, /<GalleryCard[\s\S]*<\/div>\s+<\/ParentShell>/, "gallery card closes the timetable row");
+  const styles = source("src/pages/parent/ParentHome.module.css");
+  assert.match(styles, /\.updatesGrid\s*\{[^}]*grid-template-rows:\s*auto auto/s);
+  assert.match(styles, /\.timetable\s*\{[^}]*grid-column:\s*1/s, "timetable must sit on the left column");
+  assert.match(styles, /\.timetableTable\s*\{[^}]*min-width:/s, "weekly timetable needs its own scrollable table sizing");
+  assert.match(styles, /\.gallery\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1 \/ 3/s, "gallery must span announcements + timetable rows");
+  assert.match(home, /<GalleryCard[\s\S]*<\/div>\s+<\/>\s+\);/, "gallery card closes the timetable row");
 });
 
 test("parent home quick access cards show live summary + history for each portal", () => {
   const home = source("src/pages/parent/ParentHome.jsx");
+  const styles = source("src/pages/parent/ParentHome.module.css");
   // Every card converges on real API data for the selected child.
   assert.match(home, /attendanceApi\.getAttendance\(selectedChild\.student_id\)/);
   assert.match(home, /marksApi\.studentMarks\(selectedChild\.student_id\)/);
@@ -445,8 +446,8 @@ test("parent home quick access cards show live summary + history for each portal
   assert.match(home, /\.sort\(\(a, b\) => String\(b\.date\)\.localeCompare\(String\(a\.date\)\)\)/);
   assert.match(home, /\.sort\(\(a, b\) => b\.term\.localeCompare\(a\.term\)\)/);
   assert.match(home, /\.slice\(0, 100\)/);
-  assert.match(home, /maxHeight/, "cards need a max-height scroll area");
-  assert.match(home, /overflowY: "auto"/, "cards need a vertical scrollbar");
+  assert.match(styles, /\.previewList,\s*\.historyList\s*\{[^}]*max-height:/s, "cards need a max-height scroll area");
+  assert.match(styles, /\.previewList,\s*\.historyList\s*\{[^}]*overflow-y:\s*auto/s, "cards need a vertical scrollbar");
   // Announcements scroll too.
   assert.match(home, /limit=\{12\}/);
   assert.match(home, /childLeaves\.slice\(0, 100\)/);
@@ -468,7 +469,7 @@ test("parent home quick access cards show live summary + history for each portal
   assert.match(home, /onNavigate=\{\(\) => navigate\(q\.to\)\}/);
   assert.match(home, /resolveMediaUrl\(item\.file_url\)/);
   assert.match(home, /media_kind === "video"/);
-  assert.match(home, /flexDirection: "column"/, "gallery media list must scroll vertically");
+  assert.match(styles, /\.previewList,\s*\.historyList\s*\{[^}]*flex-direction:\s*column/s, "gallery media list must stack vertically");
   // Each card keeps navigating to its portal section.
   for (const route of [
     "/parent/pickdrop",
@@ -1954,7 +1955,7 @@ test("every role has a profile route under its own portal", () => {
     ["master", "master"],
   ]) {
     assert.match(app, new RegExp(`path="profile" element=\\{<UserProfile />\\}`), `${role} is missing a profile route`);
-    const portalRoute = ["teacher", "admin"].includes(role)
+    const portalRoute = ["teacher", "admin", "parent"].includes(role)
       ? `path="/${prefix}"`
       : `path="/${prefix}/*"`;
     assert.ok(app.includes(portalRoute), `${role} has no portal route to hang it on`);
@@ -2010,7 +2011,7 @@ test("the profile page renders inside the signed-in role's own shell", () => {
   // dropping the user onto an unbranded page.
   assertContains("src/pages/UserProfile.jsx", [
     /SHELLS/,
-    /parent: ParentShell/,
+    /parent: ParentContent/,
     /teacher: TeacherShell/,
     /admin: AdminShell/,
     /pilot: PilotShell/,

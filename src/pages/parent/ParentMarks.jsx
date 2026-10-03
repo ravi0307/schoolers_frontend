@@ -1,8 +1,10 @@
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as marksApi from "../../api/marks";
-import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 function gradeFor(score) {
@@ -23,13 +25,15 @@ export default function ParentMarks() {
   const pager = usePagination(data);
 
   return (
-    <ParentShell>
-      <div className="scr-title">Report Card</div>
-      <div className="scr-sub">{selectedChild ? `${selectedChild.name} · subject-wise marks` : ""}</div>
+    <>
+      <PageHeader
+        title="Report Card"
+        subtitle={selectedChild ? `${selectedChild.name} · subject-wise marks` : ""}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
-        <div className="card">
+        <Card className="card">
           {data && data.length ? (
             pager.pageItems.map((m) => (
               <div key={m.mark_id} className="listitem">
@@ -43,11 +47,11 @@ export default function ParentMarks() {
               </div>
             ))
           ) : (
-            <Empty>No marks recorded yet.</Empty>
+            <EmptyState>No marks recorded yet.</EmptyState>
           )}
           <Pagination {...pager} />
-        </div>
+        </Card>
       )}
-    </ParentShell>
+    </>
   );
 }
