@@ -103,7 +103,7 @@
 }
 
 .back {
-  justify-self: start;
+  justify-self: end;
 }
 
 .routeAssignment {

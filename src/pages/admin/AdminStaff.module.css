@@ -109,10 +109,11 @@
   .staffActions {
     width: 100%;
     margin-left: 0;
+    justify-content: flex-end;
     flex-wrap: wrap;
   }
 
   .attendanceAction {
-    margin-left: 0;
+    margin-left: auto;
   }
 }

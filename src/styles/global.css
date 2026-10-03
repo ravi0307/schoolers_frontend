@@ -71,7 +71,7 @@
   flex-shrink: 0; width: 148px; display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
 .school-details-logo .field { width: 100%; margin-bottom: 0; }
-.school-details-logo .image-upload-actions { justify-content: center; }
+.school-details-logo .image-upload-actions { justify-content: flex-end; }
 .school-logo-label {
   font-size: 11.5px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase;
   letter-spacing: .04em;
@@ -197,7 +197,7 @@
 .data-table th { color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; background: var(--paper-light); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table td:first-child { font-weight: 700; }
-.table-actions { display: flex; gap: 7px; }
+.table-actions { display: flex; justify-content: flex-end; gap: 7px; }
 .btn {
   font-weight: 600; font-size: 13px; border: none; padding: 10px 16px;
   border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
@@ -209,6 +209,13 @@
 .btn.block { width: 100%; justify-content: center; }
 .btn.sm { padding: 6px 11px; font-size: 11.5px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+.web-content > .btn:not(.block),
+.web-content .card > .btn:not(.block),
+.web-content form > .btn:not(.block) {
+  display: flex;
+  width: fit-content;
+  margin-inline-start: auto;
+}
 
 .field { margin-bottom: 13px; }
 .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
@@ -509,7 +516,7 @@
 @media (max-width: 960px) {
   .grid4 { grid-template-columns: 1fr 1fr; }
 }
-.cta-row { display: flex; gap: 10px; margin-top: 6px; }
+.cta-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 
 .btn.toggle-on { background: var(--ok-green); color: var(--color-neutral-0); border: none; }
 .btn.toggle-off { background: var(--line); color: var(--ink); border: none; }
@@ -526,9 +533,9 @@
 }
 .timetable-entry-button .entry-subject { flex: 0 0 auto; }
 .timetable-entry-button .entry-time { flex: 0 0 auto; }
-.add-period-toolbar { margin: 14px 0 12px; display: flex; gap: 10px; align-items: center; }
+.add-period-toolbar { margin: 14px 0 12px; display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
 .add-period-toolbar .btn { width: auto; }
-.add-period-actions { display: flex; align-items: end; gap: 10px; }
+.add-period-actions { display: flex; align-items: end; justify-content: flex-end; gap: 10px; }
 .timetable-entry-button:hover {
   background: var(--ruled-blue); color: var(--paper-light);
 }
@@ -679,7 +686,7 @@
   width: 72px; height: 72px; object-fit: cover; border-radius: 10px;
   border: 1px solid var(--line); background: var(--paper);
 }
-.image-upload-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.image-upload-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .image-upload-btn { cursor: pointer; margin: 0; }
 .document-upload-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .document-upload-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
@@ -786,7 +793,7 @@
 .gallery-file-note { color: var(--ink-soft); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
 .gallery-form-error { margin-bottom: 10px; }
 .gallery-replace-toggle { margin-right: 6px; }
-.gallery-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.gallery-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .gallery-tile-remove {
   position: absolute;
   top: 8px;
@@ -1286,7 +1293,7 @@
    the name: Download is the report's own primary action, and Close is solidly
    a button on purpose, so a reader cannot mistake the sheet for a static
    message. Gold + a quiet slate is the app's add/cancel pair. */
-.sr-actions { display: flex; flex: 0 0 auto; gap: var(--space-2); }
+.sr-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: var(--space-2); }
 .sr-head .btn {
   display: inline-flex;
   align-items: center;
