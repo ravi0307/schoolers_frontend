@@ -3,12 +3,13 @@ import MobileLayout from "../layout/MobileLayout";
 import { useParentContext } from "../../context/ParentContext";
 import { useIsWide } from "../../hooks/useIsWide";
 import { Spinner } from "../ui/Primitives";
-import { Backpack, Bus, CalendarDays, Check, House, Image, Trophy } from "lucide-react";
+import { Backpack, Bus, CalendarDays, CalendarRange, Check, House, Image, Trophy } from "lucide-react";
 
 const TABS = [
   { to: "/parent/home", icon: House, label: "Home" },
   { to: "/parent/pickdrop", icon: Bus, label: "Pick & Drop" },
   { to: "/parent/attendance", icon: Check, label: "Attendance" },
+  { to: "/parent/timetable", icon: CalendarRange, label: "Timetable" },
   { to: "/parent/marks", icon: Trophy, label: "Marks" },
   { to: "/parent/gallery", icon: Image, label: "Gallery" },
   { to: "/parent/leave", icon: CalendarDays, label: "Leave" },

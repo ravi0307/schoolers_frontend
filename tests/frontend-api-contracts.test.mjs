@@ -156,7 +156,7 @@ test("key frontend workflows remain represented by application routes", () => {
     assert.ok(app.includes(`path="${route}"`), `route ${route} is not registered`);
   }
   const routeGroups = {
-    parent: ["home", "pickdrop", "attendance", "marks", "gallery", "leave", "barter"],
+    parent: ["home", "pickdrop", "attendance", "timetable", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave"],
@@ -393,6 +393,21 @@ test("parent home shows the selected child's timetable as an admin-style weekly 
     /toLocaleDateString\("en-US", \{ weekday: "short" \}\)/,
     /No timetable has been published for this class yet\./,
   ]);
+});
+
+test("parent timetable page shows the selected child's class week", () => {
+  assertContains("src/pages/parent/ParentTimetable.jsx", [
+    /ParentShell/,
+    /useParentContext/,
+    /selectedChild\?\.class_id/,
+    /timetableApi\.classTimetableWeek\(classId, weekStart\)/,
+    /mergeWeekColumns\(buildWeekColumns\(weekStart\), week\)/,
+    /TimetableWeekHeader/,
+    /WeekSelector/,
+    /No timetable has been published for this class yet\./,
+  ]);
+  const shell = source("src/components/layout/ParentShell.jsx");
+  assert.match(shell, /to: "\/parent\/timetable"/, "ParentShell lacks the Timetable tab");
 });
 
 test("parent home groups announcements with the timetable and stretches the gallery beside both", () => {
