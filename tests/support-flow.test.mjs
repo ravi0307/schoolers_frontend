@@ -98,3 +98,26 @@ test("the support routes and navigation are registered", () => {
   assert.match(source("src/components/layout/AdminShell.jsx"), /\/admin\/support/);
   assert.match(source("src/components/layout/MasterShell.jsx"), /\/master\/support/);
 });
+
+test("opening a ticket loads its detail from the shared client", () => {
+  const api = source("src/api/support.js");
+  // The thread is fetched on demand from the single-ticket endpoint, and it
+  // must stay on the shared axios client so it inherits the gateway base URL
+  // and the auth header — the path that broke when the gateway mislabelled a
+  // decoded body as gzip and the browser reported a Network Error.
+  assert.ok(
+    api.includes('import client from "./client"'),
+    "support API must use the shared client"
+  );
+  assert.ok(
+    api.includes("client.get(`/support/tickets/${ticketId}`)"),
+    "ticket detail must hit the single-ticket endpoint"
+  );
+});
+
+test("a failed detail load is surfaced, not swallowed", () => {
+  const panel = source("src/components/support/SupportTicketPanel.jsx");
+  assert.match(panel, /useApi/);
+  assert.match(panel, /ErrorBanner/);
+  assert.match(panel, /message=\{error\}/);
+});
