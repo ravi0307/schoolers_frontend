@@ -1,0 +1,26 @@
+.childPicker {
+  display: flex;
+  width: min(100%, 42rem);
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.childPicker label {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.childPicker select {
+  min-width: 0;
+  flex: 1;
+}
+
+@media (max-width: 40rem) {
+  .childPicker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

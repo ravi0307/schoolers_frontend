@@ -5,6 +5,7 @@ import { ParentProvider } from "./context/ParentContext";
 import { TeacherProvider } from "./context/TeacherContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import AdminShell from "./components/layout/AdminShell";
+import ParentShell from "./components/layout/ParentShell";
 import TeacherShell from "./components/layout/TeacherShell";
 import StaffShell from "./components/layout/StaffShell";
 
@@ -86,27 +87,28 @@ export default function App() {
 
             {/* Parent */}
             <Route
-              path="/parent/*"
+              path="/parent"
               element={
                 <ProtectedRoute roles={["parent"]}>
                   <ParentProvider>
-                    <Routes>
-                      <Route path="home" element={<ParentHome />} />
-                      <Route path="pickdrop" element={<ParentPickDrop />} />
-                      <Route path="attendance" element={<ParentAttendance />} />
-                      <Route path="timetable" element={<ParentTimetable />} />
-                      <Route path="marks" element={<ParentMarks />} />
-                      <Route path="report" element={<ParentReport />} />
-                      <Route path="leave" element={<ParentLeave />} />
-                      <Route path="barter" element={<ParentBarter />} />
-                      <Route path="gallery" element={<ParentGallery />} />
-                      <Route path="profile" element={<UserProfile />} />
-                      <Route path="*" element={<Navigate to="/parent/home" replace />} />
-                    </Routes>
+                    <ParentShell />
                   </ParentProvider>
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path="home" element={<ParentHome />} />
+              <Route path="pickdrop" element={<ParentPickDrop />} />
+              <Route path="attendance" element={<ParentAttendance />} />
+              <Route path="timetable" element={<ParentTimetable />} />
+              <Route path="marks" element={<ParentMarks />} />
+              <Route path="report" element={<ParentReport />} />
+              <Route path="leave" element={<ParentLeave />} />
+              <Route path="barter" element={<ParentBarter />} />
+              <Route path="gallery" element={<ParentGallery />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="*" element={<Navigate to="/parent/home" replace />} />
+            </Route>
 
             {/* Teacher */}
             <Route

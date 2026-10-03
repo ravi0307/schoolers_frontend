@@ -1,7 +1,7 @@
 .reportGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
   align-items: start;
 }
 
@@ -16,21 +16,21 @@
 .reportCard :global(.cta-row) {
   justify-content: flex-start;
   flex-wrap: wrap;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
 }
 
 .reportCard :global(.data-table) {
-  min-width: 500px;
+  min-width: 31.25rem;
 }
 
 .reportCard :global(.data-table th),
 .reportCard :global(.data-table td) {
-  height: 38px;
-  padding: 7px 10px;
+  min-height: 2.375rem;
+  padding: var(--space-2) var(--space-3);
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 48rem) {
   .reportGrid {
     grid-template-columns: minmax(0, 1fr);
   }

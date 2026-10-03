@@ -1,13 +1,19 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import StaffShell from "../../components/layout/StaffShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import FormField from "../../components/ui/FormField";
+import { Megaphone, Plus } from "lucide-react";
+import EmptyState from "../../components/ui/EmptyState";
+import styles from "./StaffBroadcast.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
 import * as communicationApi from "../../api/communication";
 import * as academicsApi from "../../api/academics";
 import * as transportApi from "../../api/transport";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, ConfirmDialog } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 import RichTextEditor from "../../components/ui/RichTextEditor";
@@ -116,26 +122,26 @@ export default function StaffBroadcast() {
     return (
       <div
         key={item.broadcast_id}
-        className="listitem"
+        className={`listitem ${styles.broadcastRow}`}
         onClick={() => setExpandedBroadcastId(isExpanded ? null : item.broadcast_id)}
-        style={{ cursor: "pointer", flexWrap: "wrap", alignItems: "flex-start", overflow: "hidden" }}
       >
-        <div className="avatar y">📣</div>
-        <div className="meta" style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
-          <b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className={`avatar y ${styles.broadcastAvatar}`}><Megaphone aria-hidden="true" /></div>
+        <div className={`meta ${styles.broadcastMeta}`}>
+          <b className={styles.broadcastName}>
             {senderNameOf(item)}
           </b>
-          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.broadcastMessage}>
             {richTextToPlainText(item.message)}
           </span>
-          <span style={{ display: "block", marginTop: 4, color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.broadcastDetails}>
             {roleNameOf(item)} · {audienceOf(item)} · {createdAt ? formatDate(createdAt) : "Date unavailable"}
           </span>
         </div>
         {editable && (
-          <div className="cta-row">
-            <button
-              className="btn ghost sm"
+          <div className={`cta-row ${styles.rowActions}`}>
+            <Button
+              variant="subtle"
+              className={styles.compactButton}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
@@ -143,9 +149,10 @@ export default function StaffBroadcast() {
               }}
             >
               Edit
-            </button>
-            <button
-              className="btn danger sm"
+            </Button>
+            <Button
+              variant="danger"
+              className={styles.compactButton}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
@@ -153,22 +160,12 @@ export default function StaffBroadcast() {
               }}
             >
               Delete
-            </button>
+            </Button>
           </div>
         )}
         {isExpanded && (
           <div
-            style={{
-              flexBasis: "100%",
-              marginTop: 10,
-              padding: "10px 12px",
-              borderRadius: 8,
-              background: "#eef7fa",
-              color: "#0f172a",
-              whiteSpace: "pre-wrap",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
+            className={styles.expandedBody}
             onClick={(event) => event.stopPropagation()}
             dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.message) }}
           />
@@ -258,86 +255,82 @@ export default function StaffBroadcast() {
   }
 
   return (
-    <StaffShell>
-      <div className="scr-title">Broadcast</div>
-      <div className="scr-sub">Send announcements to the school community</div>
+    <>
+      <PageHeader
+        title="Broadcast"
+        subtitle="Send announcements to the school community"
+        action={!formOpen && (
+          <Button variant="primary" type="button" onClick={() => setFormOpen(true)}>
+            <Plus aria-hidden="true" /> New Broadcast
+          </Button>
+        )}
+      />
       {location.state?.accessDenied && (
         <ErrorBanner message="That page is not available to staff. You have been returned to Broadcast." />
       )}
       {loading && <Spinner />}
       <ErrorBanner message={error} />
 
-      {!formOpen && (
-        <button className="btn primary" type="button" onClick={() => setFormOpen(true)}>
-          + New Broadcast
-        </button>
-      )}
-
       {formOpen && (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 14 }}>
+        <Card as="form" className={`card white ${styles.formCard}`} onSubmit={submit}>
           {!editingBroadcastId && (
             <div className="grid2">
-              <div className="field">
-                <label>Audience</label>
-                <select value={scope} onChange={(event) => changeScope(event.target.value)}>
+              <FormField id="broadcast-audience" label="Audience">
+                <select id="broadcast-audience" value={scope} onChange={(event) => changeScope(event.target.value)}>
                   <option value="school">Entire school</option>
                   <option value="class">Specific class</option>
                   <option value="route">Specific route</option>
                   <option value="pilot">Pilots</option>
                 </select>
-              </div>
+              </FormField>
               {scope === "class" && (
-                <div className="field">
-                  <label>Class</label>
-                  <select required value={classId} onChange={(event) => setClassId(event.target.value)}>
+                <FormField id="broadcast-class" label="Class" required>
+                  <select id="broadcast-class" required value={classId} onChange={(event) => setClassId(event.target.value)}>
                     <option value="">Select class</option>
                     {(classes || []).map((item) => (
                       <option key={item.class_id} value={item.class_id}>{item.name}</option>
                     ))}
                   </select>
-                </div>
+                </FormField>
               )}
               {scope === "route" && (
-                <div className="field">
-                  <label>Route</label>
-                  <select required value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+                <FormField id="broadcast-route" label="Route" required>
+                  <select id="broadcast-route" required value={routeId} onChange={(event) => setRouteId(event.target.value)}>
                     <option value="">Select route</option>
                     {(routes || []).map((item) => (
                       <option key={item.route_id} value={item.route_id}>{item.name}</option>
                     ))}
                   </select>
-                </div>
+                </FormField>
               )}
             </div>
           )}
-          <div className="field">
-            <label>Message</label>
-            <RichTextEditor value={message} onChange={setMessage} />
-          </div>
+          <FormField id="broadcast-message" label="Message">
+            <RichTextEditor id="broadcast-message" value={message} onChange={setMessage} />
+          </FormField>
           <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={saving}>
+            <Button variant="primary" type="submit" disabled={saving}>
               {saving ? "Saving..." : editingBroadcastId ? "Update Broadcast" : "Send Broadcast"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm} disabled={saving}>Cancel</button>
+            </Button>
+            <Button variant="outline" type="button" onClick={resetForm} disabled={saving}>Cancel</Button>
           </div>
-        </form>
+        </Card>
       )}
 
       {!loading && !error && (
         <>
-          <div className="card white" style={{ marginTop: 14 }}>
+          <Card className={`card white ${styles.filters}`}>
             <div className="grid2">
-              <div className="field">
-                <label>Search broadcasts</label>
+              <FormField id="broadcast-search" label="Search broadcasts">
                 <input
+                  id="broadcast-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search sender, message, or class"
                 />
-              </div>
-              <div className="field">
-                <label>Filter by audience</label>
-                <select value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
+              </FormField>
+              <FormField id="broadcast-audience-filter" label="Filter by audience">
+                <select id="broadcast-audience-filter" value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
                   <option value="all">All audiences</option>
                   <option value="school">Entire school</option>
                   <option value="class">Specific class</option>
@@ -346,37 +339,33 @@ export default function StaffBroadcast() {
                   <option value="role_teacher">Teachers</option>
                   <option value="role_admin">School Admin</option>
                 </select>
-              </div>
+              </FormField>
             </div>
-            <div className="field">
-              <label>Sort by creation date</label>
-              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+            <FormField id="broadcast-sort" label="Sort by creation date">
+              <select id="broadcast-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
               </select>
-            </div>
-          </div>
-          <div
-            className="grid2"
-            style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, alignItems: "start", marginTop: 18 }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div className="section-label" style={{ marginTop: 0 }}>Posted (Outgoing)</div>
-              <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+            </FormField>
+          </Card>
+          <div className={styles.broadcastColumns}>
+            <div className={styles.broadcastColumn}>
+              <h2 className={`section-label ${styles.sectionHeading}`}>Posted (Outgoing)</h2>
+              <Card className={`card ${styles.broadcastList}`}>
                 {postedBroadcasts.length
                   ? postedPager.pageItems.map((item) => renderBroadcastRow(item, true))
-                  : <Empty>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</Empty>}
+                  : <EmptyState>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</EmptyState>}
                 <Pagination {...postedPager} />
-              </div>
+              </Card>
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div className="section-label" style={{ marginTop: 0 }}>Received (Incoming)</div>
-              <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+            <div className={styles.broadcastColumn}>
+              <h2 className={`section-label ${styles.sectionHeading}`}>Received (Incoming)</h2>
+              <Card className={`card ${styles.broadcastList}`}>
                 {receivedBroadcasts.length
                   ? receivedPager.pageItems.map((item) => renderBroadcastRow(item, false))
-                  : <Empty>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</Empty>}
+                  : <EmptyState>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</EmptyState>}
                 <Pagination {...receivedPager} />
-              </div>
+              </Card>
             </div>
           </div>
         </>
@@ -389,6 +378,6 @@ export default function StaffBroadcast() {
         onConfirm={confirmDelete}
         onCancel={() => !deleting && setPendingDelete(null)}
       />
-    </StaffShell>
+    </>
   );
 }

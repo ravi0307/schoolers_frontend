@@ -1,5 +1,9 @@
 import { useMemo } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import DataTable from "../../components/ui/DataTable";
+import { ArrowUpRight, Bus, CalendarDays, Check, Image as ImageIcon, Megaphone, Trophy, Video } from "lucide-react";
+import styles from "./ParentHome.module.css";
 import BroadcastFeed from "../../components/ui/BroadcastFeed";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
@@ -11,77 +15,50 @@ import * as marksApi from "../../api/marks";
 import * as galleryApi from "../../api/gallery";
 import * as leaveApi from "../../api/leave";
 import * as transportApi from "../../api/transport";
-import { Pill, initials, Spinner, Empty } from "../../components/ui/Primitives";
+import { Pill, initials, Spinner } from "../../components/ui/Primitives";
+import EmptyState from "../../components/ui/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { resolveMediaUrl } from "../../api/client";
 import { TIMETABLE_DAYS as DAYS, toTimeInput, displayTime } from "../../utils/timetableFlow";
 
 const LOADING = "Loading…";
-function GalleryCard({ title, summary, items, onNavigate, style }) {
+function GalleryCard({ title, summary, items, onNavigate, className }) {
   return (
-    <button
-      className="card"
+    <Card
+      as="button"
+      type="button"
+      className={`${styles.summaryCard} ${className || ""}`}
       onClick={onNavigate}
-      style={{ ...style, textAlign: "left", cursor: "pointer" }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <b style={{ fontSize: 12.5 }}>{title}</b>
-        <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
+      <div className={styles.summaryHead}>
+        <b className={styles.summaryTitle}>{title}</b>
+        <span className={styles.openLink}>Open <ArrowUpRight aria-hidden="true" /></span>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
+      <div className={styles.summaryText}>{summary}</div>
       {items.length > 0 && (
-        <div
-          style={{
-            marginTop: 8,
-            maxHeight: 150,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-          }}
-        >
+        <div className={styles.previewList}>
           {items.map((item) => (
-            <div key={item.media_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div key={item.media_id} className={styles.previewItem}>
               {item.media_kind === "video" ? (
-                <div
-                  style={{
-                    width: 88,
-                    height: 64,
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "var(--ruled-blue-light)",
-                    borderRadius: 8,
-                    fontSize: 24,
-                  }}
-                >
-                  🎬
+                <div className={styles.previewPlaceholder}>
+                  <Video aria-label="Video" />
                 </div>
               ) : (
                 <img
                   src={resolveMediaUrl(item.file_url)}
                   alt={item.title}
                   loading="lazy"
-                  style={{ width: 88, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                  className={styles.previewImage}
                 />
               )}
-              <span
-                style={{
-                  fontSize: 12.5,
-                  color: "var(--ink-soft)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span className={styles.previewTitle}>
                 {item.title}
               </span>
             </div>
           ))}
         </div>
       )}
-    </button>
+    </Card>
   );
 }
 
@@ -108,56 +85,32 @@ function summaryEntryTimes(entry, periodById) {
   return [null, null];
 }
 
-const TONE_COLOR = {
-  ok: "var(--ok-green)",
-  warn: "var(--red-pen)",
-  mute: "var(--ink-soft)",
-};
-
-function QuickCard({ icon, title, summary, rows, onNavigate }) {
+function QuickCard({ icon: Icon, title, summary, rows, onNavigate }) {
   return (
-    <button className="card" onClick={onNavigate} style={{ textAlign: "left", cursor: "pointer" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <b style={{ fontSize: 12.5 }}>
-          {icon} {title}
+    <Card as="button" type="button" className={styles.summaryCard} onClick={onNavigate}>
+      <div className={styles.summaryHead}>
+        <b className={styles.summaryTitle}>
+          <Icon aria-hidden="true" className={styles.summaryIcon} /> {title}
         </b>
-        <span style={{ fontSize: 10, color: "var(--ink-soft)" }}>Open →</span>
+        <span className={styles.openLink}>Open <ArrowUpRight aria-hidden="true" /></span>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--chalk-green-dark)", marginTop: 6 }}>{summary}</div>
+      <div className={styles.summaryText}>{summary}</div>
       {rows && rows.length > 0 && (
-        <div
-          style={{
-            marginTop: 8,
-            borderTop: "1px solid var(--line)",
-            paddingTop: 4,
-            maxHeight: 150,
-            overflowY: "auto",
-          }}
-        >
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "var(--ink-soft)", marginBottom: 2 }}>Recent</div>
+        <div className={styles.historyList}>
+          <div className={styles.historyLabel}>Recent</div>
           {rows.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 8,
-                padding: "3px 0",
-                fontSize: 11,
-                borderBottom: i < rows.length - 1 ? "1px dotted var(--line)" : undefined,
-              }}
-            >
-              <span style={{ color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div key={i} className={styles.historyRow}>
+              <span className={styles.historyName}>
                 {row.label}
               </span>
-              <span style={{ fontWeight: 600, whiteSpace: "nowrap", color: TONE_COLOR[row.tone] || "var(--ink)" }}>
+              <span className={`${styles.historyValue} ${styles[`tone${row.tone[0].toUpperCase()}${row.tone.slice(1)}`] || ""}`}>
                 {row.value}
               </span>
             </div>
           ))}
         </div>
       )}
-    </button>
+    </Card>
   );
 }
 
@@ -322,58 +275,58 @@ export default function ParentHome() {
   const quickLinks = [
     {
       to: "/parent/pickdrop",
-      icon: "🚌",
+      icon: Bus,
       title: "Pick & Drop",
       summary: pickdropText,
       rows: pdLoading ? [] : pickdropHistory,
     },
     {
       to: "/parent/attendance",
-      icon: "✅",
+      icon: Check,
       title: "Attendance",
       summary: attendanceText,
       rows: attLoading ? [] : attendanceHistory,
     },
     {
       to: "/parent/marks",
-      icon: "🏆",
+      icon: Trophy,
       title: "Report Card",
       summary: marksText,
       rows: marksLoading ? [] : marksHistory,
     },
     {
       to: "/parent/leave",
-      icon: "📅",
+      icon: CalendarDays,
       title: "Leave Request",
       summary: leaveText,
       rows: leaveLoading ? [] : leaveHistory,
     },
   ];
 
-  if (!selectedChild) return <ParentShell>{null}</ParentShell>;
+  if (!selectedChild) return null;
 
   return (
-    <ParentShell>
-      <div className="scr-title">Good day 👋</div>
-      <div className="scr-sub">Here's what's happening with {selectedChild.name.split(" ")[0]} today</div>
+    <>
+      <PageHeader
+        title="Good day"
+        subtitle={`Here's what's happening with ${selectedChild.name.split(" ")[0]} today`}
+      />
 
-      <div className="card white" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <Card className={`card white ${styles.studentCard}`}>
           <div className="avatar">{initials(selectedChild.name)}</div>
-          <div>
-            <b style={{ fontSize: 13.5 }}>{selectedChild.name}</b>
-            <div style={{ marginTop: 4 }}>
+          <div className={styles.studentDetails}>
+            <b className={styles.studentName}>{selectedChild.name}</b>
+            <div className={styles.studentStatus}>
               <Pill tone={selectedChild.present_today ? "ok" : "warn"}>
                 {selectedChild.present_today ? "Present today" : "Marked absent"}
               </Pill>
             </div>
           </div>
-        </div>
-      </div>
+      </Card>
 
       <div className="section-label">Quick access</div>
-      <div className="grid2">
-{quickLinks.map((q) => (
+      <div className={`grid2 ${styles.quickGrid}`}>
+        {quickLinks.map((q) => (
           <QuickCard
             key={q.to}
             icon={q.icon}
@@ -386,10 +339,10 @@ export default function ParentHome() {
       </div>
 
       <div className="section-label">Announcements & timetable</div>
-      <div className="grid2" style={{ gridTemplateRows: "auto auto" }}>
-        <div className="card">
-          <b style={{ fontSize: 12.5 }}>📢 Announcements</b>
-          <div style={{ marginTop: 4, maxHeight: 150, overflowY: "auto" }}>
+      <div className={styles.updatesGrid}>
+        <Card className={`card ${styles.announcements}`}>
+          <b className={styles.summaryTitle}><Megaphone aria-hidden="true" className={styles.summaryIcon} /> Announcements</b>
+          <div className={styles.announcementFeed}>
             <BroadcastFeed
               data={broadcasts}
               loading={loading}
@@ -399,21 +352,19 @@ export default function ParentHome() {
               empty="No announcements for your children yet."
             />
           </div>
-        </div>
+        </Card>
         {ttLoading && <Spinner />}
         {!ttLoading &&
           (timetable && timetable.length ? (
-            <div
-              className="card white timetable-weekly-summary-card"
-              style={{ gridColumn: 1 }}
-            >
-              <span className="timetable-weekly-summary-title">Weekly summary</span>
-              <table className="timetable-preview-table">
+            <Card className={`card white ${styles.timetable} ${styles.timetableCard}`}>
+              <span className={styles.timetableTitle}>Weekly summary</span>
+              <DataTable label="Weekly timetable summary" className={styles.timetableViewport}>
+              <table className={styles.timetableTable}>
                 <thead>
                   <tr>
-                    <th className="time-col-header">Time</th>
+                    <th className={styles.timeHeader} scope="col">Time</th>
                     {DAYS.map((day) => (
-                      <th key={day} style={day === today ? { color: "var(--chalk-green-dark)" } : undefined}>
+                      <th key={day} className={day === today ? styles.today : undefined}>
                         {day}
                         {day === today ? " · today" : ""}
                       </th>
@@ -423,11 +374,11 @@ export default function ParentHome() {
                 <tbody>
                   {timeSlots.map((start) => (
                     <tr key={start}>
-                      <td className="time-cell">{displayTime(start)}</td>
+                      <th className={styles.timeCell} scope="row">{displayTime(start)}</th>
                       {DAYS.map((day) => {
                         const entry = ttEntryMap.get(`${day}|${start}`);
                         return (
-                          <td key={day} className={entry ? "active-cell" : ""}>
+                          <td key={day} className={entry ? styles.activeCell : ""}>
                             {entry
                               ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
                               : ""}
@@ -438,20 +389,21 @@ export default function ParentHome() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </DataTable>
+            </Card>
           ) : (
-            <div className="card" style={{ gridColumn: 1 }}>
-              <Empty>No timetable has been published for this class yet.</Empty>
-            </div>
+            <Card className={`card ${styles.timetable}`}>
+              <EmptyState>No timetable has been published for this class yet.</EmptyState>
+            </Card>
           ))}
         <GalleryCard
-          title="🖼️ Gallery"
+          title={<><ImageIcon aria-hidden="true" className={styles.summaryIcon} /> Gallery</>}
           summary={galleryText}
           items={galleryLoading ? [] : galleryItems}
           onNavigate={() => navigate("/parent/gallery")}
-          style={{ gridColumn: 2, gridRow: "1 / 3" }}
+          className={styles.gallery}
         />
       </div>
-    </ParentShell>
+    </>
   );
 }

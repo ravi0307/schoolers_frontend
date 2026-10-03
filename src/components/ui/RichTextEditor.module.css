@@ -1,0 +1,80 @@
+.editor {
+  overflow: hidden;
+  border: var(--border-width-thin) solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  --surface-text-muted: var(--color-text-muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.toolButton,
+.colorControl,
+.fontSize {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+}
+
+.toolButton {
+  cursor: pointer;
+}
+
+.toolButton:hover,
+.toolButton.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+}
+
+.toolButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.colorControl {
+  cursor: pointer;
+}
+
+.colorControl input {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.fontSize {
+  width: 6.875rem;
+}
+
+.content {
+  padding: var(--space-3);
+  outline-offset: calc(-1 * var(--border-width-thin));
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.contentCompact { min-height: 3.75rem; }
+.contentShort { min-height: 5rem; }
+.contentMedium { min-height: 5.625rem; }
+.contentDefault { min-height: 9.375rem; }

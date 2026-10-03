@@ -1,8 +1,10 @@
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as attendanceApi from "../../api/attendance";
-import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 export default function ParentAttendance() {
@@ -14,13 +16,15 @@ export default function ParentAttendance() {
   const pager = usePagination(data);
 
   return (
-    <ParentShell>
-      <div className="scr-title">Attendance</div>
-      <div className="scr-sub">{selectedChild ? `${selectedChild.name}'s attendance history` : ""}</div>
+    <>
+      <PageHeader
+        title="Attendance"
+        subtitle={selectedChild ? `${selectedChild.name}'s attendance history` : ""}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
-        <div className="card">
+        <Card className="card">
           {data && data.length ? (
             pager.pageItems.map((a) => (
               <div key={a.attendance_id} className="listitem">
@@ -31,11 +35,11 @@ export default function ParentAttendance() {
               </div>
             ))
           ) : (
-            <Empty>No attendance records yet.</Empty>
+            <EmptyState>No attendance records yet.</EmptyState>
           )}
           <Pagination {...pager} />
-        </div>
+        </Card>
       )}
-    </ParentShell>
+    </>
   );
 }
