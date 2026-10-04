@@ -157,10 +157,10 @@ test("key frontend workflows remain represented by application routes", () => {
   }
   const routeGroups = {
     parent: ["home", "pickdrop", "attendance", "timetable", "marks", "gallery", "leave", "barter"],
-    teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery"],
+    teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery", "report"],
     staff: ["broadcast", "gallery", "report"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications", "support"],
-    pilot: ["pickdrop", "broadcast", "leave"],
+    pilot: ["pickdrop", "broadcast", "leave", "report"],
     master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {

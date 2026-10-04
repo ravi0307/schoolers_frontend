@@ -91,3 +91,50 @@ test("staff can request delete confirmation only from their own outgoing broadca
   assert.match(page, /communicationApi\.deleteBroadcast/);
   assert.match(page, /<ConfirmDialog/);
 });
+
+// Attendance and salary moved out of My Profile and onto a "My Report" page in
+// the sidebar, for the three roles who have a staff row and read their own
+// register: staff, teacher and pilot. They share one component, so a teacher
+// and a pilot see exactly what an admin's own report shows -- the same fetch,
+// the same month filter, the same honest "no records" wording.
+
+test("teacher and pilot get a My Report page in the sidebar", () => {
+  for (const [shell, to] of [
+    ["src/components/layout/TeacherShell.jsx", "/teacher/report"],
+    ["src/components/layout/PilotShell.jsx", "/pilot/report"],
+  ]) {
+    const nav = source(shell);
+    assert.ok(nav.includes(`to: "${to}"`), `${shell} nav is missing ${to}`);
+    assert.match(nav, /label:\s*"My Report"/, `${shell} must label the link My Report`);
+  }
+});
+
+test("the teacher and pilot report routes are registered and guarded", () => {
+  const app = source("src/App.jsx");
+  assert.match(app, /<Route path="report" element=\{<TeacherReport \/>\}/, "/teacher/report is not registered");
+  assert.match(app, /<Route path="report" element=\{<PilotReport \/>\}/, "/pilot/report is not registered");
+  assert.match(app, /roles=\{\["teacher"\]\}/);
+  assert.match(app, /roles=\{\["pilot"\]\}/);
+});
+
+test("every staff-linked non-admin report page reuses the shared self-summary", () => {
+  for (const page of [
+    "src/pages/teacher/TeacherReport.jsx",
+    "src/pages/pilot/PilotReport.jsx",
+  ]) {
+    const text = source(page);
+    // The shared component is what carries the /reports/staff/me fetch, so a
+    // per-role copy would be a second implementation of the same report.
+    assert.match(text, /StaffSelfSummary/, `${page} must reuse StaffSelfSummary`);
+    assert.doesNotMatch(text, /staffReport\(|reportsApi\.staffReport/, `${page} must not look up another person's report`);
+  }
+});
+
+test("My Profile no longer carries attendance and salary", () => {
+  const page = source("src/pages/UserProfile.jsx");
+  assert.doesNotMatch(
+    page,
+    /<StaffSelfSummary\s*\/>/,
+    "the self-summary must not also render on the profile page"
+  );
+});
