@@ -29,6 +29,7 @@ import TeacherMarks from "./pages/teacher/TeacherMarks";
 import TeacherTimetable from "./pages/teacher/TeacherTimetable";
 import TeacherBroadcast from "./pages/teacher/TeacherBroadcast";
 import TeacherGallery from "./pages/teacher/TeacherGallery";
+import TeacherReport from "./pages/teacher/TeacherReport";
 
 import StaffBroadcast from "./pages/staff/StaffBroadcast";
 import StaffGallery from "./pages/staff/StaffGallery";
@@ -54,6 +55,7 @@ import AdminSupport from "./pages/admin/AdminSupport";
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
 import PilotLeave from "./pages/pilot/PilotLeave";
+import PilotReport from "./pages/pilot/PilotReport";
 
 import MasterSchools from "./pages/master/MasterSchools";
 import MasterSchoolDetail from "./pages/master/MasterSchoolDetail";
@@ -128,6 +130,7 @@ export default function App() {
               <Route path="timetable" element={<TeacherTimetable />} />
               <Route path="broadcast" element={<TeacherBroadcast />} />
               <Route path="gallery" element={<TeacherGallery />} />
+              <Route path="report" element={<TeacherReport />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
             </Route>
@@ -188,6 +191,7 @@ export default function App() {
                     <Route path="pickdrop" element={<PilotPickDrop />} />
                     <Route path="broadcast" element={<PilotBroadcast />} />
                     <Route path="leave" element={<PilotLeave />} />
+                    <Route path="report" element={<PilotReport />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/pilot/pickdrop" replace />} />
                   </Routes>

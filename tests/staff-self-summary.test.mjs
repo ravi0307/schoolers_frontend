@@ -153,9 +153,13 @@ test("the summary is its own component so only staff-linked roles fetch it", () 
   // The role alone is not enough: an admin can exist before its staff row, so
   // the linked record has to be present before the fetch is made.
   assert.match(page, /const hasStaffRecord = Boolean\(data\?\.linked_person_id\)/);
-  assert.match(
+  // For staff, teacher and pilot, the attendance+salary now live under the
+  // "My Report" portal page rather than on the profile. The component and
+  // the staff-linked gate remain for admin so its own report still renders.
+  assert.doesNotMatch(
     page,
-    /\{STAFF_LINKED_ROLES\.has\(role\) && hasStaffRecord && <StaffSelfSummary \/>\}/
+    /<StaffSelfSummary \/>\s*<\/div>\s*<\/Card>/,
+    "staff self-summary must not be mounted on the profile for non-admin staff-linked roles"
   );
 });
 

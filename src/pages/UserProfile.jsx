@@ -246,8 +246,6 @@ export default function UserProfile() {
 
           <PasswordForm />
 
-          {STAFF_LINKED_ROLES.has(role) && hasStaffRecord && <StaffSelfSummary />}
-
         </div>
       )}
     </Shell>

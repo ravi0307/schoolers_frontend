@@ -1,5 +1,5 @@
 import WebLayout from "../layout/WebLayout";
-import { CalendarDays, ClipboardList, Image, Megaphone, Trophy, UserRoundCheck } from "lucide-react";
+import { CalendarDays, ClipboardList, FileText, Image, Megaphone, Trophy, UserRoundCheck } from "lucide-react";
 
 const NAV = [
   { to: "/teacher/dashboard", icon: ClipboardList, label: "Student List" },
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/teacher/timetable", icon: CalendarDays, label: "Timetable" },
   { to: "/teacher/broadcast", icon: Megaphone, label: "Broadcast" },
   { to: "/teacher/gallery", icon: Image, label: "Gallery" },
+  { to: "/teacher/report", icon: FileText, label: "My Report" },
 ];
 
 export default function TeacherShell({ children }) {
