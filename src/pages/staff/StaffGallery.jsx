@@ -1,13 +1,14 @@
-import PageHeader from "../../components/ui/PageHeader";
+import StaffShell from "../../components/layout/StaffShell";
 import GalleryView from "../../components/gallery/GalleryView";
 
 export default function StaffGallery() {
   return (
-    <>
-      <PageHeader title="Gallery" subtitle="Photos and videos the school shares with the community" />
+    <StaffShell>
+      <div className="scr-title">Gallery</div>
+      <div className="scr-sub">Photos and videos the school shares with the community</div>
       {/* Staff browse the whole school gallery like an admin, but the per-item
           controls only appear on media they uploaded themselves. */}
       <GalleryView canUpload canManage />
-    </>
+    </StaffShell>
   );
 }
