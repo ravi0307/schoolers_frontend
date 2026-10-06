@@ -1,22 +1,18 @@
 import { useMemo, useState } from "react";
-import PageHeader from "../../components/ui/PageHeader";
-import Card from "../../components/ui/Card";
-import DataTable from "../../components/ui/DataTable";
+import ParentShell from "../../components/layout/ParentShell";
 import WeekSelector from "../../components/ui/WeekSelector";
 import TimetableWeekHeader from "../../components/ui/TimetableWeekHeader";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as academicsApi from "../../api/academics";
 import * as timetableApi from "../../api/timetable";
-import { Spinner, ErrorBanner } from "../../components/ui/Primitives";
-import EmptyState from "../../components/ui/EmptyState";
+import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import {
   getEntryTime,
   startOfWeekIso,
   buildWeekColumns,
   mergeWeekColumns,
 } from "../../utils/timetableFlow";
-import styles from "./ParentTimetable.module.css";
 
 export default function ParentTimetable() {
   const { selectedChild } = useParentContext();
@@ -48,41 +44,48 @@ export default function ParentTimetable() {
   const hasEntries = weekColumns.some((column) => column.entries.length > 0);
 
   return (
-    <>
-      <PageHeader
-        title="Timetable"
-        subtitle={selectedChild ? `${selectedChild.name}'s weekly schedule` : "Weekly schedule"}
-      />
+    <ParentShell>
+      <div className="scr-title">Timetable</div>
+      <div className="scr-sub">
+        {selectedChild ? `${selectedChild.name}'s weekly schedule` : "Weekly schedule"}
+      </div>
 
       {classId && <WeekSelector weekStart={weekStart} onChange={setWeekStart} busy={loading} />}
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
-      {!classId && <EmptyState>No class has been assigned to this child yet.</EmptyState>}
+      {!classId && <div className="empty">No class has been assigned to this child yet.</div>}
       {classId && !loading && !error && (
-        <Card className={`card white ${styles.tableCard}`}>
+        <div className="card white" style={{ overflowX: "auto" }}>
           {hasEntries ? (
-            <DataTable label="Weekly class timetable">
-              <table className="data-table">
-                <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} />
-                <tbody>
-                  <tr>
+            <table className="data-table">
+              <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} />
+              <tbody>
+                <tr>
                   {/* Matches the header's caption column; without it the day
                       cells shift left and holiday notes land on the wrong day. */}
                   <td className="timetable-week-corner" />
                   {weekColumns.map((column) => (
-                    <td key={column.day} className={`${styles.timetableCell} ${column.isHoliday ? "timetable-day-holiday" : ""}`}>
+                    <td
+                      key={column.day}
+                      style={{ verticalAlign: "top" }}
+                      className={column.isHoliday ? "timetable-day-holiday" : undefined}
+                    >
                       {column.entries.map((entry) => {
                         const timeLabel = getEntryTime(entry, periodById);
                         return (
-                          <div key={entry.entry_id} className={`pill ${styles.timetableEntry}`}>
-                            <div className={styles.entrySubject}>
+                          <div
+                            key={entry.entry_id}
+                            className="pill"
+                            style={{ display: "block", marginBottom: 4, background: "var(--paper)" }}
+                          >
+                            <div style={{ fontWeight: 700 }}>
                               {entry.subject_id
                                 ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
                                 : "Unassigned"}
                             </div>
                             {timeLabel ? (
-                              <div className={styles.entryTime}>{timeLabel}</div>
+                              <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>{timeLabel}</div>
                             ) : null}
                           </div>
                         );
@@ -92,15 +95,14 @@ export default function ParentTimetable() {
                       )}
                     </td>
                   ))}
-                  </tr>
-                </tbody>
-              </table>
-            </DataTable>
+                </tr>
+              </tbody>
+            </table>
           ) : (
-            <EmptyState>No timetable has been published for this class yet.</EmptyState>
+            <Empty>No timetable has been published for this class yet.</Empty>
           )}
-        </Card>
+        </div>
       )}
-    </>
+    </ParentShell>
   );
 }
