@@ -12,7 +12,6 @@ import Card from "../components/ui/Card";
 import DescriptionList from "../components/ui/DescriptionList";
 import FormActions from "../components/ui/FormActions";
 import LoadingState from "../components/ui/LoadingState";
-import PageHeader from "../components/ui/PageHeader";
 import PasswordInput from "../components/ui/PasswordInput";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -182,21 +181,18 @@ export default function UserProfile() {
 
   return (
     <Shell>
-      <PageHeader
-        className="profile-heading"
-        title="My profile"
-        subtitle={
-          <>
+      <div className="scr-title-row">
+        <div className="scr-title-text">
+          <div className="scr-title">My profile</div>
+          <div className="scr-sub">
             Your name and email are maintained on the {role === "parent" || role === "pilot" ? "staff and family record" : "staff record"}, so ask your administrator to correct them.
-          </>
-        }
-        action={
-          <Button variant="outline" className="btn ghost profile-back" onClick={() => navigate(home)}>
-            <ArrowLeft aria-hidden="true" size={16} />
-            Back to dashboard
-          </Button>
-        }
-      />
+          </div>
+        </div>
+        <Button className="btn ghost profile-back" onClick={() => navigate(home)}>
+          <ArrowLeft aria-hidden="true" size={16} />
+          Back to dashboard
+        </Button>
+      </div>
 
       {loading && <LoadingState />}
       <ErrorBanner message={error} />
