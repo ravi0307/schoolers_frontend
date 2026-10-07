@@ -70,12 +70,12 @@ export default function ParentTripHistory() {
       {selectedChild ? (
         <div className="child-selector">
           <span>Child:</span>
-          <select
+          <select aria-label="Child selector">
             onChange={(e) => {
               setSelectedChild(kids.find((k) => k.student_id === e.target.value) || null);
               setDetailData(null);
             }}
-          >
+          </select>
             <option value="">All children</option>
             {kids.map((child) => (
               <option key={child.student_id} value={child.student_id}>
