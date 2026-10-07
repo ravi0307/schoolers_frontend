@@ -1,0 +1,129 @@
+/* Admin Trip History styles */
+
+/* Page header */
+.page-header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  min-width: 0;
+}
+
+/* Filters bar */
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-4);
+  min-width: 0;
+}
+
+.filter-select,
+.filter-input {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.filter-select {
+  padding: var(--space-2) var(--space-3);
+}
+
+.filter-input {
+  padding: var(--space-2) var(--space-3);
+  height: var(--input-height);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.filter-group label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+/* Trip table */
+.trip-table {
+  width: 100%;
+}
+
+.trip-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trip-table th,
+.trip-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  min-width: 0;
+}
+
+.trip-table th {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+}
+
+.trip-table td {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+/* Trip row */
+.admin-trip-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+  align-items: start;
+  margin-bottom: var(--space-2);
+}
+
+.admin-trip-date {
+  grid-column: 1;
+  font-size: var(--font-size-xs);
+}
+
+.admin-trip-route {
+  grid-column: 2;
+}
+
+.admin-trip-status {
+  grid-column: 3;
+  font-size: var(--font-size-xs);
+}
+
+.admin-trip-what-happened {
+  grid-column: 4;
+}
+
+.admin-trip-driver {
+  grid-column: 5;
+}
+
+.admin-trip-actions {
+  grid-column: 6;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Empty state */
+.Empty {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}

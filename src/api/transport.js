@@ -28,3 +28,7 @@ export const updatePickupStatus = (routeId, studentId, status) =>
   client.patch(`/routes/${routeId}/students/${studentId}/status`, { status }).then((r) => r.data);
 
 export const getMyPickdropStatus = () => client.get("/routes/mine").then((r) => r.data);
+
+// Admin Trip History APIs
+export const listAdminTrips = (params) => client.get("/api/v1/trips", { params }).then((r) => r.data);
+export const getTripDetails = (tripId) => client.get(`/api/v1/trips/${tripId}`).then((r) => r.data);
