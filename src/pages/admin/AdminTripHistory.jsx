@@ -71,15 +71,15 @@ function AdminTripHistory() {
       {!loading && !error && (
         <>
           <div className="filters-bar">
-            <select className="filter-select" onChange={(e) => setFilterRoute(e.target.value)}>
+            <select className="filter-select" onChange={(e) => setFilterRoute(e.target.value)} aria-label="Route filter">
               <option value="">All routes</option>
             </select>
 
-            <select className="filter-select" onChange={(e) => setFilterStatus(e.target.value)}>
+            <select className="filter-select" onChange={(e) => setFilterStatus(e.target.value)} aria-label="Status filter">
               <option value="">All statuses</option>
             </select>
 
-            <select className="filter-select" onChange={(e) => setFilterDirection(e.target.value)}>
+            <select className="filter-select" onChange={(e) => setFilterDirection(e.target.value)} aria-label="Direction filter">
               <option value="">Both directions</option>
             </select>
 
