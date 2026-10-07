@@ -1,0 +1,54 @@
+/** Status pill tone mapping */
+export const statusPill = (status) => {
+  const map = { completed: "ok", cancelled: "mute", ongoing: "info" };
+  return map[status] || "mute";
+};
+
+/** Status enum -> human label */
+export const statusLabel = (status) => {
+  const map = { completed: "Completed", cancelled: "Cancelled", ongoing: "Ongoing" };
+  return map[status] || status || "—";
+};
+
+/** Trip type -> human label */
+export const tripTypeLabel = (tripType) => {
+  const map = { regular: "Regular", field: "Field trip", emergency: "Emergency" };
+  return map[tripType] || tripType || "—";
+};
+
+/** Build a summary line from trip data */
+export const tripSummaryLine = (trip) => {
+  const parts = [];
+  if (trip.route_name) parts.push(trip.route_name);
+  if (trip.trip_date) parts.push(`on ${trip.trip_date}`);
+  return parts.join(" ") || "— trip";
+};
+
+/** Format ISO date string to display format */
+export const formatTripDate = (dateStr) => {
+  if (!dateStr) return "—";
+  try {
+    return new Date(dateStr).toLocaleDateString();
+  } catch {
+    return String(dateStr).slice(0, 10);
+  }
+};
+
+/** Format duration in minutes to HH:MM or "XXm" */
+export const formatDuration = (minutes) => {
+  if (minutes === null || minutes === undefined) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+};
+
+/** Format stop scheduled time */
+export const formatStopTime = (timeStr) => {
+  if (!timeStr) return "—";
+  try {
+    return new Date(timeStr).toLocaleTimeString([], { hour: "numeric", minute: "numeric" });
+  } catch {
+    return String(timeStr).slice(11, 16);
+  }
+};
