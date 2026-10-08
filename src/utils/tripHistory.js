@@ -10,6 +10,14 @@ export const statusLabel = (status) => {
   return map[status] || status || "—";
 };
 
+/** Normalize trip-list API responses across list and paginated endpoints. */
+export const normalizeTripList = (response) => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+};
+
 /** Trip type -> human label */
 export const tripTypeLabel = (tripType) => {
   const map = { regular: "Regular", field: "Field trip", emergency: "Emergency" };

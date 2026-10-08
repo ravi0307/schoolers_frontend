@@ -65,7 +65,7 @@ Outputs a static bundle to `dist/` — verified to build cleanly (127 modules,
 
 ## Test accounts
 
-Same as the backend — password `test1234` for all:
+Same as the backend — password `admin123` for all:
 
 | username | role |
 |---|---|

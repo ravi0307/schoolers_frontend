@@ -1,34 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import PilotShell from "../../components/layout/PilotShell";
 import { useApi } from "../../hooks/useApi";
 import * as tripsApi from "../../api/trips";
+import * as transportApi from "../../api/transport";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import {
   statusPill,
   statusLabel,
-  tripTypeLabel,
-  tripSummaryLine,
   formatTripDate,
-  formatDuration,
-  formatStopTime,
+  normalizeTripList,
 } from "../../utils/tripHistory";
 import styles from "./PilotTrips.module.css";
 
 /**
  * My Trips: a pilot's own record of what they drove.
  *
- * Read-only on purpose. The screen exists so a pilot can answer "did I do that
- * run, and what happened on it" without asking an admin, and a record that can
- * be edited from a phone in a lay-by is not a record. Every change is made on
- * Pick & Drop, while the run is happening.
- *
- * What a pilot sees of their own trips is not quite what an admin sees. Names
- * are sent by the server only while the pilot still holds the route, so a trip
- * from a route they have since been moved off shows counts and stops but no
- * child names. That narrowing is the server's decision and this page just
- * renders whichever it sent, rather than deciding for itself who should see
- * what.
+ * Trip details are read-only. Each card opens inline so a pilot can review the
+ * operational record and student outcomes without leaving the trip list.
  */
 
 const RANGES = [
@@ -43,42 +32,258 @@ function daysAgo(n) {
   return date.toISOString().slice(0, 10);
 }
 
+function clockTime(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function elapsedMinutes(start, end) {
+  if (!start || !end) return null;
+  const duration = Math.max(0, Math.round((new Date(end) - new Date(start)) / 60000));
+  return Number.isFinite(duration) ? duration : null;
+}
+
+function minutesOf(value) {
+  const text = String(value || "");
+  const timeOnly = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (timeOnly) return Number(timeOnly[1]) * 60 + Number(timeOnly[2]);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.getHours() * 60 + date.getMinutes();
+}
+
+function variance(scheduled, actual) {
+  if (!scheduled || !actual) return "—";
+  const planned = minutesOf(scheduled);
+  const arrived = minutesOf(actual);
+  if (planned === null || arrived === null) return "—";
+  const delta = arrived - planned;
+  if (!delta) return "On time";
+  return `${Math.abs(delta)} min ${delta > 0 ? "late" : "early"}`;
+}
+
+function boardingLabel(status) {
+  return {
+    picked: "Boarded",
+    did_not_board: "Absent",
+    pending: "Not recorded",
+  }[status] || status?.replace(/_/g, " ") || "Not recorded";
+}
+
+function dropLabel(status) {
+  return {
+    dropped: "Dropped",
+    drop_not_recorded: "Not recorded",
+    pending: "Not recorded",
+  }[status] || status?.replace(/_/g, " ") || "Not recorded";
+}
+
+function outcomeTone(status, kind) {
+  if (kind === "boarding") {
+    if (status === "picked") return styles.outcomeSuccess;
+    if (status === "did_not_board") return styles.outcomeMissed;
+    return styles.outcomePending;
+  }
+  if (status === "dropped") return styles.outcomeSuccess;
+  if (status === "drop_not_recorded") return styles.outcomeMissed;
+  return styles.outcomePending;
+}
+
+function PilotTripDetails({ trip }) {
+  const { data, loading, error } = useApi(
+    () => Promise.all([
+      tripsApi.getMyTripDetails(trip.trip_id),
+      trip.route_id ? transportApi.listStops(trip.route_id) : Promise.resolve([]),
+    ]).then(([details, stops]) => ({ details, stops })),
+    [trip.trip_id, trip.route_id]
+  );
+
+  if (loading) return <div className={styles.detailsLoading}><Spinner /></div>;
+  if (error) return <div className={styles.detailsLoading}><ErrorBanner message={error} /></div>;
+  if (!data) return null;
+
+  const { details, stops } = data;
+  const students = Array.isArray(details.students) ? details.students : [];
+  const direction = details.direction || trip.direction;
+  const isDrop = direction === "drop";
+  const scheduledTimeKey = isDrop ? "drop_time" : "pickup_time";
+  const scheduledOrderKey = isDrop ? "drop_order" : "pickup_order";
+  const configuredStopIdKey = isDrop ? "drop_stop_id" : "pickup_stop_id";
+  const actualStopIdKey = isDrop ? "drop_stop_id" : "boarding_stop_id";
+  const actualTimeKey = isDrop ? "drop_at" : "boarding_at";
+  const actualStatusKey = isDrop ? "drop_status" : "boarding_status";
+  const routeStops = (Array.isArray(stops) ? stops : [])
+    .filter((stop) => stop[scheduledTimeKey])
+    .sort((left, right) => (left[scheduledOrderKey] || 0) - (right[scheduledOrderKey] || 0));
+  const boarded = students.filter((student) => student.boarding_status === "picked").length;
+  const absentOrMissing = students.filter((student) => student.boarding_status !== "picked").length;
+  const duration = elapsedMinutes(details.started_at, details.ended_at);
+
+  return (
+    <div className={styles.detail} data-trip-details>
+      <section className={styles.operationalSummary} aria-label="Trip timing">
+        <div className={styles.tripFacts}>
+          <div>
+            <span className={styles.sectionLabel}>TRIP TYPE</span>
+            <b>{direction ? direction[0].toUpperCase() + direction.slice(1) : "—"}</b>
+          </div>
+          <div>
+            <span className={styles.sectionLabel}>DATE</span>
+            <b>{details.trip_date ? new Date(`${details.trip_date}T00:00:00`).toLocaleDateString([], {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }) : formatTripDate(trip.trip_date)}</b>
+          </div>
+          <div>
+            <span className={styles.sectionLabel}>VEHICLE</span>
+            <b>{details.vehicle || trip.vehicle || "—"}</b>
+          </div>
+        </div>
+        <div className={styles.timingSummary}>
+          <span className={styles.sectionLabel}>TIMING</span>
+          <b>
+            Started {clockTime(details.started_at)} · Ended {clockTime(details.ended_at)}
+            {duration !== null && ` · Total Time: ${duration} ${duration === 1 ? "min" : "mins"}`}
+          </b>
+        </div>
+      </section>
+
+      <section className={styles.detailsSection}>
+        <h3 className={styles.sectionLabel}>STOPS TRACKING</h3>
+        <div className={styles.detailsTableWrap}>
+          <table className={styles.detailsTable}>
+            <thead>
+              <tr>
+                <th scope="col">Stop name</th>
+                <th scope="col">Scheduled time</th>
+                <th scope="col">Actual arrival</th>
+                <th scope="col">Variance / delay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {routeStops.map((stop) => {
+                const stopId = stop[configuredStopIdKey] ?? stop.stop_id;
+                const matchingStudents = students
+                  .filter((student) =>
+                    student[actualStopIdKey] === stopId &&
+                    student[actualStatusKey] &&
+                    student[actualStatusKey] !== "pending"
+                  );
+                const visits = matchingStudents
+                  .map((student) => student[actualTimeKey])
+                  .filter(Boolean)
+                  .sort((left, right) => new Date(left) - new Date(right));
+                const actual = visits[0];
+                const logged = matchingStudents.length > 0;
+                return (
+                  <tr key={stopId}>
+                    <td>
+                      <span className={styles.stopName}>
+                        {logged && <span className={styles.stopCheck} aria-label="Stop logged">✓</span>}
+                        {stop.stop_name || "—"}
+                      </span>
+                    </td>
+                    <td>{clockTime(stop[scheduledTimeKey])}</td>
+                    <td className={actual ? "" : styles.missingValue}>
+                      {actual ? clockTime(actual) : "—"}
+                    </td>
+                    <td className={actual ? "" : styles.missingValue}>
+                      {variance(stop[scheduledTimeKey], actual)}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!routeStops.length && (
+                <tr>
+                  <td colSpan="4" className={styles.emptyDetails}>No scheduled stops are recorded for this route.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className={styles.detailsSection}>
+        <h3 className={styles.sectionLabel}>
+          STUDENTS ({students.length} EXPECTED · {boarded} BOARDED · {absentOrMissing} ABSENT/MISSING)
+        </h3>
+        <div className={styles.detailsTableWrap}>
+          <table className={styles.detailsTable}>
+            <thead>
+              <tr>
+                <th scope="col">Student name</th>
+                <th scope="col">Class/grade</th>
+                <th scope="col">Boarding status</th>
+                <th scope="col">Dropoff status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student) => (
+                <tr key={student.student_id}>
+                  <td>{student.student_name || `Student #${student.student_id}`}</td>
+                  <td>{student.class_name || student.grade_level || student.class || "—"}</td>
+                  <td>
+                    <span className={`${styles.outcomeBadge} ${outcomeTone(student.boarding_status, "boarding")}`}>
+                      {boardingLabel(student.boarding_status)}
+                    </span>
+                    {student.boarding_at && <span className={styles.outcomeTime}>{clockTime(student.boarding_at)}</span>}
+                  </td>
+                  <td>
+                    <span className={`${styles.outcomeBadge} ${outcomeTone(student.drop_status, "drop")}`}>
+                      {dropLabel(student.drop_status)}
+                    </span>
+                    {student.drop_at && <span className={styles.outcomeTime}>{clockTime(student.drop_at)}</span>}
+                  </td>
+                </tr>
+              ))}
+              {!students.length && (
+                <tr>
+                  <td colSpan="4" className={styles.emptyDetails}>No student outcomes are recorded for this trip.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function PilotTrips() {
   const [rangeKey, setRangeKey] = useState("week");
-  const range = RANGES.find((r) => r.key === rangeKey);
+  const range = RANGES.find((item) => item.key === rangeKey) || RANGES[0];
   const [openId, setOpenId] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(null);
-  const [detailError, setDetailError] = useState(null);
 
   const { data: listData, loading, error, refetch } = useApi(
     () =>
       tripsApi.listMyTrips({
         from_date: daysAgo(range.days),
         to_date: new Date().toISOString().slice(0, 10),
-        pageSize: 50,
       }),
     [rangeKey]
   );
 
-  // Selected trip detail data – fetched on demand
-  const [detailData, setDetailData] = useState(null);
-
-  // Fetch detail only when a trip is selected
-  useEffect(() => {
-    if (openId) {
-      setDetailLoading(true);
-      setDetailError(null);
-      tripsApi.getMyTripDetails(openId).then(
-        (res) => setDetailData(res),
-        (err) => setDetailError(apiErrorMessage(err))
-      ).finally(() => setDetailLoading(false));
-    } else {
-      setDetailData(null);
-    }
-  }, [openId]);
-
-  const items = listData?.items || [];
+  const items = normalizeTripList(listData);
+  const totalTrips = Array.isArray(listData)
+    ? items.length
+    : listData?.total ?? items.length;
   const pager = usePagination(items);
+
+  function toggleTrip(trip) {
+    if (trip.status !== "completed") return;
+    setOpenId((current) => current === trip.trip_id ? null : trip.trip_id);
+  }
+
+  function handleCardKeyDown(event, trip) {
+    if (trip.status !== "completed" || (event.key !== "Enter" && event.key !== " ")) return;
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
+    toggleTrip(trip);
+  }
 
   return (
     <PilotShell>
@@ -86,25 +291,24 @@ export default function PilotTrips() {
         <div>
           <div className="scr-title">My Trips</div>
           <div className="scr-sub">
-            {listData ? `${listData.total} trip${listData.total === 1 ? "" : "s"} · ${range.label.toLowerCase()}` : range.label}
+            {listData ? `${totalTrips} trip${totalTrips === 1 ? "" : "s"} · ${range.label.toLowerCase()}` : range.label}
           </div>
         </div>
       </div>
 
       <div className={styles.ranges} role="group" aria-label="Date range">
-        {RANGES.map((r) => (
+        {RANGES.map((item) => (
           <button
-            key={r.key}
+            key={item.key}
             type="button"
             className={styles.rangeChip}
-            aria-pressed={r.key === rangeKey}
+            aria-pressed={item.key === rangeKey}
             onClick={() => {
               setOpenId(null);
-              setRangeKey(r.key);
-              setDetailData(null);
+              setRangeKey(item.key);
             }}
           >
-            {r.label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -119,110 +323,61 @@ export default function PilotTrips() {
           ) : (
             <>
               <ul className={styles.list}>
-                {pager.pageItems.map((trip) => (
-                  <li className={styles.row} key={trip.trip_id}>
-                    <button type="button" className={styles.rowHead} onClick={() => setOpenId(openId === trip.trip_id ? null : trip.trip_id)} aria-expanded={openId === trip.trip_id}>
-                      <span className={styles.rowTitle}>
-                        <b>{trip.route_name || `Route ${trip.route_id}`}</b>
-                        <span>{formatTripDate(trip.trip_date)} · {tripTypeLabel(trip.trip_type)}</span>
-                      </span>
-                      <Pill tone={statusPill(trip.status)}>{statusLabel(trip.status)}</Pill>
-                    </button>
-                    {openId === trip.trip_id && (
-                      <>
-                      {detailLoading && (
-                        <div className={styles.detail}>
-                          <p>Loading trip details…</p>
-                        </div>
-                      )}
-                      {detailError && (
-                        <div className={styles.detail}>
-                          <ErrorBanner message={detailError} />
-                        </div>
-                      )}
-                      {!detailLoading && !detailError && detailData && (
-                        <div className={styles.detail}>
-                          <div className="trip-info">
-                            <div className="info-row">
-                              <span>Date:</span>
-                              <span>{formatTripDate(detailData.trip_date)}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>Route:</span>
-                              <span>{detailData.route_name || `Route ${detailData.route_id}`}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>Direction:</span>
-                              <span>{detailData.direction || "—"}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>Status:</span>
-                              <span><Pill tone={statusPill(detailData.status)}>{statusLabel(detailData.status)}</Pill></span>
-                            </div>
-                            <div className="info-row">
-                              <span>Driver:</span>
-                              <span>{detailData.driver_name || "—"}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>Vehicle:</span>
-                              <span>{detailData.vehicle || "—"}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>Start:</span>
-                              <span>{detailData.started_at ? new Date(detailData.started_at).toLocaleString() : "—"}</span>
-                            </div>
-                            <div className="info-row">
-                              <span>End:</span>
-                              <span>{detailData.ended_at ? new Date(detailData.ended_at).toLocaleString() : "—"}</span>
-                            </div>
-                            {detailData.duration_minutes !== null && detailData.duration_minutes !== undefined && (
-                              <div className="info-row">
-                                <span>Duration:</span>
-                                <span>{formatDuration(detailData.duration_minutes)}</span>
-                              </div>
+                {pager.pageItems.map((trip) => {
+                  const completed = trip.status === "completed";
+                  const expanded = openId === trip.trip_id;
+                  return (
+                    <li className={styles.row} key={trip.trip_id}>
+                      <article
+                        className={`${styles.tripCard} ${completed ? styles.tripCardInteractive : ""}`}
+                        role={completed ? "button" : undefined}
+                        tabIndex={completed ? 0 : undefined}
+                        aria-expanded={completed ? expanded : undefined}
+                        aria-controls={completed ? `pilot-trip-details-${trip.trip_id}` : undefined}
+                        onClick={() => toggleTrip(trip)}
+                        onKeyDown={(event) => handleCardKeyDown(event, trip)}
+                      >
+                        <div className={styles.rowHead}>
+                          <span className={styles.rowTitle}>
+                            <b>{trip.route_name || `Route ${trip.route_id}`}</b>
+                            <span>
+                              {formatTripDate(trip.trip_date)} ·{" "}
+                              {trip.direction
+                                ? trip.direction[0].toUpperCase() + trip.direction.slice(1)
+                                : trip.trip_type || "Trip"}
+                            </span>
+                          </span>
+                          <span className={styles.rowActions}>
+                            <Pill tone={statusPill(trip.status)}>{statusLabel(trip.status)}</Pill>
+                            {completed && (
+                              <span className={styles.detailsLink}>
+                                {expanded ? "Hide Details" : "View Details"}
+                              </span>
                             )}
-                          </div>
-
-                          <div className="student-roster">
-                            <h4>Students</h4>
-                            {detailData.students ? (
-                              <ul>
-                                {detailData.students.map((s) => (
-                                  <li key={s.student_id}>
-                                    <b>{s.student_name || `Child #${s.student_id}`}</b>
-                                    <span>
-                                      {s.boarding_status ? `Boarded at ${s.boarding_stop_name || "—"} ` : ""}
-                                      {s.drop_status ? `Dropped at ${s.drop_stop_name || "—"}` : ""}
-                                      {s.outcome ? `Outcome: ${s.outcome}` : ""}
-                                      <br />
-                                      {s.boarding_at ? `Boarded: ${new Date(s.boarding_at).toLocaleTimeString()}` : ""}
-                                      {s.drop_at ? `Dropped: ${new Date(s.drop_at).toLocaleTimeString()}` : ""}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p>No student outcomes recorded for this trip.</p>
-                            )}
-                          </div>
+                          </span>
                         </div>
-                      )}
-                      {openId === trip.trip_id && !detailLoading && !detailError && !detailData && (
-                        <div className={styles.detail}>
-                          <p>Select a trip to view details.</p>
-                        </div>
-                      )}
-                      </>
-                    )}
+                        {expanded && (
+                          <div
+                            id={`pilot-trip-details-${trip.trip_id}`}
+                            className={styles.expandedDetails}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <PilotTripDetails trip={trip} />
+                          </div>
+                        )}
+                      </article>
                     </li>
-                ))}
+                  );
+                })}
               </ul>
               <Pagination {...pager} />
             </>
           )}
-          <button type="button" className="btn ghost block" onClick={refetch}>
-            Refresh
-          </button>
+          <div className={styles.refreshRow}>
+            <button type="button" className="btn ghost block" onClick={refetch}>
+              Refresh
+            </button>
+          </div>
         </>
       )}
     </PilotShell>
