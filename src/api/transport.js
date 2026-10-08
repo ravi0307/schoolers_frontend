@@ -32,3 +32,5 @@ export const getMyPickdropStatus = () => client.get("/routes/mine").then((r) => 
 // Admin Trip History APIs
 export const listAdminTrips = (params) => client.get("/trips", { params }).then((r) => r.data);
 export const getTripDetails = (tripId) => client.get(`/trips/${tripId}`).then((r) => r.data);
+export const reopenAdminTrip = (tripId, reopenReason) =>
+  client.post(`/trips/${tripId}/reopen`, { reopen_reason: reopenReason }).then((r) => r.data);

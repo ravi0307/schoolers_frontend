@@ -5,7 +5,7 @@ import { useParentContext } from "../../context/ParentContext";
 import PageHeader from "../../components/ui/PageHeader";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
-import { formatTripDate } from "../../utils/tripHistory";
+import { formatTripDate, normalizeTripList } from "../../utils/tripHistory";
 import styles from "./ParentTripHistory.module.css";
 
 const RANGES = [
@@ -22,7 +22,7 @@ function daysAgo(days) {
 
 export default function ParentTripHistory() {
   const { selectedChild } = useParentContext();
-  const [rangeKey, setRangeKey] = useState("week");
+  const [rangeKey, setRangeKey] = useState("term");
   const range = RANGES.find((item) => item.key === rangeKey) || RANGES[0];
   const { data, loading, error } = useApi(
     () => selectedChild
@@ -33,7 +33,7 @@ export default function ParentTripHistory() {
       : Promise.resolve([]),
     [rangeKey, selectedChild?.student_id]
   );
-  const trips = Array.isArray(data) ? data : [];
+  const trips = normalizeTripList(data);
   const pager = usePagination(trips);
 
   return (
@@ -72,24 +72,48 @@ export default function ParentTripHistory() {
                 <div className={styles.tripRow}>
                   <span className={styles.tripDate}>{formatTripDate(trip.trip_date)}</span>
                   <span className={styles.tripRoute}>{trip.route_name || "—"}</span>
-                  <span>{trip.direction || "—"}</span>
+                  <span className={styles.tripDirection}>
+                    {trip.direction ? trip.direction[0].toUpperCase() + trip.direction.slice(1) : "—"}
+                  </span>
                   <span className={styles.tripStatus}>
-                    <Pill tone="ok">{trip.status || "Completed"}</Pill>
+                    <Pill tone="ok">{trip.status?.replace(/_/g, " ") || "Completed"}</Pill>
                   </span>
                 </div>
                 <div className={styles.detailPanel}>
+                  <h2 className={styles.detailsHeading}>Trip details</h2>
+                  <div className={styles.tripFacts}>
+                    <div className={styles.infoRow}>
+                      <b>Driver</b>
+                      <span>{trip.driver_name || "—"}</span>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <b>Vehicle</b>
+                      <span>{trip.vehicle || "—"}</span>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <b>Started</b>
+                      <span>{trip.started_at ? new Date(trip.started_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"}</span>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <b>Ended</b>
+                      <span>{trip.ended_at ? new Date(trip.ended_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"}</span>
+                    </div>
+                  </div>
+                  <h2 className={styles.detailsHeading}>Child outcomes</h2>
                   <div className={styles.infoRow}>
-                    <span>Pickup</span>
-                    <span>
-                      {trip.boarding_stop_name || "—"} · {trip.boarding_status || "—"}
-                      {trip.boarding_at ? ` at ${new Date(trip.boarding_at).toLocaleTimeString()}` : ""}
+                    <b>Pickup</b>
+                    <span className={styles.outcome}>
+                      <span>{trip.boarding_stop_name || "Stop not recorded"}</span>
+                      <span>{formatOutcome(trip.boarding_status)}</span>
+                      {trip.boarding_at && <time dateTime={trip.boarding_at}>{formatTime(trip.boarding_at)}</time>}
                     </span>
                   </div>
                   <div className={styles.infoRow}>
-                    <span>Drop-off</span>
-                    <span>
-                      {trip.drop_stop_name || "—"} · {trip.drop_status || "—"}
-                      {trip.drop_at ? ` at ${new Date(trip.drop_at).toLocaleTimeString()}` : ""}
+                    <b>Drop-off</b>
+                    <span className={styles.outcome}>
+                      <span>{trip.drop_stop_name || "Stop not recorded"}</span>
+                      <span>{formatOutcome(trip.drop_status)}</span>
+                      {trip.drop_at && <time dateTime={trip.drop_at}>{formatTime(trip.drop_at)}</time>}
                     </span>
                   </div>
                 </div>
@@ -101,4 +125,22 @@ export default function ParentTripHistory() {
       )}
     </>
   );
+}
+
+function formatTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function formatOutcome(value) {
+  const labels = {
+    picked: "Boarded",
+    did_not_board: "Did not board",
+    pending: "Not recorded",
+    dropped: "Dropped",
+    drop_not_recorded: "Drop not recorded",
+  };
+  return labels[value] || value?.replace(/_/g, " ") || "Not recorded";
 }
