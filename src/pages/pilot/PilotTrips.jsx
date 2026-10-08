@@ -10,6 +10,7 @@ import {
   statusLabel,
   formatTripDate,
   normalizeTripList,
+  resolveTripRoster,
 } from "../../utils/tripHistory";
 import styles from "./PilotTrips.module.css";
 
@@ -93,10 +94,22 @@ function outcomeTone(status, kind) {
 
 function PilotTripDetails({ trip }) {
   const { data, loading, error } = useApi(
-    () => Promise.all([
-      tripsApi.getMyTripDetails(trip.trip_id),
-      trip.route_id ? transportApi.listStops(trip.route_id) : Promise.resolve([]),
-    ]).then(([details, stops]) => ({ details, stops })),
+    async () => {
+      const [details, stops] = await Promise.all([
+        tripsApi.getMyTripDetails(trip.trip_id),
+        trip.route_id ? transportApi.listStops(trip.route_id) : Promise.resolve([]),
+      ]);
+      const tripStudents = Array.isArray(details.students) ? details.students : [];
+      const routeStudents = !tripStudents.length && trip.route_id
+        ? await transportApi.listRouteStudents(trip.route_id)
+        : [];
+      const roster = resolveTripRoster(tripStudents, routeStudents);
+      return {
+        details: { ...details, students: roster.students },
+        stops,
+        isCurrentRouteRoster: roster.isCurrentRouteRoster,
+      };
+    },
     [trip.trip_id, trip.route_id]
   );
 
@@ -104,7 +117,7 @@ function PilotTripDetails({ trip }) {
   if (error) return <div className={styles.detailsLoading}><ErrorBanner message={error} /></div>;
   if (!data) return null;
 
-  const { details, stops } = data;
+  const { details, stops, isCurrentRouteRoster } = data;
   const students = Array.isArray(details.students) ? details.students : [];
   const direction = details.direction || trip.direction;
   const isDrop = direction === "drop";
@@ -211,6 +224,11 @@ function PilotTripDetails({ trip }) {
         <h3 className={styles.sectionLabel}>
           STUDENTS ({students.length} EXPECTED · {boarded} BOARDED · {absentOrMissing} ABSENT/MISSING)
         </h3>
+        {isCurrentRouteRoster && (
+          <p className={styles.rosterNotice} role="note">
+            Trip-level child outcomes were not saved for this older trip. This is the route’s current roster and status, not a historical snapshot.
+          </p>
+        )}
         <div className={styles.detailsTableWrap}>
           <table className={styles.detailsTable}>
             <thead>
