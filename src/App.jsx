@@ -51,6 +51,7 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminTripHistory from "./pages/admin/AdminTripHistory";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -177,6 +178,7 @@ export default function App() {
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="trip-history" element={<AdminTripHistory />} />
               <Route path="support" element={<AdminSupport />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
