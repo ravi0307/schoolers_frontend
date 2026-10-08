@@ -1,11 +1,11 @@
 import WebLayout from "./WebLayout";
-import { Bus, CalendarDays, FileText, Megaphone } from "lucide-react";
+import { Bus, CalendarDays, FileText, History, Megaphone } from "lucide-react";
 
 const TABS = [
   { to: "/pilot/pickdrop", icon: Bus, label: "Pick & Drop" },
   { to: "/pilot/broadcast", icon: Megaphone, label: "Broadcast" },
   { to: "/pilot/leave", icon: CalendarDays, label: "Leave" },
-  { to: "/pilot/trips", icon: "Bus", label: "My Trips" },
+  { to: "/pilot/trips", icon: History, label: "My Trips" },
   { to: "/pilot/report", icon: FileText, label: "My Report" },
 ];
 

@@ -51,12 +51,12 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSupport from "./pages/admin/AdminSupport";
-import AdminTripHistory from "./pages/admin/AdminTripHistory";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
 import PilotLeave from "./pages/pilot/PilotLeave";
 import PilotReport from "./pages/pilot/PilotReport";
+import PilotTrips from "./pages/pilot/PilotTrips";
 
 import MasterSchools from "./pages/master/MasterSchools";
 import MasterSchoolDetail from "./pages/master/MasterSchoolDetail";
@@ -178,7 +178,6 @@ export default function App() {
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />
-              <Route path="trip-history" element={<AdminTripHistory />} />
               <Route path="support" element={<AdminSupport />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
@@ -193,6 +192,7 @@ export default function App() {
                     <Route path="pickdrop" element={<PilotPickDrop />} />
                     <Route path="broadcast" element={<PilotBroadcast />} />
                     <Route path="leave" element={<PilotLeave />} />
+                    <Route path="trips" element={<PilotTrips />} />
                     <Route path="report" element={<PilotReport />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/pilot/pickdrop" replace />} />

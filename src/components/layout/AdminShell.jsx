@@ -28,7 +28,6 @@ const NAV = [
   { to: "/admin/support", icon: LifeBuoy, label: "Contact Support" },
   { to: "/admin/staff", icon: Users, label: "Staff" },
   { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
-  { to: "/admin/trip-history", icon: "Bus", label: "Trip History" },
   { to: "/admin/classes", icon: ClipboardList, label: "Classes" },
   { to: "/admin/students", icon: GraduationCap, label: "Students" },
   { to: "/admin/timetable", icon: CalendarClock, label: "Manage Timetable" },
