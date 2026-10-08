@@ -7,6 +7,7 @@ import Modal from "../../components/ui/Modal";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
+import { resolveTripRoster } from "../../utils/tripHistory";
 import styles from "./AdminTripHistory.module.css";
 
 const EMPTY_LIST = [];
@@ -122,10 +123,22 @@ function stopDelay(scheduled, actual) {
 
 function TripDetails({ trip }) {
   const { data, loading, error } = useApi(
-    () => Promise.all([
-      transportApi.getTripDetails(trip.trip_id),
-      trip.route_id ? transportApi.listStops(trip.route_id) : Promise.resolve([]),
-    ]).then(([details, stops]) => ({ details, stops })),
+    async () => {
+      const [details, stops] = await Promise.all([
+        transportApi.getTripDetails(trip.trip_id),
+        trip.route_id ? transportApi.listStops(trip.route_id) : Promise.resolve([]),
+      ]);
+      const tripStudents = Array.isArray(details.students) ? details.students : [];
+      const routeStudents = !tripStudents.length && trip.route_id
+        ? await transportApi.listRouteStudents(trip.route_id)
+        : [];
+      const roster = resolveTripRoster(tripStudents, routeStudents);
+      return {
+        details: { ...details, students: roster.students },
+        stops,
+        isCurrentRouteRoster: roster.isCurrentRouteRoster,
+      };
+    },
     [trip.trip_id, trip.route_id]
   );
   const { data: studentRecords, error: studentsError } = useApi(
@@ -141,7 +154,7 @@ function TripDetails({ trip }) {
   if (error) return <div className={styles.detailLoading}><ErrorBanner message={error} /></div>;
   if (!data) return null;
 
-  const { details, stops } = data;
+  const { details, stops, isCurrentRouteRoster } = data;
   const direction = details.direction || trip.direction;
   const isDrop = direction === "drop";
   const stopTimeKey = isDrop ? "drop_time" : "pickup_time";
@@ -225,6 +238,11 @@ function TripDetails({ trip }) {
         <h2>
           Children ({students.length} expected, {boarded} boarded, {didNotBoard} did not board)
         </h2>
+        {isCurrentRouteRoster && (
+          <p className={styles.rosterNotice} role="note">
+            Trip-level child outcomes were not saved for this older trip. This is the route’s current roster and status, not a historical snapshot.
+          </p>
+        )}
         {studentsError && <ErrorBanner message={`Could not load child class details: ${studentsError}`} />}
         {classesError && <ErrorBanner message={`Could not load class names: ${classesError}`} />}
         <div className={styles.nestedTableWrap}>

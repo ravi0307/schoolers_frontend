@@ -104,7 +104,9 @@ export default function ParentTripHistory() {
                     <b>Pickup</b>
                     <span className={styles.outcome}>
                       <span>{trip.boarding_stop_name || "Stop not recorded"}</span>
-                      <span>{formatOutcome(trip.boarding_status)}</span>
+                      <span className={outcomeTone(trip.boarding_status)}>
+                        {formatOutcome(trip.boarding_status)}
+                      </span>
                       {trip.boarding_at && <time dateTime={trip.boarding_at}>{formatTime(trip.boarding_at)}</time>}
                     </span>
                   </div>
@@ -112,7 +114,9 @@ export default function ParentTripHistory() {
                     <b>Drop-off</b>
                     <span className={styles.outcome}>
                       <span>{trip.drop_stop_name || "Stop not recorded"}</span>
-                      <span>{formatOutcome(trip.drop_status)}</span>
+                      <span className={outcomeTone(trip.drop_status)}>
+                        {formatOutcome(trip.drop_status)}
+                      </span>
                       {trip.drop_at && <time dateTime={trip.drop_at}>{formatTime(trip.drop_at)}</time>}
                     </span>
                   </div>
@@ -143,4 +147,10 @@ function formatOutcome(value) {
     drop_not_recorded: "Drop not recorded",
   };
   return labels[value] || value?.replace(/_/g, " ") || "Not recorded";
+}
+
+function outcomeTone(value) {
+  if (value === "picked" || value === "dropped") return styles.outcomeSuccess;
+  if (value === "did_not_board" || value === "drop_not_recorded") return styles.outcomeMissed;
+  return styles.outcomePending;
 }

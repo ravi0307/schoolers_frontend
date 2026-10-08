@@ -18,6 +18,31 @@ export const normalizeTripList = (response) => {
   return [];
 };
 
+/**
+ * Older trips may not have TripStudent snapshots. Keep their current assigned
+ * route roster visible, but let the view label it as current rather than
+ * presenting mutable route status as historical trip data.
+ */
+export const resolveTripRoster = (tripStudents, routeStudents) => {
+  if (Array.isArray(tripStudents) && tripStudents.length) {
+    return { students: tripStudents, isCurrentRouteRoster: false };
+  }
+  const currentStudents = Array.isArray(routeStudents) ? routeStudents : [];
+  return {
+    students: currentStudents.map((student) => ({
+      student_id: student.student_id,
+      student_name: student.student_name,
+      boarding_status: student.status === "picked" || student.status === "dropped" ? "picked" : "pending",
+      drop_status: student.status === "dropped" ? "dropped" : "pending",
+      boarding_at: null,
+      drop_at: null,
+      boarding_stop_id: null,
+      drop_stop_id: null,
+    })),
+    isCurrentRouteRoster: currentStudents.length > 0,
+  };
+};
+
 /** Trip type -> human label */
 export const tripTypeLabel = (tripType) => {
   const map = { regular: "Regular", field: "Field trip", emergency: "Emergency" };

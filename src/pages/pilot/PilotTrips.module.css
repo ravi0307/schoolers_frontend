@@ -168,6 +168,16 @@
   min-width: 0;
 }
 
+.rosterNotice {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border-left: 3px solid #b7791f;
+  background: #fffbeb;
+  color: #713f12;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
 .detailsSection > .sectionLabel {
   margin-bottom: var(--space-3);
 }
