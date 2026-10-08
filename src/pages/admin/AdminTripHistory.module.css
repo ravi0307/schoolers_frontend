@@ -12,7 +12,7 @@
 }
 
 /* Filters bar */
-.filters-bar {
+.filtersBar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4) var(--space-6);
@@ -20,17 +20,17 @@
   min-width: 0;
 }
 
-.filter-select,
-.filter-input {
+.filterSelect,
+.filterInput {
   min-width: 0;
   flex: 1 1 0;
 }
 
-.filter-select {
+.filterSelect {
   padding: var(--space-2) var(--space-3);
 }
 
-.filter-input {
+.filterInput {
   padding: var(--space-2) var(--space-3);
   height: var(--input-height);
 }
@@ -48,30 +48,30 @@
 }
 
 /* Trip table */
-.trip-table {
+.tripTable {
   width: 100%;
 }
 
-.trip-table table {
+.tripTable table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.trip-table th,
-.trip-table td {
+.tripTable th,
+.tripTable td {
   padding: var(--space-3) var(--space-4);
   text-align: left;
   min-width: 0;
 }
 
-.trip-table th {
+.tripTable th {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
-.trip-table td {
+.tripTable td {
   color: var(--color-text);
   font-size: var(--font-size-sm);
 }
@@ -115,6 +115,46 @@
 }
 
 /* Empty state */
+.detailPanel {
+  border-top: var(--border-width-thin) solid var(--color-border);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.studentRoster {
+  margin-top: var(--space-4);
+}
+
+.studentRoster h2 {
+  font-size: var(--font-size-sm);
+}
+
+.studentRoster ul {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.studentRoster li {
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 700px) {
+  .tripTable {
+    overflow-x: auto;
+  }
+
+  .tripTable table {
+    min-width: 620px;
+  }
+}
+
 .Empty {
   text-align: center;
   padding: var(--space-8);

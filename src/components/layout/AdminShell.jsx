@@ -8,6 +8,7 @@ import {
   CalendarClock,
   ClipboardList,
   GraduationCap,
+  History,
   House,
   Image,
   LifeBuoy,
@@ -21,6 +22,7 @@ import {
 const NAV = [
   { to: "/admin/dashboard", icon: House, label: "Dashboard" },
   { to: "/admin/routes", icon: Bus, label: "Commute" },
+  { to: "/admin/trips", icon: History, label: "Trip History" },
   { to: "/admin/broadcast", icon: Megaphone, label: "Broadcast" },
   { to: "/admin/leave", icon: CalendarDays, label: "Leave Requests" },
   { to: "/admin/gallery", icon: Image, label: "Gallery" },

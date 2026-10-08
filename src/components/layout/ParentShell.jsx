@@ -5,11 +5,12 @@ import { Spinner } from "../ui/Primitives";
 import Card from "../ui/Card";
 import EmptyState from "../ui/EmptyState";
 import styles from "./ParentShell.module.css";
-import { Backpack, BarChart3, Bus, CalendarDays, CalendarRange, Check, House, Image, Trophy } from "lucide-react";
+import { Backpack, BarChart3, Bus, CalendarDays, CalendarRange, Check, History, House, Image, Trophy } from "lucide-react";
 
 const TABS = [
   { to: "/parent/home", icon: House, label: "Home" },
   { to: "/parent/pickdrop", icon: Bus, label: "Pick & Drop" },
+  { to: "/parent/trips", icon: History, label: "Trip History" },
   { to: "/parent/attendance", icon: Check, label: "Attendance" },
   { to: "/parent/timetable", icon: CalendarRange, label: "Timetable" },
   { to: "/parent/marks", icon: Trophy, label: "Marks" },
