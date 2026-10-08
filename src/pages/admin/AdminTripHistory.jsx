@@ -1,149 +1,149 @@
 import { useMemo, useState } from "react";
-import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
+import * as transportApi from "../../api/transport";
+import PageHeader from "../../components/ui/PageHeader";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
-import { usePagination } from "../../components/ui/Pagination";
 import styles from "./AdminTripHistory.module.css";
 
 const EMPTY_LIST = [];
 
-/**
- * Admin Trip History.
- *
- * Read-only history of all school trips. Admins can filter by route,
- * status, direction, and date range. Clicking "Details" on a trip
- * fetches and displays the full trip record.
- */
+function TripDetails({ tripId }) {
+  const { data, loading, error } = useApi(
+    () => (tripId ? transportApi.getTripDetails(tripId) : Promise.resolve(null)),
+    [tripId]
+  );
 
-function TripRow({ trip, onDetails }) {
-  const { trip_id, route_name, direction, status, started_at, ended_at, driver, vehicle, summary } = trip;
+  if (!tripId) return null;
+  if (loading) return <Spinner />;
+  if (error) return <ErrorBanner message={error} />;
+  if (!data) return null;
 
   return (
-    <div className="admin-trip-row">
-      <div className="admin-trip-date">{started_at ? new Date(started_at).toLocaleDateString() : "—"}</div>
-      <div className="admin-trip-route">{route_name || "—"}</div>
-      <div className="admin-trip-status">{status ? status.replace(/_/g, " ") : "—"}</div>
-      <div className="admin-trip-what-happened">{summary || "—"}</div>
-      <div className="admin-trip-driver">{driver || "—"}</div>
-      <div className="admin-trip-actions">
-        <button className="btn ghost small" onClick={() => onDetails(trip_id)}>
-          Details
-        </button>
-      </div>
+    <div className={styles.detailPanel}>
+      <div className={styles.infoRow}><b>Date</b><span>{data.trip_date || "—"}</span></div>
+      <div className={styles.infoRow}><b>Direction</b><span>{data.direction || "—"}</span></div>
+      <div className={styles.infoRow}><b>Driver</b><span>{data.driver_name || "—"}</span></div>
+      <div className={styles.infoRow}><b>Vehicle</b><span>{data.vehicle || "—"}</span></div>
+      <div className={styles.infoRow}><b>Outcome</b><span>{data.outcome_summary || "—"}</span></div>
+      {data.cancellation_reason && (
+        <div className={styles.infoRow}><b>Cancellation reason</b><span>{data.cancellation_reason}</span></div>
+      )}
+      {data.students?.length > 0 && (
+        <div className={styles.studentRoster}>
+          <h2>Students</h2>
+          <ul>
+            {data.students.map((student) => (
+              <li key={student.student_id}>
+                {student.student_name}: {student.boarding_status} / {student.drop_status}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
-function AdminTripHistory() {
-  const { data: trips, loading, error } = useApi(() => transportApi.listAdminTrips(), []);
+export default function AdminTripHistory() {
+  const { data, loading, error } = useApi(() => transportApi.listAdminTrips(), []);
+  const trips = Array.isArray(data) ? data : EMPTY_LIST;
   const [filterRoute, setFilterRoute] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDirection, setFilterDirection] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
+  const [selectedTripId, setSelectedTripId] = useState(null);
 
-  const { pageItems, pagination } = usePagination(trips || [], 20);
-
-  const filteredTrips = pageItems.filter((trip) => {
-    const routeMatch = !filterRoute || trip.route_name === filterRoute;
-    const statusMatch = !filterStatus || trip.status === filterStatus;
-    const directionMatch = !filterDirection || trip.direction === filterDirection;
-    const fromMatch = !filterFrom || new Date(trip.started_at) >= new Date(filterFrom);
-    const toMatch = !filterTo || new Date(trip.ended_at) <= new Date(filterTo);
-    return routeMatch && statusMatch && directionMatch && fromMatch && toMatch;
-  });
-
-  const handleDetails = (tripId) => {
-    // Show details for this trip
-  };
+  const routes = useMemo(
+    () => [...new Set(trips.map((trip) => trip.route_name).filter(Boolean))].sort(),
+    [trips]
+  );
+  const filteredTrips = useMemo(
+    () => trips.filter((trip) =>
+      (!filterRoute || trip.route_name === filterRoute) &&
+      (!filterStatus || trip.status === filterStatus) &&
+      (!filterDirection || trip.direction === filterDirection) &&
+      (!filterFrom || trip.trip_date >= filterFrom) &&
+      (!filterTo || trip.trip_date <= filterTo)
+    ),
+    [trips, filterRoute, filterStatus, filterDirection, filterFrom, filterTo]
+  );
+  const pager = usePagination(filteredTrips, 20);
 
   return (
-    <AdminShell>
-      <div className="page-header">
-        <div className="scr-title">Trip History</div>
-        <div className="scr-sub">Administrative history of all school trips</div>
+    <>
+      <PageHeader title="Trip History" subtitle="Administrative history of school trips" />
+      <div className={styles.filtersBar}>
+        <label>
+          Route
+          <select className={styles.filterSelect} value={filterRoute} onChange={(event) => setFilterRoute(event.target.value)}>
+            <option value="">All routes</option>
+            {routes.map((route) => <option key={route} value={route}>{route}</option>)}
+          </select>
+        </label>
+        <label>
+          Status
+          <select className={styles.filterSelect} value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+            <option value="">All statuses</option>
+            {["scheduled", "in_progress", "completed", "cancelled"].map((status) => (
+              <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Direction
+          <select className={styles.filterSelect} value={filterDirection} onChange={(event) => setFilterDirection(event.target.value)}>
+            <option value="">Both directions</option>
+            <option value="pickup">Pickup</option>
+            <option value="drop">Drop</option>
+          </select>
+        </label>
+        <label>
+          From
+          <input className={styles.filterInput} type="date" value={filterFrom} onChange={(event) => setFilterFrom(event.target.value)} />
+        </label>
+        <label>
+          To
+          <input className={styles.filterInput} type="date" value={filterTo} onChange={(event) => setFilterTo(event.target.value)} />
+        </label>
       </div>
 
       {loading && <Spinner />}
-
       {error && <ErrorBanner message={error} />}
-
-      {!loading && !error && (
-        <>
-          <div className="filters-bar">
-            <select className="filter-select" onChange={(e) => setFilterRoute(e.target.value)} aria-label="Route filter">
-              <option value="">All routes</option>
-            </select>
-
-            <select className="filter-select" onChange={(e) => setFilterStatus(e.target.value)} aria-label="Status filter">
-              <option value="">All statuses</option>
-            </select>
-
-            <select className="filter-select" onChange={(e) => setFilterDirection(e.target.value)} aria-label="Direction filter">
-              <option value="">Both directions</option>
-            </select>
-
-            <div className="filter-group">
-              <label>From</label>
-              <input type="date" className="filter-input" onChange={(e) => setFilterFrom(e.target.value)} />
-            </div>
-
-            <div className="filter-group">
-              <label>To</label>
-              <input type="date" className="filter-input" onChange={(e) => setFilterTo(e.target.value)} />
-            </div>
-          </div>
-
-          {filteredTrips.length === 0 && (
-            <Empty>No trips found.</Empty>
-          )}
-
-          <div className="trip-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>DATE</th>
-                  <th>ROUTE</th>
-                  <th>STATUS</th>
-                  <th>WHAT HAPPENED</th>
-                  <th>DRIVER</th>
-                  <th>ACTIONS</th>
+      {!loading && !error && filteredTrips.length === 0 && <Empty>No trips found.</Empty>}
+      {!loading && !error && filteredTrips.length > 0 && (
+        <div className={styles.tripTable}>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Route</th><th>Direction</th><th>Status</th><th>Driver</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+              {pager.pageItems.map((trip) => (
+                <tr key={trip.trip_id}>
+                  <td>{trip.trip_date || "—"}</td>
+                  <td>{trip.route_name || "—"}</td>
+                  <td>{trip.direction || "—"}</td>
+                  <td><Pill tone={trip.status === "completed" ? "ok" : "mute"}>{trip.status?.replace(/_/g, " ") || "—"}</Pill></td>
+                  <td>{trip.driver_name || "—"}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      aria-expanded={selectedTripId === trip.trip_id}
+                      onClick={() => setSelectedTripId(selectedTripId === trip.trip_id ? null : trip.trip_id)}
+                    >
+                      {selectedTripId === trip.trip_id ? "Hide" : "View"}
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredTrips.map((trip) => (
-                  <tr key={trip.trip_id}>
-                    <td>{trip.started_at ? new Date(trip.started_at).toLocaleDateString() : "—"}</td>
-                    <td>{trip.route_name || "—"}</td>
-                    <td>{trip.status ? trip.status.replace(/_/g, " ") : "—"}</td>
-                    <td>{trip.summary || "—"}</td>
-                    <td>{trip.driver || "—"}</td>
-                    <td>
-                      <button className="btn ghost small" onClick={() => handleDetails(trip.trip_id)}>
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {pagination && (
-            <>
-              <span>Page {pagination.pageIndex + 1} of {pagination.pageCount}</span>
-            </>
-          )}
-</>
-      </AdminShell>
-    </div>
-  );
-}
-
-export default function AdminTripHistoryPage() {
-  return (
-    <div>
-      <AdminTripHistory />
-    </div>
+              ))}
+            </tbody>
+          </table>
+          {selectedTripId && <TripDetails tripId={selectedTripId} />}
+          <Pagination {...pager} />
+        </div>
+      )}
+    </>
   );
 }

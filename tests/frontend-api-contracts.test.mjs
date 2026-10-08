@@ -114,6 +114,25 @@ test("every frontend API module is wired to its required backend surface", () =>
   ]);
 });
 
+test("trip history API paths are relative to the versioned API base URL", () => {
+  const pilotTrips = source("src/api/trips.js");
+  const transport = source("src/api/transport.js");
+
+  assert.match(pilotTrips, /client\.get\("\/trips\/mine"/);
+  assert.match(pilotTrips, /client\.get\(`\/trips\/mine\/\$\{tripId\}`\)/);
+  assert.match(transport, /client\.get\("\/trips"/);
+  assert.match(transport, /client\.get\(`\/trips\/\$\{tripId\}`\)/);
+  assert.doesNotMatch(pilotTrips + transport, /\/api\/v1\/trips/);
+});
+
+test("admin and parent trip history are registered in portal navigation and routes", () => {
+  assert.match(source("src/components/layout/AdminShell.jsx"), /to: "\/admin\/trips", icon: History, label: "Trip History"/);
+  assert.match(source("src/components/layout/ParentShell.jsx"), /to: "\/parent\/trips", icon: History, label: "Trip History"/);
+  assert.match(source("src/App.jsx"), /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(source("src/App.jsx"), /path="trips" element=\{<ParentTripHistory \/>\}/);
+  assert.match(source("src/api/trips.js"), /getChildTripHistory = \(studentId, params\)/);
+});
+
 test("admin and teacher portals use shared outlet layouts", () => {
   const app = source("src/App.jsx");
   assert.match(app, /path="\/admin"/);
@@ -923,6 +942,7 @@ const ADMIN_SHELL = "src/components/layout/AdminShell.jsx";
 const ADMIN_NAV = [
   "/admin/dashboard",
   "/admin/routes",
+  "/admin/trips",
   "/admin/broadcast",
   "/admin/leave",
   "/admin/gallery",

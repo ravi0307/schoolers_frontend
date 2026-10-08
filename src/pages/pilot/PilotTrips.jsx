@@ -129,7 +129,8 @@ export default function PilotTrips() {
                       <Pill tone={statusPill(trip.status)}>{statusLabel(trip.status)}</Pill>
                     </button>
                     {openId === trip.trip_id && (
-                      detailLoading && (
+                      <>
+                      {detailLoading && (
                         <div className={styles.detail}>
                           <p>Loading trip details…</p>
                         </div>
@@ -211,8 +212,9 @@ export default function PilotTrips() {
                           <p>Select a trip to view details.</p>
                         </div>
                       )}
+                      </>
+                    )}
                     </li>
-                  </li>
                 ))}
               </ul>
               <Pagination {...pager} />

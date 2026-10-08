@@ -22,6 +22,7 @@ import ParentBarter from "./pages/parent/ParentBarter";
 import ParentGallery from "./pages/parent/ParentGallery";
 import ParentTimetable from "./pages/parent/ParentTimetable";
 import ParentReport from "./pages/parent/ParentReport";
+import ParentTripHistory from "./pages/parent/ParentTripHistory";
 
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherAttendance from "./pages/teacher/TeacherAttendance";
@@ -51,6 +52,7 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminTripHistory from "./pages/admin/AdminTripHistory";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -102,6 +104,7 @@ export default function App() {
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<ParentHome />} />
               <Route path="pickdrop" element={<ParentPickDrop />} />
+              <Route path="trips" element={<ParentTripHistory />} />
               <Route path="attendance" element={<ParentAttendance />} />
               <Route path="timetable" element={<ParentTimetable />} />
               <Route path="marks" element={<ParentMarks />} />
@@ -173,6 +176,7 @@ export default function App() {
               <Route path="students" element={<AdminStudents />} />
               <Route path="staff" element={<AdminStaff />} />
               <Route path="routes" element={<AdminRoutes />} />
+              <Route path="trips" element={<AdminTripHistory />} />
               <Route path="leave" element={<AdminLeave />} />
               <Route path="website" element={<AdminWebsite />} />
               <Route path="notifications" element={<AdminNotifications />} />

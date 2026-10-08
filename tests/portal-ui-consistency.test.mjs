@@ -30,6 +30,7 @@ test("parent navigation keeps every destination inside the shared responsive she
   for (const route of [
     "/parent/home",
     "/parent/pickdrop",
+    "/parent/trips",
     "/parent/attendance",
     "/parent/timetable",
     "/parent/marks",
@@ -44,6 +45,17 @@ test("parent navigation keeps every destination inside the shared responsive she
   assert.doesNotMatch(shell, /MobileLayout|useIsWide/);
   assert.match(shell, /setSelectedChildId\(Number\(e\.target\.value\)\)/);
   assert.match(shell, /No children linked to this parent account yet/);
+});
+
+test("admin and parent trip history sidebar entries open registered pages", () => {
+  const admin = read("src/components/layout/AdminShell.jsx");
+  const parent = read("src/components/layout/ParentShell.jsx");
+  const app = read("src/App.jsx");
+
+  assert.match(admin, /to: "\/admin\/trips", icon: History, label: "Trip History"/);
+  assert.match(parent, /to: "\/parent\/trips", icon: History, label: "Trip History"/);
+  assert.match(app, /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(app, /path="trips" element=\{<ParentTripHistory \/>\}/);
 });
 
 test("staff navigation and profile/sign-out use the shared shell configuration", () => {

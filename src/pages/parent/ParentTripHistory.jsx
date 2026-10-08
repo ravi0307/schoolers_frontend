@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import { useState } from "react";
 import { useApi } from "../../hooks/useApi";
 import * as tripsApi from "../../api/trips";
 import { useParentContext } from "../../context/ParentContext";
-import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import PageHeader from "../../components/ui/PageHeader";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
-import { formatTripDate, formatDuration, statusPill, statusLabel } from "../../utils/tripHistory";
+import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import { formatTripDate } from "../../utils/tripHistory";
 import styles from "./ParentTripHistory.module.css";
 
 const RANGES = [
@@ -14,213 +14,91 @@ const RANGES = [
   { key: "term", label: "Last 90 days", days: 90 },
 ];
 
-function daysAgo(n) {
+function daysAgo(days) {
   const date = new Date();
-  date.setDate(date.getDate() - n);
+  date.setDate(date.getDate() - days);
   return date.toISOString().slice(0, 10);
 }
 
 export default function ParentTripHistory() {
-  const { selectedChild, kids } = useParentContext();
+  const { selectedChild } = useParentContext();
   const [rangeKey, setRangeKey] = useState("week");
-  const range = RANGES.find((r) => r.key === rangeKey);
-  const [openId, setOpenId] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(null);
-  const [detailError, setDetailError] = useState(null);
-  const [detailData, setDetailData] = useState(null);
-
-  const child = selectedChild || (kids && kids.length > 0 ? kids[0] : null);
-
-  const { data: listData, loading, error, refetch } = useApi(
-    () =>
-      tripsApi.getChildTripHistory(
-        child?.student_id || "",
-        {
+  const range = RANGES.find((item) => item.key === rangeKey) || RANGES[0];
+  const { data, loading, error } = useApi(
+    () => selectedChild
+      ? tripsApi.getChildTripHistory(selectedChild.student_id, {
           from_date: daysAgo(range.days),
           to_date: new Date().toISOString().slice(0, 10),
-        }
-      ),
-    [rangeKey, child?.student_id]
+        })
+      : Promise.resolve([]),
+    [rangeKey, selectedChild?.student_id]
   );
-
-  // Fetch detail only when a trip is selected
-  useEffect(() => {
-    if (openId) {
-      setDetailLoading(true);
-      setDetailError(null);
-      tripsApi.getMyTripDetails(openId).then(
-        (res) => setDetailData(res),
-        (err) => setDetailError("Failed to load trip details")
-      ).finally(() => setDetailLoading(false));
-    } else {
-      setDetailData(null);
-    }
-  }, [openId]);
-
-  const items = listData?.items || [];
-  const pager = usePagination(items);
+  const trips = Array.isArray(data) ? data : [];
+  const pager = usePagination(trips);
 
   return (
-    <ParentShell>
-      <div className="page-header">
-        <div className="scr-title">Trip History</div>
-        <div className="scr-sub">Completed school trips for your child</div>
-      </div>
+    <>
+      <PageHeader
+        title="Trip History"
+        subtitle={selectedChild ? `Completed trips for ${selectedChild.name}` : "Completed school trips"}
+      />
 
-      {selectedChild ? (
-        <div className="child-selector">
-          <span>Child:</span>
-          <select aria-label="Child selector">
-            onChange={(e) => {
-              setSelectedChild(kids.find((k) => k.student_id === e.target.value) || null);
-              setDetailData(null);
-            }}
-          </select>
-            <option value="">All children</option>
-            {kids.map((child) => (
-              <option key={child.student_id} value={child.student_id}>
-                {child.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : (
-        <p>Select a child above to view trip history.</p>
-      )}
-
-      <div className="period-filters">
-        {RANGES.map((r) => (
+      <div className={styles.periodFilters} role="group" aria-label="Trip date range">
+        {RANGES.map((item) => (
           <button
-            key={r.key}
+            key={item.key}
             type="button"
             className={styles.rangeChip}
-            onClick={() => {
-              setRangeKey(r.key);
-              refetch();
-            }}
+            data-selected={item.key === rangeKey}
+            aria-pressed={item.key === rangeKey}
+            onClick={() => setRangeKey(item.key)}
           >
-            {r.label}
+            {item.label}
           </button>
         ))}
       </div>
 
       {loading && <Spinner />}
       {error && <ErrorBanner message={error} />}
-
-      {!loading && !error && (
+      {!loading && !error && !selectedChild && <Empty>No children are linked to this account.</Empty>}
+      {!loading && !error && selectedChild && trips.length === 0 && (
+        <Empty>No completed trips found for the selected period.</Empty>
+      )}
+      {!loading && !error && trips.length > 0 && (
         <>
-          {items.length === 0 ? (
-            <Empty>No completed trips found for the selected period.</Empty>
-          ) : (
-            <>
-              <ul className="trip-list">
-                {pager.pageItems.map((trip) => (
-                  <li className="trip-item" key={trip.trip_id}>
-                    <button
-                      type="button"
-                      className="trip-row"
-                      onClick={() => setOpenId(openId === trip.trip_id ? null : trip.trip_id)}
-                      aria-expanded={openId === trip.trip_id}
-                    >
-                      <span className="trip-date">
-                        {trip.trip_date ? new Date(trip.trip_date).toLocaleDateString() : "—"}
-                      </span>
-                      <span className="trip-route">
-                        {trip.route_name || "—"}
-                      </span>
-                      <span className="trip-direction">
-                        {trip.direction || "—"}
-                      </span>
-                      <span className="trip-status">
-                        <Pill tone={statusPill(trip.status)}>
-                          {statusLabel(trip.status)}
-                        </Pill>
-                      </span>
-                    </button>
-                    {openId === trip.trip_id && (
-                      <div className="trip-detail">
-                        {detailLoading && (
-                          <p>Loading trip details…</p>
-                        )}
-                        {detailError && (
-                          <ErrorBanner message={detailError} />
-                        )}
-                        {!detailLoading && !detailError && detailData && (
-                          <div className="detail-panel">
-                            <div className="detail-info">
-                              <div className="info-row">
-                                <span>Date:</span>
-                                <span>{formatTripDate(detailData.trip_date)}</span>
-                              </div>
-                              <div className="info-row">
-                                <span>Route:</span>
-                                <span>{detailData.route_name || "—"}</span>
-                              </div>
-                              <div className="info-row">
-                                <span>Driver:</span>
-                                <span>{detailData.driver_name || "—"}</span>
-                              </div>
-                              <div className="info-row">
-                                <span>Status:</span>
-                                <Pill tone={statusPill(detailData.status)}>
-                                  {statusLabel(detailData.status)}
-                                </Pill>
-                              </div>
-                              {detailData.started_at && (
-                                <div className="info-row">
-                                  <span>Start:</span>
-                                  <span>{new Date(detailData.started_at).toLocaleString()}</span>
-                                </div>
-                              )}
-                              {detailData.ended_at && (
-                                <div className="info-row">
-                                  <span>End:</span>
-                                  <span>{new Date(detailData.ended_at).toLocaleString()}</span>
-                                </div>
-                              )}
-                              {detailData.duration_minutes !== null && detailData.duration_minutes !== undefined && (
-                                <div className="info-row">
-                                  <span>Duration:</span>
-                                  <span>{formatDuration(detailData.duration_minutes)}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {detailData.students && detailData.students.length > 0 ? (
-                              <div className="student-roster">
-                                <h4>Students</h4>
-                                <ul>
-                                  {detailData.students.map((s) => (
-                                    <li key={s.student_id}>
-                                      <b>{s.student_name || "—"}</b>
-                                      <span>
-                                        {s.outcome ? `Outcome: ${s.outcome}` : ""}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ) : (
-                              <p>No student outcomes recorded for this trip.</p>
-                            )}
-                          </div>
-                        )}
-                        {openId === trip.trip_id && !detailLoading && !detailError && !detailData && (
-                          <p>Select a trip to view details.</p>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <Pagination {...pager} />
-            </>
-          )}
-          <button type="button" className="btn ghost block" onClick={refetch}>
-            Refresh
-          </button>
+          <div className={styles.tripList}>
+            {pager.pageItems.map((trip) => (
+              <article className={styles.tripItem} key={trip.trip_id}>
+                <div className={styles.tripRow}>
+                  <span className={styles.tripDate}>{formatTripDate(trip.trip_date)}</span>
+                  <span className={styles.tripRoute}>{trip.route_name || "—"}</span>
+                  <span>{trip.direction || "—"}</span>
+                  <span className={styles.tripStatus}>
+                    <Pill tone="ok">{trip.status || "Completed"}</Pill>
+                  </span>
+                </div>
+                <div className={styles.detailPanel}>
+                  <div className={styles.infoRow}>
+                    <span>Pickup</span>
+                    <span>
+                      {trip.boarding_stop_name || "—"} · {trip.boarding_status || "—"}
+                      {trip.boarding_at ? ` at ${new Date(trip.boarding_at).toLocaleTimeString()}` : ""}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span>Drop-off</span>
+                    <span>
+                      {trip.drop_stop_name || "—"} · {trip.drop_status || "—"}
+                      {trip.drop_at ? ` at ${new Date(trip.drop_at).toLocaleTimeString()}` : ""}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <Pagination {...pager} />
         </>
       )}
-    </ParentShell>
+    </>
   );
 }
