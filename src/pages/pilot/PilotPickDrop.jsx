@@ -64,7 +64,9 @@ export default function PilotPickDrop() {
           {students && students.length ? (
             pager.pageItems.map((s) => (
               <div key={s.id} className="listitem">
-                <div className="meta"><b>Student #{s.student_id}</b></div>
+                <div className="meta">
+                  <b>{s.student_name || `Student #${s.student_id}`}</b>
+                </div>
                 <span
                   className={`pill ${STATUS_TONE[s.status]}`}
                   style={{ cursor: "pointer" }}
