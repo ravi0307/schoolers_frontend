@@ -283,6 +283,12 @@ test("pilot pick & drop maps stop API fields (stop_name, pickup_time, drop_time)
     /s\.pickup_time/,
     /s\.drop_time/,
   ]);
+  assert.ok(
+    source("src/pages/pilot/PilotPickDrop.jsx").includes(
+      "s.student_name || `Student #${s.student_id}`"
+    ),
+    "pilot assigned-route rows should show the student name when available",
+  );
 });
 
 test("parent pick & drop shows each child's live route status, bus, and stops", () => {
