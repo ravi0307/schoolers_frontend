@@ -629,6 +629,8 @@
 .role-picker button.active { background: var(--chalk-green); color: var(--paper-light); border-color: var(--chalk-green); }
 
 .public-site {
+  width: 100%;
+  max-width: none;
   min-height: 100vh;
   background: var(--paper-light);
   color: var(--ink);

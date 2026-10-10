@@ -1,4 +1,9 @@
 export const DEFAULT_WEBSITE_CANVAS_SIZE = Object.freeze({ width: 1200, height: 1900 });
+export const DEFAULT_WEBSITE_BACKGROUND = "#ffffff";
+export const WEBSITE_BACKGROUND_PRESETS = Object.freeze([
+  "#ffffff", "#f8fafc", "#f0f4f8", "#ecfeff", "#eff6ff",
+  "#f0fdf4", "#fff7ed", "#fdf2f8", "#1e293b", "#0f172a",
+]);
 export const WEBSITE_CANVAS_LIMITS = Object.freeze({
   minWidth: 650,
   maxWidth: 5000,
@@ -76,6 +81,7 @@ export function readLocalWebsiteDraft(storage, schoolId) {
   return {
     school_name: parsed.school_name || parsed.schoolName || "School website",
     canvas_size: normalizeWebsiteCanvasSize(parsed.canvas_size || parsed.canvasSize),
+    canvas_background: normalizeWebsiteBackground(parsed.canvas_background || parsed.canvasBackground),
     nodes: normalizeWebsiteBuilderNodes(parsed.nodes),
     testimonials: Array.isArray(parsed.testimonials) ? parsed.testimonials : [],
     pending_testimonials: Array.isArray(parsed.pending_testimonials)
@@ -88,6 +94,7 @@ export function writeLocalWebsiteDraft(storage, schoolId, draft) {
   storage.setItem(websiteDraftStorageKey(schoolId), JSON.stringify({
     ...draft,
     canvas_size: normalizeWebsiteCanvasSize(draft.canvas_size || draft.canvasSize),
+    canvas_background: normalizeWebsiteBackground(draft.canvas_background || draft.canvasBackground),
     nodes: normalizeWebsiteBuilderNodes(draft.nodes),
   }));
 }
@@ -262,6 +269,25 @@ export function createDefaultWebsiteNodes() {
   ];
 }
 
+export function normalizeWebsiteBackground(value) {
+  if (typeof value !== "string") return DEFAULT_WEBSITE_BACKGROUND;
+  const color = value.trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
+  if (/^rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(color)) {
+    return color;
+  }
+  return DEFAULT_WEBSITE_BACKGROUND;
+}
+
+function normalizeWebsiteImageUrl(value) {
+  if (typeof value !== "string") return "";
+  const url = value.trim();
+  if (/^https?:\/\/[^\s"'<>\\]+$/i.test(url)) return url.slice(0, 2000);
+  if (/^\/(?!\/)[^\s"'<>\\]*$/.test(url)) return url.slice(0, 2000);
+  if (/^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+/=]+$/i.test(url)) return url;
+  return "";
+}
+
 export function normalizeWebsiteBuilderNodes(nodes) {
   if (!Array.isArray(nodes)) return [];
   return nodes
@@ -272,8 +298,12 @@ export function normalizeWebsiteBuilderNodes(nodes) {
       return {
         id: node.id.slice(0, 100),
         anchorId: typeof node.anchorId === "string" ? node.anchorId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) : "",
-        type: ["header", "footer", "testimonial", "testimonials", "banner", "contact", "center"].includes(node.type) ? node.type : "center",
+        type: ["header", "footer", "testimonial", "testimonials", "banner", "contact", "center", "school-profile"].includes(node.type) ? node.type : "center",
         title: typeof node.title === "string" ? node.title.slice(0, 120) : "Content",
+        variant: ["minimal", "centered", "accented"].includes(node.variant) ? node.variant : "minimal",
+        profileName: typeof node.profileName === "string" ? node.profileName.slice(0, 120) : "",
+        profileMotto: typeof node.profileMotto === "string" ? node.profileMotto.slice(0, 240) : "",
+        profileLogo: normalizeWebsiteImageUrl(node.profileLogo),
         x,
         y,
         width: clampNumber(node.width, 8, 100 - x, 40),
@@ -281,7 +311,7 @@ export function normalizeWebsiteBuilderNodes(nodes) {
         html: typeof node.html === "string" ? node.html : "",
         slides: Array.isArray(node.slides) ? node.slides.filter((slide) => slide && typeof slide.imageUrl === "string").map((slide) => ({
           id: typeof slide.id === "string" ? slide.id.slice(0, 100) : "banner-slide",
-          imageUrl: slide.imageUrl.slice(0, 2000),
+          imageUrl: normalizeWebsiteImageUrl(slide.imageUrl),
           title: typeof slide.title === "string" ? slide.title.slice(0, 200) : "",
           subtitle: typeof slide.subtitle === "string" ? slide.subtitle.slice(0, 500) : "",
         })) : [],

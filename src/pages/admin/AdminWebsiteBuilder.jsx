@@ -17,6 +17,7 @@ import {
   X,
   ExternalLink,
   History,
+  ImagePlus,
 } from "lucide-react";
 import AdminShell from "../../components/layout/AdminShell";
 import PublicSiteCanvas from "../../components/site/PublicSiteCanvas";
@@ -25,9 +26,12 @@ import * as websiteApi from "../../api/website";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { publicSitePath } from "../../utils/siteFlow";
-import { sanitizeRichText } from "../../components/ui/richText";
+import { FONT_FAMILY_OPTIONS, FONT_SIZE_OPTIONS, sanitizeRichText } from "../../components/ui/richText";
 import {
   DEFAULT_WEBSITE_CANVAS_SIZE,
+  DEFAULT_WEBSITE_BACKGROUND,
+  WEBSITE_BACKGROUND_PRESETS,
+  normalizeWebsiteBackground,
   normalizeWebsiteCanvasSize,
   addWebsiteVersion,
   readWebsiteVersionHistory,
@@ -51,6 +55,7 @@ import styles from "./AdminWebsiteBuilder.module.css";
 const SPAWN_OPTIONS = [
   { type: "center", label: "Add New Center Content Box" },
   { type: "testimonials", label: "Insert Mock Testimonial Section" },
+  { type: "school-profile", label: "Add School Profile Node" },
 ];
 const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
@@ -58,10 +63,45 @@ function makeId() {
   return globalThis.crypto?.randomUUID?.() || `node-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function RichTextModal({ initialHtml, onClose, onSave, onChange }) {
+function backgroundColorInputValue(value) {
+  const match = value.match(/^#([0-9a-f]{6})$/i);
+  if (match) return value;
+  const rgb = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) return `#${rgb.slice(1, 4).map((part) => Number(part).toString(16).padStart(2, "0")).join("")}`;
+  const short = value.match(/^#([0-9a-f]{3})$/i);
+  return short ? `#${[...short[1]].map((part) => part + part).join("")}` : "#ffffff";
+}
+
+function backgroundOpacity(value) {
+  return Number(value.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*(0|1|0?\.\d+)\)$/i)?.[1] ?? 1);
+}
+
+function rgbaBackground(value, alpha) {
+  const hex = backgroundColorInputValue(value).slice(1);
+  const rgb = [0, 2, 4].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
+  return `rgba(${rgb.join(", ")}, ${alpha})`;
+}
+
+function isRichColor(value) {
+  return /^#[0-9a-f]{3,8}$/i.test(value)
+    || /^rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(value);
+}
+
+function richColorPickerValue(value) {
+  const match = value.match(/^#([0-9a-f]{6})$/i);
+  if (match) return value;
+  const rgb = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) return `#${rgb.slice(1, 4).map((part) => Number(part).toString(16).padStart(2, "0")).join("")}`;
+  return "#1e293b";
+}
+
+function RichTextModal({ initialHtml, onClose, onSave, onChange, onUploadImage }) {
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
+  const imageInputRef = useRef(null);
   const [html, setHtml] = useState(initialHtml || "");
+  const [textColor, setTextColor] = useState("#1e293b");
+  const [highlightColor, setHighlightColor] = useState("#fff7b2");
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -90,6 +130,26 @@ function RichTextModal({ initialHtml, onClose, onSave, onChange }) {
     saveSelection();
   }
 
+  async function insertImages(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      try {
+        const asset = await onUploadImage(file);
+        format("insertImage", asset);
+      } catch (error) {
+        window.alert(error?.message || "The image could not be uploaded.");
+      }
+    }
+  }
+
+  function insertImageUrl() {
+    const url = window.prompt("Enter an image URL (https:// or a school website upload URL):");
+    if (!url) return;
+    format("insertImage", url.trim());
+  }
+
   return (
     <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
@@ -110,7 +170,27 @@ function RichTextModal({ initialHtml, onClose, onSave, onChange }) {
           <button type="button" title="Align left" aria-label="Align left" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyLeft")}><AlignLeft /></button>
           <button type="button" title="Align center" aria-label="Align center" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyCenter")}><AlignCenter /></button>
           <button type="button" title="Align right" aria-label="Align right" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyRight")}><AlignRight /></button>
-          <label className={styles.colorTool}>Font color <input type="color" aria-label="Font color" onChange={(event) => format("foreColor", event.target.value)} /></label>
+          <select aria-label="Font family" defaultValue="Arial" onChange={(event) => format("fontName", event.target.value)}>
+            {FONT_FAMILY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <select aria-label="Font size" defaultValue="3" onChange={(event) => format("fontSize", event.target.value)}>
+            {FONT_SIZE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <label className={styles.colorTool}>Text color <input type="color" value={richColorPickerValue(textColor)} aria-label="Font color" onChange={(event) => {
+            setTextColor(event.target.value);
+            format("foreColor", event.target.value);
+          }} /><input type="text" aria-label="Text color hex or RGBA" value={textColor} onChange={(event) => setTextColor(event.target.value)} onBlur={() => {
+            if (isRichColor(textColor)) format("foreColor", textColor);
+          }} /></label>
+          <label className={styles.colorTool}>Highlight <input type="color" value={richColorPickerValue(highlightColor)} aria-label="Highlight color" onChange={(event) => {
+            setHighlightColor(event.target.value);
+            format("hiliteColor", event.target.value);
+          }} /><input type="text" aria-label="Highlight hex or RGBA" value={highlightColor} onChange={(event) => setHighlightColor(event.target.value)} onBlur={() => {
+            if (isRichColor(highlightColor)) format("hiliteColor", highlightColor);
+          }} /></label>
+          <button type="button" title="Upload image" aria-label="Upload image" onMouseDown={(event) => event.preventDefault()} onClick={() => imageInputRef.current?.click()}><ImagePlus /></button>
+          <button type="button" title="Insert image URL" onMouseDown={(event) => event.preventDefault()} onClick={insertImageUrl}>Image URL</button>
+          <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden onChange={insertImages} />
         </div>
         <div
           ref={editorRef}
@@ -145,11 +225,14 @@ export default function AdminWebsiteBuilder() {
   const { user } = useAuth();
   const toast = useToast();
   const canvasRef = useRef(null);
+  const bannerUploadRefs = useRef({});
   const transformRef = useRef(null);
   const resizeTooltipRef = useRef(null);
   const hoverTooltipTimerRef = useRef(null);
   const [nodes, setNodes] = useState([]);
   const [canvasSize, setCanvasSize] = useState(DEFAULT_WEBSITE_CANVAS_SIZE);
+  const [canvasBackground, setCanvasBackground] = useState(DEFAULT_WEBSITE_BACKGROUND);
+  const [canvasBackgroundOpacity, setCanvasBackgroundOpacity] = useState(1);
   const [testimonials, setTestimonials] = useState(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
   const [pendingTestimonials, setPendingTestimonials] = useState(MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
   const [websiteQueries, setWebsiteQueries] = useState([]);
@@ -182,12 +265,15 @@ export default function AdminWebsiteBuilder() {
       const draft = state.draft;
       setNodes(normalizeWebsiteBuilderNodes(draft?.nodes || createDefaultWebsiteNodes()));
       setCanvasSize(normalizeWebsiteCanvasSize(draft?.canvas_size));
+      setCanvasBackground(normalizeWebsiteBackground(draft?.canvas_background));
+      setCanvasBackgroundOpacity(backgroundOpacity(normalizeWebsiteBackground(draft?.canvas_background)));
       setTestimonials(draft?.testimonials || MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
       setPendingTestimonials(draft?.pending_testimonials || MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
       setSavedDraft(draft ? {
         schoolName: draft.school_name,
         savedAt: state.updated_at,
         canvasSize: draft.canvas_size,
+        canvasBackground: normalizeWebsiteBackground(draft.canvas_background),
         nodes: draft.nodes,
         testimonials: draft.testimonials,
         pendingTestimonials: draft.pending_testimonials,
@@ -332,10 +418,76 @@ export default function AdminWebsiteBuilder() {
     setDirty(true);
   }
 
+  function updateCanvasBackground(value) {
+    const normalized = normalizeWebsiteBackground(value);
+    setCanvasBackground(normalized);
+    setCanvasBackgroundOpacity(backgroundOpacity(normalized));
+    setDirty(true);
+  }
+
+  function addSchoolProfileNode() {
+    setNodes((current) => [...current, {
+      id: makeId(),
+      anchorId: `school-profile-${makeId().slice(0, 8)}`,
+      type: "school-profile",
+      title: "School profile",
+      x: 10,
+      y: 18,
+      width: 80,
+      height: 14,
+      profileName: user?.schoolName || "",
+      profileMotto: "",
+      profileLogo: "",
+      labels: [],
+      html: "",
+    }]);
+    setDirty(true);
+  }
+
+  async function uploadBannerImages(event, nodeId) {
+    const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
+    event.target.value = "";
+    if (!files.length) return;
+    setUploadingBannerId(nodeId);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const asset = await websiteApi.uploadBuilderAsset(file);
+        uploaded.push({
+          id: makeId(),
+          imageUrl: resolveMediaUrl(asset.url),
+          title: file.name.replace(/\.[^.]+$/, ""),
+          subtitle: "",
+        });
+      }
+      updateNode(nodeId, (node) => ({ slides: [...(node.slides || []), ...uploaded] }));
+      toast(`${uploaded.length} banner image${uploaded.length === 1 ? "" : "s"} added`);
+    } catch (error) {
+      toast(apiErrorMessage(error));
+    } finally {
+      setUploadingBannerId(null);
+    }
+  }
+
+  async function uploadProfileLogo(event, nodeId) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const asset = await websiteApi.uploadBuilderAsset(file);
+      updateNode(nodeId, { profileLogo: resolveMediaUrl(asset.url) });
+      toast("School logo uploaded");
+    } catch (error) {
+      toast(apiErrorMessage(error));
+    }
+  }
+
   function loadSampleSchoolSite() {
     if (!window.confirm("Load the Sunrise School sample site? This replaces the current editor contents. Save your current layout first if you want to keep it.")) return;
     setNodes(createDefaultWebsiteNodes());
     setCanvasSize(DEFAULT_WEBSITE_CANVAS_SIZE);
+    setCanvasBackground(DEFAULT_WEBSITE_BACKGROUND);
+    setCanvasBackgroundOpacity(1);
     setTestimonials(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
     setPendingTestimonials(MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
     setDirty(true);
@@ -361,7 +513,7 @@ export default function AdminWebsiteBuilder() {
     const bounds = canvasRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(82, (menu.x / bounds.width) * 100));
     const y = Math.max(0, Math.min(82, (menu.y / bounds.height) * 100));
-    const title = type === "center" ? "New content block" : "Families say it best";
+    const title = type === "center" ? "New content block" : type === "school-profile" ? "School profile" : "Families say it best";
     const node = {
       id: makeId(),
       anchorId: `section-${makeId().slice(0, 8)}`,
@@ -369,10 +521,13 @@ export default function AdminWebsiteBuilder() {
       title,
       x,
       y,
-      width: type === "testimonials" ? 90 : 38,
-      height: type === "testimonials" ? 16 : 20,
+      width: type === "testimonials" ? 90 : type === "school-profile" ? 55 : 38,
+      height: type === "testimonials" ? 16 : type === "school-profile" ? 14 : 20,
       html: type === "center" ? "<h2>Your new section</h2><p>Click to edit this content and make it your own.</p>" : "",
       labels: [],
+      profileName: type === "school-profile" ? user?.schoolName || "" : "",
+      profileMotto: "",
+      profileLogo: "",
     };
     setNodes((current) => [...current, node]);
     if (type === "testimonials") {
@@ -400,9 +555,12 @@ export default function AdminWebsiteBuilder() {
     try {
       const asset = await websiteApi.uploadBuilderAsset(imageFile);
       updateNode(nodeId, (node) => ({
-        slides: node.slides?.length
-          ? node.slides.map((slide, index) => index === 0 ? { ...slide, imageUrl: resolveMediaUrl(asset.url) } : slide)
-          : [{ id: makeId(), imageUrl: resolveMediaUrl(asset.url), title: "A bright beginning for every learner", subtitle: "Curiosity, confidence and community—every day." }],
+        slides: [...(node.slides || []).slice(0, 19), {
+          id: makeId(),
+          imageUrl: resolveMediaUrl(asset.url),
+          title: imageFile.name.replace(/\.[^.]+$/, ""),
+          subtitle: "",
+        }],
       }));
       toast("Banner image uploaded");
     } catch (error) {
@@ -496,6 +654,7 @@ export default function AdminWebsiteBuilder() {
       const content = {
         school_name: user?.schoolName || "School website",
         canvas_size: canvasSize,
+        canvas_background: normalizeWebsiteBackground(canvasBackground),
         nodes: safeNodes,
         testimonials,
         pending_testimonials: pendingTestimonials,
@@ -507,6 +666,7 @@ export default function AdminWebsiteBuilder() {
         schoolName: content.school_name,
         savedAt: result.updated_at,
         canvasSize,
+        canvasBackground,
         nodes: safeNodes,
         testimonials,
         pendingTestimonials,
@@ -530,6 +690,7 @@ export default function AdminWebsiteBuilder() {
       const content = {
         school_name: savedDraft.schoolName || user?.schoolName || "School website",
         canvas_size: savedDraft.canvasSize,
+        canvas_background: normalizeWebsiteBackground(savedDraft.canvasBackground || canvasBackground),
         nodes: savedDraft.nodes,
         testimonials: savedDraft.testimonials || testimonials,
         pending_testimonials: savedDraft.pendingTestimonials || pendingTestimonials,
@@ -539,6 +700,7 @@ export default function AdminWebsiteBuilder() {
         schoolName: content.school_name,
         savedAt: draft.updated_at,
         canvasSize: content.canvas_size,
+        canvasBackground: content.canvas_background,
         nodes: content.nodes,
         testimonials: content.testimonials,
         pendingTestimonials: content.pending_testimonials,
@@ -576,6 +738,7 @@ export default function AdminWebsiteBuilder() {
     setPreviewDraft({
       schoolName: content.school_name || content.schoolName || "School website",
       canvasSize: content.canvas_size || content.canvasSize,
+      canvasBackground: content.canvas_background || content.canvasBackground,
       nodes: content.nodes,
       testimonials: content.testimonials || [],
     });
@@ -594,6 +757,8 @@ export default function AdminWebsiteBuilder() {
     const restoredCanvasSize = normalizeWebsiteCanvasSize(content.canvas_size || content.canvasSize);
     setNodes(restoredNodes);
     setCanvasSize(restoredCanvasSize);
+    setCanvasBackground(normalizeWebsiteBackground(content.canvas_background || content.canvasBackground));
+    setCanvasBackgroundOpacity(backgroundOpacity(normalizeWebsiteBackground(content.canvas_background || content.canvasBackground)));
     setTestimonials(content.testimonials || []);
     setPendingTestimonials(content.pending_testimonials || content.pendingTestimonials || []);
     setDirty(true);
@@ -742,12 +907,68 @@ export default function AdminWebsiteBuilder() {
             <span>px</span>
           </label>
           <span className={styles.canvasSizeHint}>Custom dimensions apply to the design canvas and are saved with your draft.</span>
+          <button type="button" className="btn ghost sm" onClick={addSchoolProfileNode}>Add School Profile</button>
         </div>
+        <section className={styles.backgroundControls} aria-label="Canvas background settings">
+          <strong>Canvas background</strong>
+          <div className={styles.backgroundPickerRow}>
+            <input
+              type="color"
+              aria-label="Pick canvas background color"
+              value={backgroundColorInputValue(canvasBackground)}
+              onChange={(event) => updateCanvasBackground(rgbaBackground(event.target.value, canvasBackgroundOpacity))}
+            />
+            <label>
+              Hex or RGBA
+              <input
+                type="text"
+                aria-label="Canvas background hex or RGBA value"
+                value={canvasBackground}
+                onChange={(event) => {
+                  setCanvasBackground(event.target.value);
+                  setDirty(true);
+                }}
+                onBlur={() => updateCanvasBackground(canvasBackground)}
+              />
+            </label>
+            <label className={styles.opacityControl}>
+              Opacity
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={canvasBackgroundOpacity}
+                aria-label="Canvas background opacity"
+                onChange={(event) => {
+                  const opacity = Number(event.target.value);
+                  setCanvasBackgroundOpacity(opacity);
+                  setCanvasBackground(rgbaBackground(canvasBackground, opacity));
+                  setDirty(true);
+                }}
+              />
+              <span>{Math.round(canvasBackgroundOpacity * 100)}%</span>
+            </label>
+          </div>
+          <div className={styles.backgroundSwatches} role="group" aria-label="Canvas background presets">
+            {WEBSITE_BACKGROUND_PRESETS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                title={color}
+                aria-label={`Set canvas background to ${color}`}
+                aria-pressed={canvasBackground.toLowerCase() === color}
+                style={{ backgroundColor: color }}
+                onClick={() => updateCanvasBackground(color)}
+              />
+            ))}
+          </div>
+        </section>
         <div className={styles.canvasViewport}>
           <div
             ref={canvasRef}
             className={styles.canvas}
-            style={{ width: `${canvasSize.width}px`, height: `${canvasSize.height}px` }}
+            style={{ width: "100%", aspectRatio: `${canvasSize.width} / ${canvasSize.height}`, backgroundColor: normalizeWebsiteBackground(canvasBackground) }}
             onContextMenu={openContextMenu}
             onPointerDown={(event) => {
               if (event.target === event.currentTarget) setMenu(null);
@@ -802,6 +1023,14 @@ export default function AdminWebsiteBuilder() {
                 </label>
                 {node.type === "header" || node.type === "footer" ? (
                   <div className={styles.labels}>
+                    <label className={styles.variantControl}>
+                      Presentation
+                      <select value={node.variant || "minimal"} onChange={(event) => updateNode(node.id, { variant: event.target.value })}>
+                        <option value="minimal">Minimalist left-branded</option>
+                        <option value="centered">Centered hub</option>
+                        <option value="accented">High-contrast accent</option>
+                      </select>
+                    </label>
                     {node.labels.map((label) => (
                       <div className={styles.labelItem} key={label.id}>
                         <input aria-label="Navigation label" placeholder="Label (e.g. Services)" value={label.text} onChange={(event) => updateNode(node.id, (current) => ({
@@ -820,8 +1049,20 @@ export default function AdminWebsiteBuilder() {
                 ) : node.type === "banner" ? (
                   <div className={styles.bannerEditor}>
                     <img src={node.slides?.[0]?.imageUrl} alt="Mock school banner preview" />
-                    <div><strong>{node.slides?.[0]?.title}</strong><span>Drop an image file here to upload it to your school website</span></div>
+                    <div>
+                      <strong>{node.slides?.[0]?.title}</strong>
+                      <span>{node.slides?.length || 0} carousel images · Drop or add images to upload</span>
+                      <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => bannerUploadRefs.current[node.id]?.click()}>Add carousel images</button>
+                      <input ref={(element) => { bannerUploadRefs.current[node.id] = element; }} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden onChange={(event) => uploadBannerImages(event, node.id)} />
+                    </div>
                     {uploadingBannerId === node.id ? <div className={styles.bannerLoader}><span className={styles.spinner} />Uploading media layout asset...</div> : null}
+                  </div>
+                ) : node.type === "school-profile" ? (
+                  <div className={styles.profileEditor}>
+                    <label>School name<input value={node.profileName || ""} onChange={(event) => updateNode(node.id, { profileName: event.target.value })} /></label>
+                    <label>Tagline / motto<input value={node.profileMotto || ""} onChange={(event) => updateNode(node.id, { profileMotto: event.target.value })} /></label>
+                    <label>Logo URL<input value={node.profileLogo || ""} placeholder="https://..." onChange={(event) => updateNode(node.id, { profileLogo: event.target.value })} /></label>
+                    <label>Upload school logo<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={(event) => uploadProfileLogo(event, node.id)} /></label>
                   </div>
                 ) : node.type === "testimonials" ? (
                   <div className={styles.nodeContent}>
@@ -931,6 +1172,10 @@ export default function AdminWebsiteBuilder() {
             setActiveEditor(null);
           }}
           onChange={(html) => updateNode(activeEditor, { html })}
+          onUploadImage={async (file) => {
+            const asset = await websiteApi.uploadBuilderAsset(file);
+            return resolveMediaUrl(asset.url);
+          }}
         />
       ) : null}
       {showPreview && savedDraft ? (
@@ -940,8 +1185,8 @@ export default function AdminWebsiteBuilder() {
           <section className={styles.previewDialog} role="dialog" aria-modal="true" aria-labelledby="website-preview-title">
             <header className={styles.previewToolbar}>
               <div>
-                  <h2 id="website-preview-title">{previewDraft ? "Website version preview" : "Saved website preview"}</h2>
-                  <p>{previewDraft ? "Previewing an archived website version." : "This is the latest saved draft. Publish it to make it publicly available."}</p>
+                <h2 id="website-preview-title">{previewDraft ? "Website version preview" : "Saved website preview"}</h2>
+                <p>{previewDraft ? "Previewing an archived website version." : "This is the latest saved draft. Publish it to make it publicly available."}</p>
               </div>
               <div className={styles.previewActions}>
                 <button
@@ -959,13 +1204,10 @@ export default function AdminWebsiteBuilder() {
               </div>
             </header>
             <div className={styles.previewFrame}>
-              <header className={styles.previewBrand}>
-                <span className={styles.previewLogo} aria-hidden="true">{(savedDraft.schoolName || user?.schoolName || "S").slice(0, 1).toUpperCase()}</span>
-                <strong>{savedDraft.schoolName || user?.schoolName || "School website"}</strong>
-              </header>
               <PublicSiteCanvas
                 nodes={(previewDraft || savedDraft).nodes}
                 canvasSize={(previewDraft || savedDraft).canvasSize}
+                canvasBackground={(previewDraft || savedDraft).canvasBackground}
                 testimonials={(previewDraft || savedDraft).testimonials}
                 schoolName={(previewDraft || savedDraft).schoolName}
               />
