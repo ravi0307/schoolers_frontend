@@ -6,6 +6,7 @@ import {
   Bold,
   Check,
   Image as ImageIcon,
+  Inbox,
   Italic,
   List,
   ListOrdered,
@@ -151,6 +152,10 @@ export default function AdminWebsiteBuilder() {
   const [canvasSize, setCanvasSize] = useState(DEFAULT_WEBSITE_CANVAS_SIZE);
   const [testimonials, setTestimonials] = useState(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
   const [pendingTestimonials, setPendingTestimonials] = useState(MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
+  const [websiteQueries, setWebsiteQueries] = useState([]);
+  const [queriesLoading, setQueriesLoading] = useState(false);
+  const [queriesError, setQueriesError] = useState("");
+  const [queriesAttempt, setQueriesAttempt] = useState(0);
   const [savedDraft, setSavedDraft] = useState(null);
   const [versionHistory, setVersionHistory] = useState({ versions: [], activeVersionId: null });
   const [menu, setMenu] = useState(null);
@@ -217,6 +222,22 @@ export default function AdminWebsiteBuilder() {
     });
     return () => { active = false; };
   }, [user?.schoolId, loadAttempt]);
+
+  useEffect(() => {
+    if (viewMode !== "queries") return undefined;
+    let active = true;
+    setWebsiteQueries([]);
+    setQueriesLoading(true);
+    setQueriesError("");
+    websiteApi.getWebsiteQueries().then((queries) => {
+      if (active) setWebsiteQueries(queries);
+    }).catch((error) => {
+      if (active) setQueriesError(apiErrorMessage(error));
+    }).finally(() => {
+      if (active) setQueriesLoading(false);
+    });
+    return () => { active = false; };
+  }, [viewMode, user?.schoolId, queriesAttempt]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -640,8 +661,36 @@ export default function AdminWebsiteBuilder() {
           <button type="button" role="tab" aria-selected={viewMode === "moderation"} className={viewMode === "moderation" ? styles.activeTab : ""} onClick={() => setViewMode("moderation")}>
             <MessageSquareText size={16} /> Testimonial approvals <span>{pendingTestimonials.length}</span>
           </button>
+          <button type="button" role="tab" aria-selected={viewMode === "queries"} className={viewMode === "queries" ? styles.activeTab : ""} onClick={() => setViewMode("queries")}>
+            <Inbox size={16} /> User queries <span>{websiteQueries.length}</span>
+          </button>
         </div>
-        {viewMode === "moderation" ? (
+        {viewMode === "queries" ? (
+          <section className={styles.queriesPanel} aria-label="User queries">
+            <header>
+              <div><h2>Contact form submissions</h2><p>Messages submitted through your published school website.</p></div>
+              <button type="button" className="btn ghost sm" onClick={() => setQueriesAttempt((attempt) => attempt + 1)}>Refresh queries</button>
+            </header>
+            {queriesLoading ? <p className={styles.queryState} role="status">Loading user queries…</p> : null}
+            {queriesError ? <p className={styles.queryError} role="alert">{queriesError}</p> : null}
+            {!queriesLoading && !queriesError && websiteQueries.length === 0 ? (
+              <p className={styles.emptyQueue}>No contact form submissions yet.</p>
+            ) : null}
+            {!queriesLoading && websiteQueries.length > 0 ? (
+              <div className={styles.queryList}>
+                {websiteQueries.map((query) => (
+                  <article className={styles.queryCard} key={query.query_id}>
+                    <header>
+                      <div><h3>{query.name}</h3><a href={`mailto:${query.email}`}>{query.email}</a></div>
+                      <time dateTime={query.created_at}>{new Date(query.created_at).toLocaleString()}</time>
+                    </header>
+                    <p>{query.message}</p>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : viewMode === "moderation" ? (
           <section className={styles.moderationPanel} aria-label="Testimonial approvals">
             <header><div><h2>Pending testimonials</h2><p>Approve a story to add it to the live website preview.</p></div><span>{pendingTestimonials.length} pending</span></header>
             {pendingTestimonials.length ? (

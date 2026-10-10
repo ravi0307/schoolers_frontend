@@ -198,7 +198,14 @@ test("admin canvas route exposes server draft saving, publishing, and saved-site
   assert.match(builder, /Pending testimonials/);
   assert.match(publicCanvas, /Submit Message/);
   assert.match(builder, /Uploading media layout asset\.\.\./);
-  assert.match(publicCanvas, /window\.alert\(/);
+  assert.match(publicCanvas, /onContactSubmit\(contact\)/);
+  assert.match(publicCanvas, /Thank you\. Your message has been sent to the school\./);
+  assert.match(publicCanvas, /contactSubmitting/);
+  assert.match(builder, /User queries/);
+  assert.match(builder, /websiteApi\.getWebsiteQueries\(\)/);
+  assert.match(builder, /query\.message/);
+  assert.match(builder, /query\.email/);
+  assert.match(source("src/pages/PublicWebsite.jsx"), /submitWebsiteQuery\(site\.school_id, payload\)/);
   assert.match(publicCanvas, /function scrollToSection\(event, anchorId\)/);
   assert.match(publicCanvas, /event\.preventDefault\(\)/);
   assert.match(publicCanvas, /target\.scrollIntoView\(/);

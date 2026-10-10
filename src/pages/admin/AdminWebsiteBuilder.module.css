@@ -31,6 +31,20 @@
 .pendingCard > small { margin-top: -.4rem; color: #64748b; }
 .pendingCard button { display: inline-flex; align-items: center; gap: .35rem; }
 .emptyQueue { border-radius: .7rem; background: #f0fdf4; padding: 1rem; color: #166534; font-size: .85rem; }
+.queriesPanel { border: 1px solid #dbe4ec; border-radius: .9rem; background: #fff; padding: 1rem; }
+.queriesPanel > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.queriesPanel > header h2 { margin: 0; color: #1e293b; font-size: 1.1rem; }
+.queriesPanel > header p { margin: .25rem 0 0; color: #64748b; font-size: .8rem; }
+.queryList { display: grid; gap: .75rem; }
+.queryCard { border: 1px solid #dbe4ec; border-radius: .75rem; background: #f8fafc; padding: .9rem; }
+.queryCard > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.queryCard h3 { margin: 0; color: #1e293b; font-size: .92rem; }
+.queryCard a { color: #0f766e; font-size: .8rem; }
+.queryCard time { color: #64748b; font-size: .75rem; }
+.queryCard > p { margin: .7rem 0 0; color: #334155; font-size: .86rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.queryState, .queryError { border-radius: .65rem; padding: .8rem; font-size: .85rem; }
+.queryState { background: #f1f5f9; color: #475569; }
+.queryError { background: #fff1f2; color: #9f1239; }
 .canvasViewport { max-width: 100%; overflow: auto; border: 1px solid #d3dde7; border-radius: 1rem; background: #e7edf3; }
 .canvas {
   position: relative;
@@ -177,6 +191,7 @@
   .previewToolbar { align-items: flex-start; }
   .previewToolbar p { max-width: 24rem; }
   .previewActions { gap: .35rem; }
+  .queriesPanel > header, .queryCard > header { align-items: flex-start; flex-direction: column; }
   .nodeToolbar { font-size: .65rem; }
   .labelItem { width: 100%; grid-template-columns: minmax(3rem, 1fr) minmax(3rem, 1fr) 1.5rem; }
 }
