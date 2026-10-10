@@ -3,12 +3,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   DEFAULT_WEBSITE_CANVAS_SIZE,
+  DEFAULT_WEBSITE_BACKGROUND,
   MOCK_ACTIVE_TESTIMONIALS,
   MOCK_BANNER_SLIDES,
   MOCK_PENDING_TESTIMONIALS,
   approveQueuedTestimonial,
   createDefaultWebsiteNodes,
   normalizeWebsiteCanvasSize,
+  normalizeWebsiteBackground,
   normalizeWebsiteBuilderNodes,
   addWebsiteVersion,
   readLocalWebsiteDraft,
@@ -37,6 +39,13 @@ test("canvas dimensions use defaults and stay inside supported limits", () => {
     width: 1800,
     height: 1200,
   });
+});
+
+test("canvas background accepts safe hex and rgba colors and falls back for invalid values", () => {
+  assert.equal(normalizeWebsiteBackground(), DEFAULT_WEBSITE_BACKGROUND);
+  assert.equal(normalizeWebsiteBackground("#0f766e"), "#0f766e");
+  assert.equal(normalizeWebsiteBackground("rgba(15, 118, 110, 0.35)"), "rgba(15, 118, 110, 0.35)");
+  assert.equal(normalizeWebsiteBackground("url(javascript:alert(1))"), DEFAULT_WEBSITE_BACKGROUND);
 });
 
 test("starter layout contains header navigation, banner, content, testimonials, contact, and footer", () => {
@@ -78,6 +87,21 @@ test("normalizes coordinates, node types, and anchor ids before rendering", () =
   assert.equal(node.labels[0].anchorId, "servicesnews");
 });
 
+test("normalizes school identity content and header/footer presentation variants", () => {
+  const [profile, header] = normalizeWebsiteBuilderNodes([
+    {
+      id: "profile", type: "school-profile", profileName: "Sunrise School",
+      profileMotto: "Learn together", profileLogo: "/api/v1/website/uploads/logo.png",
+    },
+    { id: "header", type: "header", variant: "accented" },
+  ]);
+  assert.equal(profile.type, "school-profile");
+  assert.equal(profile.profileName, "Sunrise School");
+  assert.equal(profile.profileMotto, "Learn together");
+  assert.equal(profile.profileLogo, "/api/v1/website/uploads/logo.png");
+  assert.equal(header.variant, "accented");
+});
+
 test("default canvas begins with editable school copy", () => {
   const nodes = createDefaultWebsiteNodes();
   assert.equal(nodes.length, 9);
@@ -93,6 +117,7 @@ test("local storage draft fallback accepts legacy camel-case canvas data per sch
   const sourceDraft = {
     schoolName: "Sunrise School",
     canvasSize: { width: 1400, height: 1500 },
+    canvasBackground: "rgba(15, 118, 110, 0.35)",
     nodes: createDefaultWebsiteNodes(),
     testimonials: [],
     pendingTestimonials: [],
@@ -103,6 +128,7 @@ test("local storage draft fallback accepts legacy camel-case canvas data per sch
   assert.equal(websiteDraftStorageKey(17), "schoolers-website-builder-draft:17");
   assert.equal(restored.school_name, "Sunrise School");
   assert.deepEqual(restored.canvas_size, { width: 1400, height: 1500 });
+  assert.equal(restored.canvas_background, "rgba(15, 118, 110, 0.35)");
   assert.equal(restored.nodes.length, sourceDraft.nodes.length);
   assert.equal(readLocalWebsiteDraft(storage, 18), null);
 });
@@ -197,6 +223,11 @@ test("admin canvas route exposes server draft saving, publishing, and saved-site
   assert.match(builder, /Content block HTML editor/);
   assert.match(builder, /Pending testimonials/);
   assert.match(publicCanvas, /Submit Message/);
+  assert.match(publicCanvas, /setInterval/);
+  assert.match(publicCanvas, /Previous banner slide/);
+  assert.match(publicCanvas, /school-profile/);
+  assert.match(publicCanvas, /canvasBackground/);
+  assert.doesNotMatch(publicCanvas, /width: `\$\{canvasSize\.width\}px`/);
   assert.match(builder, /Uploading media layout asset\.\.\./);
   assert.match(publicCanvas, /onContactSubmit\(contact\)/);
   assert.match(publicCanvas, /Thank you\. Your message has been sent to the school\./);
@@ -239,7 +270,13 @@ test("admin canvas route exposes server draft saving, publishing, and saved-site
   assert.match(builder, /Load sample school site/);
   assert.match(builder, /Canvas width in pixels/);
   assert.match(builder, /Canvas height in pixels/);
-  assert.match(builder, /style=\{\{ width: `\$\{canvasSize\.width\}px`, height: `\$\{canvasSize\.height\}px` \}\}/);
+  assert.match(builder, /aspectRatio: `\$\{canvasSize\.width\} \/ \$\{canvasSize\.height\}`/);
+  assert.match(builder, /Canvas background hex or RGBA value/);
+  assert.match(builder, /Add school profile node/i);
+  assert.match(builder, /Add carousel images/);
+  assert.match(builder, /Font family/);
+  assert.match(builder, /Highlight color/);
+  assert.match(builder, /style=\{\{ width: "100%", aspectRatio: `\$\{canvasSize\.width\} \/ \$\{canvasSize\.height\}`, backgroundColor:/);
   assert.doesNotMatch(builder, /websiteApi\.upsertPage/);
 });
 
@@ -251,5 +288,6 @@ test("legacy multi-page website UI and browser-only persistence are retired", ()
   assert.doesNotMatch(builder, /writeWebsiteBuilderDraft\(window\.localStorage/);
   assert.doesNotMatch(api, /website\/settings|website\/pages|website\/go-live/);
   assert.match(publicPage, /<PublicSiteCanvas/);
+  assert.doesNotMatch(publicPage, /public-site-header/);
   assert.doesNotMatch(publicPage, /PublicSiteView/);
 });

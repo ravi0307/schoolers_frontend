@@ -15,6 +15,18 @@
 .canvasControls input { width: 6.25rem; border: 1px solid #cbd5e1; border-radius: .4rem; background: white; padding: .35rem .45rem; color: #1e293b; font: inherit; font-size: .82rem; }
 .canvasControls input:focus { border-color: #0891b2; outline: 2px solid #a5f3fc; }
 .canvasSizeHint { color: #64748b; font-size: .74rem; }
+.backgroundControls { display: grid; gap: .65rem; margin: 0 0 .8rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #f8fafc; padding: .75rem .85rem; color: #334155; }
+.backgroundControls > strong { font-size: .82rem; }
+.backgroundPickerRow { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1rem; }
+.backgroundPickerRow > input[type="color"] { width: 2.4rem; height: 2.4rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: .2rem; cursor: pointer; }
+.backgroundPickerRow label { display: flex; align-items: center; gap: .45rem; color: #475569; font-size: .76rem; font-weight: 600; }
+.backgroundPickerRow label > input[type="text"] { width: min(15rem, 56vw); border: 1px solid #cbd5e1; border-radius: .4rem; background: #fff; padding: .4rem .5rem; color: #1e293b; font: inherit; font-size: .78rem; }
+.backgroundPickerRow input:focus { border-color: #0891b2; outline: 2px solid #a5f3fc; }
+.opacityControl input { width: min(9rem, 32vw); accent-color: #0f766e; }
+.opacityControl span { min-width: 2.5rem; color: #64748b; }
+.backgroundSwatches { display: flex; flex-wrap: wrap; gap: .45rem; }
+.backgroundSwatches button { width: 1.75rem; height: 1.75rem; border: 1px solid #94a3b8; border-radius: 50%; cursor: pointer; }
+.backgroundSwatches button[aria-pressed="true"] { outline: 2px solid #0f766e; outline-offset: 2px; }
 .modeTabs { display: flex; gap: .5rem; margin-bottom: .9rem; border-bottom: 1px solid #cbd5e1; }
 .modeTabs button { display: inline-flex; align-items: center; gap: .45rem; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: .65rem .75rem; color: #64748b; cursor: pointer; font-size: .83rem; font-weight: 700; }
 .modeTabs button span { display: grid; min-width: 1.2rem; height: 1.2rem; place-items: center; border-radius: 99px; background: #e2e8f0; color: #334155; font-size: .7rem; }
@@ -48,6 +60,9 @@
 .canvasViewport { max-width: 100%; overflow: auto; border: 1px solid #d3dde7; border-radius: 1rem; background: #e7edf3; }
 .canvas {
   position: relative;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
   overflow: hidden;
   background-color: #fff;
   background-image: linear-gradient(#e8eef4 1px, transparent 1px), linear-gradient(90deg, #e8eef4 1px, transparent 1px);
@@ -77,6 +92,12 @@
 .deleteButton { width: 1.6rem; height: 1.6rem; }
 .deleteButton:hover, .labelItem button:hover, .iconButton:hover { background: #e2eaf1; color: #17283a; }
 .labels { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem; padding: .55rem; }
+.variantControl { display: flex; align-items: center; gap: .5rem; color: #475569; font-size: .7rem; font-weight: 700; }
+.variantControl select, .toolbar select { min-width: 0; border: 1px solid #cbd5df; border-radius: .4rem; background: #fff; padding: .38rem .5rem; color: #334155; font: inherit; font-size: .75rem; }
+.profileEditor { display: grid; gap: .55rem; padding: .65rem; }
+.profileEditor label { display: grid; gap: .2rem; color: #64748b; font-size: .68rem; font-weight: 700; }
+.profileEditor input { min-width: 0; border: 1px solid #cbd5df; border-radius: .4rem; background: #fff; padding: .4rem .5rem; color: #1e293b; font: inherit; font-size: .76rem; touch-action: auto; }
+.profileEditor input:focus { border-color: #0891b2; outline: 2px solid #a5f3fc; }
 .labelItem { display: grid; grid-template-columns: minmax(5rem, 1fr) minmax(5rem, 1fr) 1.5rem; align-items: center; gap: .3rem; width: min(100%, 23rem); }
 .labelItem input { min-width: 0; width: 100%; border: 1px solid #cbd5df; border-radius: .4rem; padding: .35rem .45rem; color: #1e293b; background: white; font: inherit; font-size: .72rem; touch-action: auto; }
 .labelItem input:focus { border-color: #0891b2; outline: 2px solid #a5f3fc; }
@@ -90,6 +111,7 @@
 .bannerEditor > div:not(.bannerLoader) { position: absolute; inset: auto 1rem 1rem; display: grid; gap: .25rem; text-shadow: 0 1px 4px #0f172a; }
 .bannerEditor > div > strong { font-size: clamp(.8rem, 1.7vw, 1.5rem); }
 .bannerEditor > div > span { font-size: .75rem; }
+.bannerEditor > div > button { justify-self: start; margin-top: .3rem; border: 1px solid rgb(255 255 255 / 70%); border-radius: 999px; background: rgb(15 23 42 / 70%); padding: .35rem .65rem; color: white; cursor: pointer; font: inherit; font-size: .7rem; font-weight: 700; }
 .bannerLoader { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; gap: .6rem; background: rgba(15,23,42,.62); backdrop-filter: blur(8px); font-size: .85rem; }
 .spinner { width: 1.4rem; height: 1.4rem; border: 3px solid rgba(255,255,255,.35); border-top-color: #67e8f9; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -156,7 +178,7 @@
 .previewToolbar p { margin: .25rem 0 0; color: #64748b; font-size: .8rem; }
 .previewActions { display: flex; flex: none; align-items: center; gap: .55rem; }
 .previewActions .iconButton { flex: none; }
-.previewFrame { width: min(100%, 75rem); flex: 1; align-self: center; overflow: auto; background: white; box-shadow: 0 0 1.2rem rgba(15,23,42,.12); }
+.previewFrame { width: 100%; max-width: none; flex: 1; overflow: auto; background: white; box-shadow: 0 0 1.2rem rgba(15,23,42,.12); }
 .previewBrand { display: flex; min-height: 4.5rem; align-items: center; gap: .75rem; border-bottom: 1px solid #e2e8f0; padding: .75rem 1.25rem; color: #1e293b; }
 .previewLogo { display: grid; width: 2.5rem; height: 2.5rem; flex: none; place-items: center; border-radius: .7rem; background: #0f766e; color: white; font-weight: 800; }
 .contextMenu { position: absolute; z-index: 10; display: grid; min-width: 12rem; padding: .3rem; border: 1px solid #dbe4ec; border-radius: .65rem; background: white; box-shadow: 0 12px 32px rgba(15,23,42,.2); }
@@ -173,8 +195,10 @@
 .toolbar { display: flex; flex-wrap: wrap; gap: .35rem; padding: .55rem 1.25rem; border-block: 1px solid #e2e8f0; background: #f8fafc; }
 .toolbar button { display: inline-grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid #d8e0e8; border-radius: .4rem; background: white; color: #334155; cursor: pointer; }
 .toolbar button:hover { border-color: #0891b2; color: #087e8b; }
+.toolbar select { height: 2rem; }
 .colorTool { display: flex; align-items: center; gap: .35rem; margin-left: auto; color: #475569; font-size: .8rem; }
-.colorTool input { width: 2rem; height: 2rem; border: 0; background: transparent; cursor: pointer; }
+.colorTool input[type="color"] { width: 2rem; height: 2rem; border: 0; background: transparent; cursor: pointer; }
+.colorTool input[type="text"] { width: 7.5rem; min-width: 5rem; border: 1px solid #d8e0e8; border-radius: .4rem; background: white; padding: .35rem .45rem; color: #334155; font: inherit; font-size: .72rem; }
 .richEditor { min-height: 16rem; overflow: auto; padding: 1.25rem; outline: none; line-height: 1.6; }
 .richEditor:focus { box-shadow: inset 0 0 0 2px #a5f3fc; }
 .modalActions { display: flex; justify-content: flex-end; gap: .55rem; padding: .8rem 1.2rem; border-top: 1px solid #e2e8f0; }

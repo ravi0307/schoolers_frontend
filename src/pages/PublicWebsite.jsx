@@ -16,12 +16,10 @@ export default function PublicWebsite() {
 
   return (
     <main className="public-site">
-      <header className="public-site-header">
-        <h1>{site.school_name}</h1>
-      </header>
       <PublicSiteCanvas
         nodes={site.nodes}
         canvasSize={site.canvas_size}
+        canvasBackground={site.canvas_background}
         testimonials={site.testimonials}
         schoolName={site.school_name}
         onContactSubmit={(payload) => submitWebsiteQuery(site.school_id, payload)}
