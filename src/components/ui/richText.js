@@ -1,4 +1,4 @@
-const ALLOWED_RICH_TEXT_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "S", "UL", "OL", "LI", "BR", "P", "FONT", "IMG"]);
+const ALLOWED_RICH_TEXT_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "S", "UL", "OL", "LI", "BR", "P", "H1", "H2", "H3", "BLOCKQUOTE", "FONT", "IMG"]);
 export const FONT_SIZE_OPTIONS = [
   { value: "1", label: "Small" },
   { value: "3", label: "Normal" },

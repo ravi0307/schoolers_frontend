@@ -47,7 +47,6 @@ import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStaff from "./pages/admin/AdminStaff";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
-import AdminWebsite from "./pages/admin/AdminWebsite";
 import AdminWebsiteBuilder from "./pages/admin/AdminWebsiteBuilder";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
@@ -179,7 +178,7 @@ export default function App() {
               <Route path="routes" element={<AdminRoutes />} />
               <Route path="trips" element={<AdminTripHistory />} />
               <Route path="leave" element={<AdminLeave />} />
-              <Route path="website" element={<AdminWebsite />} />
+              <Route path="website" element={<Navigate to="/admin/my_website2" replace />} />
               <Route path="my_website2" element={<AdminWebsiteBuilder />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />

@@ -236,7 +236,7 @@ test("role shells and feature pages are imported by the application", () => {
   const app = source("src/App.jsx");
   for (const component of [
     "Login", "PublicWebsite", "ParentHome", "TeacherDashboard", "AdminDashboard",
-    "AdminTimetable", "AdminBroadcast", "AdminWebsite", "AdminRoutes",
+    "AdminTimetable", "AdminBroadcast", "AdminRoutes",
     "PilotPickDrop", "MasterSchools", "MasterSystemHealth",
     "ParentPickDrop",
   ]) {
@@ -962,7 +962,6 @@ const ADMIN_NAV = [
   "/admin/holidays",
   "/admin/accounts",
   "/admin/reports",
-  "/admin/website",
   "/admin/my_website2",
 ];
 // "Set up" is a real sequence: each entry feeds the one below it.
