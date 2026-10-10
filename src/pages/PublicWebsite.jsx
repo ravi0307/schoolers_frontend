@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { getPublicSite, getPublicSiteByName } from "../api/website";
 import { ErrorBanner, Spinner } from "../components/ui/Primitives";
-import PublicSiteView from "../components/site/PublicSiteView";
+import PublicSiteCanvas from "../components/site/PublicSiteCanvas";
 
 export default function PublicWebsite() {
   const { schoolId, schoolName } = useParams();
@@ -14,5 +14,17 @@ export default function PublicWebsite() {
   if (loading) return <div className="public-site-state"><Spinner /></div>;
   if (error) return <div className="public-site-state"><ErrorBanner message={error} /></div>;
 
-  return <PublicSiteView site={site} />;
+  return (
+    <main className="public-site">
+      <header className="public-site-header">
+        <h1>{site.school_name}</h1>
+      </header>
+      <PublicSiteCanvas
+        nodes={site.nodes}
+        canvasSize={site.canvas_size}
+        testimonials={site.testimonials}
+        schoolName={site.school_name}
+      />
+    </main>
+  );
 }

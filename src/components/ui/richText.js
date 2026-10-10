@@ -1,4 +1,4 @@
-const ALLOWED_RICH_TEXT_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "S", "UL", "OL", "LI", "BR", "P", "FONT", "IMG"]);
+const ALLOWED_RICH_TEXT_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "S", "UL", "OL", "LI", "BR", "P", "H1", "H2", "H3", "BLOCKQUOTE", "FONT", "IMG"]);
 export const FONT_SIZE_OPTIONS = [
   { value: "1", label: "Small" },
   { value: "3", label: "Normal" },
@@ -6,12 +6,15 @@ export const FONT_SIZE_OPTIONS = [
   { value: "7", label: "Huge" },
 ];
 
-export function sanitizeRichText(value) {
+export function sanitizeRichText(value, { allowAlignment = false } = {}) {
   if (typeof document === "undefined") return value || "";
   const container = document.createElement("div");
   container.innerHTML = value || "";
+  const allowedTags = allowAlignment
+    ? new Set([...ALLOWED_RICH_TEXT_TAGS, "DIV", "P"])
+    : ALLOWED_RICH_TEXT_TAGS;
   container.querySelectorAll("*").forEach((element) => {
-    if (!ALLOWED_RICH_TEXT_TAGS.has(element.tagName)) {
+    if (!allowedTags.has(element.tagName)) {
       element.replaceWith(...Array.from(element.childNodes));
       return;
     }
@@ -35,6 +38,10 @@ export function sanitizeRichText(value) {
           }
         } else if (attribute.name === "size") {
           if (!/^[1-7]$/.test(attribute.value)) element.removeAttribute(attribute.name);
+        } else if (allowAlignment && ["DIV", "P"].includes(element.tagName)) {
+          const alignment = (element.getAttribute("style") || "").match(/^text-align\s*:\s*(left|center|right|justify)\s*;?$/i)?.[1];
+          Array.from(element.attributes).forEach((attribute) => element.removeAttribute(attribute.name));
+          if (alignment) element.setAttribute("style", `text-align: ${alignment.toLowerCase()}`);
         } else {
           element.removeAttribute(attribute.name);
         }
