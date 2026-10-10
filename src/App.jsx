@@ -178,8 +178,9 @@ export default function App() {
               <Route path="routes" element={<AdminRoutes />} />
               <Route path="trips" element={<AdminTripHistory />} />
               <Route path="leave" element={<AdminLeave />} />
-              <Route path="website" element={<Navigate to="/admin/my_website2" replace />} />
-              <Route path="my_website2" element={<AdminWebsiteBuilder />} />
+              <Route path="website" element={<Navigate to="/admin/build-your-site" replace />} />
+              <Route path="build-your-site" element={<AdminWebsiteBuilder />} />
+              <Route path="my_website2" element={<Navigate to="/admin/build-your-site" replace />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />

@@ -178,7 +178,7 @@ test("key frontend workflows remain represented by application routes", () => {
     parent: ["home", "pickdrop", "attendance", "timetable", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery", "report"],
     staff: ["broadcast", "gallery", "report"],
-    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "my_website2", "notifications", "support"],
+    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "build-your-site", "my_website2", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave", "report"],
     master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
@@ -197,16 +197,22 @@ test("public website is reachable by school slug after builder publish", () => {
   const app = source("src/App.jsx");
   assert.ok(app.includes('path="/website/:schoolName"'), "public website slug route is not registered");
   const website = source("src/api/website.js");
-  assert.match(website, /client\.get\("\/website\/builder"\)/);
+  assert.match(website, /client\.get\(`\/website\/\$\{schoolId\}`\)/);
+  assert.match(website, /readLocalWebsiteDraft\(window\.localStorage, schoolId\)/);
+  assert.match(website, /catch \(error\) \{[\s\S]*?readLocalWebsiteDraft\(window\.localStorage, schoolId\)/);
+  assert.match(website, /if \(!localDraft\) throw error/);
   assert.match(website, /client\.put\("\/website\/builder\/draft", content\)/);
   assert.match(website, /client\.post\("\/website\/builder\/publish"\)/);
   assert.match(website, /form\.append\("file", file\)/);
   assert.match(website, /client\.post\("\/website\/builder\/assets", form\)/);
+  assert.match(website, /client\.get\("\/website\/queries"\)/);
+  assert.match(website, /axios\.post\(`\$\{BASE_URL\}\/public\/sites\/\$\{schoolId\}\/queries`, payload\)/);
   assert.match(website, /\/website\/builder\/publish/);
   assert.match(website, /\/public\/sites\/by-name/);
   assert.match(website, /axios\.get\(`\$\{BASE_URL\}\/public\/sites\/\$\{schoolId\}`\)/);
   const publicPage = source("src/pages/PublicWebsite.jsx");
   assert.match(publicPage, /getPublicSiteByName/);
+  assert.match(publicPage, /submitWebsiteQuery\(site\.school_id, payload\)/);
   assert.match(publicPage, /getPublicSite\(/);
   assert.match(publicPage, /nodes=\{site\.nodes\}/);
   assert.match(publicPage, /canvasSize=\{site\.canvas_size\}/);
@@ -215,9 +221,10 @@ test("public website is reachable by school slug after builder publish", () => {
 
 test("admin website builder saves and publishes the canvas through the API", () => {
   const builder = source("src/pages/admin/AdminWebsiteBuilder.jsx");
-  assert.match(builder, /websiteApi\.getBuilderState\(\)/);
+  assert.match(builder, /websiteApi\.getBuilderState\(user\?\.schoolId\)/);
   assert.match(builder, /websiteApi\.saveBuilderDraft\(content\)/);
   assert.match(builder, /websiteApi\.publishBuilderSite\(\)/);
+  assert.match(builder, /const draft = await websiteApi\.saveBuilderDraft\(content\);[\s\S]*?const site = await websiteApi\.publishBuilderSite\(\)/);
   assert.match(builder, /Publish website/);
   assert.match(builder, /getPublicSite|publicSitePath/);
   assert.doesNotMatch(builder, /writeWebsiteBuilderDraft\(window\.localStorage/);
@@ -225,7 +232,10 @@ test("admin website builder saves and publishes the canvas through the API", () 
   assert.match(builder, /canvas_size: canvasSize/);
   assert.match(builder, /pending_testimonials: pendingTestimonials/);
   assert.match(builder, /apiErrorMessage\(error\)/);
-  assert.match(builder, /disabled=\{publishing \|\| !savedDraft \|\| dirty\}/);
+  assert.match(builder, /disabled=\{publishing \|\| !savedDraft \|\| dirty \|\| Boolean\(previewDraft\)\}/);
+  assert.match(builder, /websiteApi\.getWebsiteQueries\(\)/);
+  assert.match(builder, /User queries/);
+  assert.match(builder, /setPreviewDraft\(null\);\s*setShowPreview\(true\)/);
 });
 
 test("student records capture photo, identity numbers, and documents in the roster workflow", () => {
@@ -973,7 +983,7 @@ const ADMIN_NAV = [
   "/admin/holidays",
   "/admin/accounts",
   "/admin/reports",
-  "/admin/my_website2",
+  "/admin/build-your-site",
 ];
 // "Set up" is a real sequence: each entry feeds the one below it.
 const SET_UP_SEQUENCE = [

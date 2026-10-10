@@ -1,9 +1,23 @@
 import axios from "axios";
 import client, { BASE_URL } from "./client";
 import { schoolSiteSlug } from "../utils/siteFlow";
+import { readLocalWebsiteDraft } from "../utils/websiteBuilder";
 
-export const getBuilderState = () =>
-  client.get("/website/builder").then((response) => response.data);
+export const getBuilderState = async (schoolId) => {
+  try {
+    const response = await client.get(`/website/${schoolId}`);
+    return response.data;
+  } catch (error) {
+    let localDraft;
+    try {
+      localDraft = readLocalWebsiteDraft(window.localStorage, schoolId);
+    } catch {
+      throw error;
+    }
+    if (!localDraft) throw error;
+    return { draft: localDraft, updated_at: null, published_at: null, published: null, source: "localStorage" };
+  }
+};
 
 export const saveBuilderDraft = (content) =>
   client.put("/website/builder/draft", content).then((response) => response.data);
@@ -16,6 +30,12 @@ export const uploadBuilderAsset = (file) => {
   form.append("file", file);
   return client.post("/website/builder/assets", form).then((response) => response.data);
 };
+
+export const getWebsiteQueries = () =>
+  client.get("/website/queries").then((response) => response.data);
+
+export const submitWebsiteQuery = (schoolId, payload) =>
+  axios.post(`${BASE_URL}/public/sites/${schoolId}/queries`, payload).then((response) => response.data);
 
 /** Public, unauthenticated — anyone can view a school's published site. */
 export const getPublicSite = (schoolId) =>

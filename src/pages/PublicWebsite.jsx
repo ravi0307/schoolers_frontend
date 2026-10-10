@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
-import { getPublicSite, getPublicSiteByName } from "../api/website";
+import { getPublicSite, getPublicSiteByName, submitWebsiteQuery } from "../api/website";
 import { ErrorBanner, Spinner } from "../components/ui/Primitives";
 import PublicSiteCanvas from "../components/site/PublicSiteCanvas";
 
@@ -24,6 +24,7 @@ export default function PublicWebsite() {
         canvasSize={site.canvas_size}
         testimonials={site.testimonials}
         schoolName={site.school_name}
+        onContactSubmit={(payload) => submitWebsiteQuery(site.school_id, payload)}
       />
     </main>
   );

@@ -6,6 +6,7 @@ import {
   Bold,
   Check,
   Image as ImageIcon,
+  Inbox,
   Italic,
   List,
   ListOrdered,
@@ -15,6 +16,7 @@ import {
   Trash2,
   X,
   ExternalLink,
+  History,
 } from "lucide-react";
 import AdminShell from "../../components/layout/AdminShell";
 import PublicSiteCanvas from "../../components/site/PublicSiteCanvas";
@@ -27,6 +29,11 @@ import { sanitizeRichText } from "../../components/ui/richText";
 import {
   DEFAULT_WEBSITE_CANVAS_SIZE,
   normalizeWebsiteCanvasSize,
+  addWebsiteVersion,
+  readWebsiteVersionHistory,
+  restoreWebsiteVersionContent,
+  writeWebsiteVersionHistory,
+  writeLocalWebsiteDraft,
   WEBSITE_CANVAS_LIMITS,
   createDefaultWebsiteNodes,
   MOCK_ACTIVE_TESTIMONIALS,
@@ -145,10 +152,17 @@ export default function AdminWebsiteBuilder() {
   const [canvasSize, setCanvasSize] = useState(DEFAULT_WEBSITE_CANVAS_SIZE);
   const [testimonials, setTestimonials] = useState(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
   const [pendingTestimonials, setPendingTestimonials] = useState(MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
+  const [websiteQueries, setWebsiteQueries] = useState([]);
+  const [queriesLoading, setQueriesLoading] = useState(false);
+  const [queriesError, setQueriesError] = useState("");
+  const [queriesAttempt, setQueriesAttempt] = useState(0);
   const [savedDraft, setSavedDraft] = useState(null);
+  const [versionHistory, setVersionHistory] = useState({ versions: [], activeVersionId: null });
   const [menu, setMenu] = useState(null);
   const [activeEditor, setActiveEditor] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewDraft, setPreviewDraft] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [viewMode, setViewMode] = useState("design");
   const [uploadingBannerId, setUploadingBannerId] = useState(null);
   const [showGuides, setShowGuides] = useState(false);
@@ -163,7 +177,7 @@ export default function AdminWebsiteBuilder() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    websiteApi.getBuilderState().then((state) => {
+    websiteApi.getBuilderState(user?.schoolId).then((state) => {
       if (!active) return;
       const draft = state.draft;
       setNodes(normalizeWebsiteBuilderNodes(draft?.nodes || createDefaultWebsiteNodes()));
@@ -176,10 +190,28 @@ export default function AdminWebsiteBuilder() {
         canvasSize: draft.canvas_size,
         nodes: draft.nodes,
         testimonials: draft.testimonials,
+        pendingTestimonials: draft.pending_testimonials,
       } : null);
       setPublishedAt(state.published_at);
+      let nextHistory = { versions: [], activeVersionId: null };
+      let historyError = "";
+      try {
+        const history = readWebsiteVersionHistory(window.localStorage, user?.schoolId);
+        nextHistory = !history.versions.length && state.published
+          ? addWebsiteVersion(history, state.published, state.published_at || new Date().toISOString())
+          : history;
+        if (nextHistory !== history) {
+          writeWebsiteVersionHistory(window.localStorage, user?.schoolId, nextHistory);
+        }
+      } catch (error) {
+        historyError = apiErrorMessage(error);
+        if (state.published) {
+          nextHistory = addWebsiteVersion(nextHistory, state.published, state.published_at || new Date().toISOString());
+        }
+      }
+      setVersionHistory(nextHistory);
       setDirty(!draft);
-      setStorageError("");
+      setStorageError(historyError);
     }).catch((error) => {
       if (!active) return;
       setStorageError(apiErrorMessage(error));
@@ -190,6 +222,22 @@ export default function AdminWebsiteBuilder() {
     });
     return () => { active = false; };
   }, [user?.schoolId, loadAttempt]);
+
+  useEffect(() => {
+    if (viewMode !== "queries") return undefined;
+    let active = true;
+    setWebsiteQueries([]);
+    setQueriesLoading(true);
+    setQueriesError("");
+    websiteApi.getWebsiteQueries().then((queries) => {
+      if (active) setWebsiteQueries(queries);
+    }).catch((error) => {
+      if (active) setQueriesError(apiErrorMessage(error));
+    }).finally(() => {
+      if (active) setQueriesLoading(false);
+    });
+    return () => { active = false; };
+  }, [viewMode, user?.schoolId, queriesAttempt]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -453,6 +501,7 @@ export default function AdminWebsiteBuilder() {
         pending_testimonials: pendingTestimonials,
       };
       const result = await websiteApi.saveBuilderDraft(content);
+      writeLocalWebsiteDraft(window.localStorage, user?.schoolId, content);
       setNodes(safeNodes);
       setSavedDraft({
         schoolName: content.school_name,
@@ -460,6 +509,7 @@ export default function AdminWebsiteBuilder() {
         canvasSize,
         nodes: safeNodes,
         testimonials,
+        pendingTestimonials,
       });
       setPublishedAt(result.published_at);
       setDirty(false);
@@ -477,13 +527,85 @@ export default function AdminWebsiteBuilder() {
   async function publish() {
     setPublishing(true);
     try {
+      const content = {
+        school_name: savedDraft.schoolName || user?.schoolName || "School website",
+        canvas_size: savedDraft.canvasSize,
+        nodes: savedDraft.nodes,
+        testimonials: savedDraft.testimonials || testimonials,
+        pending_testimonials: savedDraft.pendingTestimonials || pendingTestimonials,
+      };
+      const draft = await websiteApi.saveBuilderDraft(content);
+      const publishableDraft = {
+        schoolName: content.school_name,
+        savedAt: draft.updated_at,
+        canvasSize: content.canvas_size,
+        nodes: content.nodes,
+        testimonials: content.testimonials,
+        pendingTestimonials: content.pending_testimonials,
+      };
+      setSavedDraft(publishableDraft);
+      setDirty(false);
+      setStorageError("");
+      try {
+        writeLocalWebsiteDraft(window.localStorage, user?.schoolId, content);
+      } catch (error) {
+        setStorageError(`Draft saved to the server but could not be cached locally: ${apiErrorMessage(error)}`);
+      }
+
       const site = await websiteApi.publishBuilderSite();
       setPublishedAt(site.published_at);
-      toast("Website published");
+      const nextHistory = addWebsiteVersion(versionHistory, content, site.published_at || new Date().toISOString());
+      setVersionHistory(nextHistory);
+      try {
+        writeWebsiteVersionHistory(window.localStorage, user?.schoolId, nextHistory);
+        toast("Website published");
+      } catch (error) {
+        const message = apiErrorMessage(error);
+        setStorageError(message);
+        toast(`Website published, but version history could not be saved locally: ${message}`);
+      }
     } catch (error) {
       toast(apiErrorMessage(error));
     } finally {
       setPublishing(false);
+    }
+  }
+
+  function previewWebsiteVersion(version) {
+    const content = version.content;
+    setPreviewDraft({
+      schoolName: content.school_name || content.schoolName || "School website",
+      canvasSize: content.canvas_size || content.canvasSize,
+      nodes: content.nodes,
+      testimonials: content.testimonials || [],
+    });
+    setShowHistory(false);
+    setShowPreview(true);
+  }
+
+  function previewSavedWebsite() {
+    setPreviewDraft(null);
+    setShowPreview(true);
+  }
+
+  function restoreWebsiteVersion(version) {
+    const content = restoreWebsiteVersionContent(version);
+    const restoredNodes = normalizeWebsiteBuilderNodes(content.nodes);
+    const restoredCanvasSize = normalizeWebsiteCanvasSize(content.canvas_size || content.canvasSize);
+    setNodes(restoredNodes);
+    setCanvasSize(restoredCanvasSize);
+    setTestimonials(content.testimonials || []);
+    setPendingTestimonials(content.pending_testimonials || content.pendingTestimonials || []);
+    setDirty(true);
+    setShowHistory(false);
+    try {
+      writeLocalWebsiteDraft(window.localStorage, user?.schoolId, content);
+      setStorageError("");
+      toast(`Version ${version.number} restored to the canvas. Save and publish to make it live.`);
+    } catch (error) {
+      const message = apiErrorMessage(error);
+      setStorageError(message);
+      toast(`Version ${version.number} restored in this session, but could not be saved locally: ${message}`);
     }
   }
 
@@ -507,21 +629,21 @@ export default function AdminWebsiteBuilder() {
       <div className={styles.page}>
         <header className={styles.pageHeader}>
           <div>
-            <div className="scr-title">my_website2</div>
+            <div className="scr-title">Build Your Site</div>
             <div className="scr-sub">Design and preview your one-page school website.</div>
           </div>
           <div className={styles.headerActions}>
             <button className="btn ghost" type="button" onClick={loadSampleSchoolSite}>
               <Sparkles size={16} aria-hidden="true" /> Load sample school site
             </button>
-            <button className="btn ghost" type="button" onClick={() => setShowPreview(true)} disabled={!savedDraft}>
+            <button className="btn ghost" type="button" onClick={previewSavedWebsite} disabled={!savedDraft}>
               Preview saved website
+            </button>
+            <button className="btn ghost" type="button" onClick={() => setShowHistory(true)}>
+              <History size={16} aria-hidden="true" /> History
             </button>
             <button className="btn primary" type="button" onClick={save} disabled={saving || !dirty}>
               <Save size={17} aria-hidden="true" /> {saving ? "Saving..." : "Save draft"}
-            </button>
-            <button className="btn primary" type="button" onClick={publish} disabled={publishing || !savedDraft || dirty}>
-              {publishing ? "Publishing..." : "Publish website"}
             </button>
           </div>
         </header>
@@ -539,8 +661,36 @@ export default function AdminWebsiteBuilder() {
           <button type="button" role="tab" aria-selected={viewMode === "moderation"} className={viewMode === "moderation" ? styles.activeTab : ""} onClick={() => setViewMode("moderation")}>
             <MessageSquareText size={16} /> Testimonial approvals <span>{pendingTestimonials.length}</span>
           </button>
+          <button type="button" role="tab" aria-selected={viewMode === "queries"} className={viewMode === "queries" ? styles.activeTab : ""} onClick={() => setViewMode("queries")}>
+            <Inbox size={16} /> User queries <span>{websiteQueries.length}</span>
+          </button>
         </div>
-        {viewMode === "moderation" ? (
+        {viewMode === "queries" ? (
+          <section className={styles.queriesPanel} aria-label="User queries">
+            <header>
+              <div><h2>Contact form submissions</h2><p>Messages submitted through your published school website.</p></div>
+              <button type="button" className="btn ghost sm" onClick={() => setQueriesAttempt((attempt) => attempt + 1)}>Refresh queries</button>
+            </header>
+            {queriesLoading ? <p className={styles.queryState} role="status">Loading user queries…</p> : null}
+            {queriesError ? <p className={styles.queryError} role="alert">{queriesError}</p> : null}
+            {!queriesLoading && !queriesError && websiteQueries.length === 0 ? (
+              <p className={styles.emptyQueue}>No contact form submissions yet.</p>
+            ) : null}
+            {!queriesLoading && websiteQueries.length > 0 ? (
+              <div className={styles.queryList}>
+                {websiteQueries.map((query) => (
+                  <article className={styles.queryCard} key={query.query_id}>
+                    <header>
+                      <div><h3>{query.name}</h3><a href={`mailto:${query.email}`}>{query.email}</a></div>
+                      <time dateTime={query.created_at}>{new Date(query.created_at).toLocaleString()}</time>
+                    </header>
+                    <p>{query.message}</p>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : viewMode === "moderation" ? (
           <section className={styles.moderationPanel} aria-label="Testimonial approvals">
             <header><div><h2>Pending testimonials</h2><p>Approve a story to add it to the live website preview.</p></div><span>{pendingTestimonials.length} pending</span></header>
             {pendingTestimonials.length ? (
@@ -736,6 +886,42 @@ export default function AdminWebsiteBuilder() {
         </>
         )}
       </div>
+      {showHistory ? (
+        <div className={styles.historyBackdrop} role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setShowHistory(false);
+        }}>
+          <aside className={styles.historyDrawer} role="dialog" aria-modal="true" aria-labelledby="website-history-title">
+            <header>
+              <div><h2 id="website-history-title">Website Version History</h2><p>Preview or restore an archived deployment.</p></div>
+              <button type="button" className={styles.iconButton} onClick={() => setShowHistory(false)} aria-label="Close version history"><X /></button>
+            </header>
+            {versionHistory.versions.length ? (
+              <div className={styles.versionList}>
+                {versionHistory.versions.map((version) => {
+                  const activeVersion = version.id === versionHistory.activeVersionId;
+                  return (
+                    <article className={styles.versionCard} key={version.id}>
+                      <strong>Version {version.number}{activeVersion ? " (Active)" : ""}</strong>
+                      <time dateTime={version.deployedAt}>
+                        Deployed on {new Date(version.deployedAt).toLocaleString("en-IN", {
+                          day: "2-digit", month: "short", year: "numeric",
+                          hour: "2-digit", minute: "2-digit", hour12: true,
+                        })}
+                      </time>
+                      <div>
+                        <button type="button" className="btn ghost sm" onClick={() => previewWebsiteVersion(version)}>Preview Version</button>
+                        <button type="button" className={styles.restoreButton} onClick={() => restoreWebsiteVersion(version)}>Restore This Version</button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={styles.emptyHistory}>No deployments yet. Publish a saved website to start version history.</p>
+            )}
+          </aside>
+        </div>
+      ) : null}
       {activeEditor ? (
         <RichTextModal
           initialHtml={nodes.find((node) => node.id === activeEditor)?.html || ""}
@@ -754,17 +940,35 @@ export default function AdminWebsiteBuilder() {
           <section className={styles.previewDialog} role="dialog" aria-modal="true" aria-labelledby="website-preview-title">
             <header className={styles.previewToolbar}>
               <div>
-                <h2 id="website-preview-title">Saved website preview</h2>
-                <p>This is the latest saved draft. Publish it to make it publicly available.</p>
+                  <h2 id="website-preview-title">{previewDraft ? "Website version preview" : "Saved website preview"}</h2>
+                  <p>{previewDraft ? "Previewing an archived website version." : "This is the latest saved draft. Publish it to make it publicly available."}</p>
               </div>
-              <button type="button" className={styles.iconButton} onClick={() => setShowPreview(false)} aria-label="Close preview"><X /></button>
+              <div className={styles.previewActions}>
+                <button
+                  className="btn primary"
+                  type="button"
+                  onClick={publish}
+                  disabled={publishing || !savedDraft || dirty || Boolean(previewDraft)}
+                >
+                  {publishing ? "Publishing..." : "Publish website"}
+                </button>
+                <button type="button" className={styles.iconButton} onClick={() => {
+                  setShowPreview(false);
+                  setPreviewDraft(null);
+                }} aria-label="Close preview"><X /></button>
+              </div>
             </header>
             <div className={styles.previewFrame}>
               <header className={styles.previewBrand}>
                 <span className={styles.previewLogo} aria-hidden="true">{(savedDraft.schoolName || user?.schoolName || "S").slice(0, 1).toUpperCase()}</span>
                 <strong>{savedDraft.schoolName || user?.schoolName || "School website"}</strong>
               </header>
-              <PublicSiteCanvas nodes={savedDraft.nodes} canvasSize={savedDraft.canvasSize} testimonials={savedDraft.testimonials} schoolName={savedDraft.schoolName} />
+              <PublicSiteCanvas
+                nodes={(previewDraft || savedDraft).nodes}
+                canvasSize={(previewDraft || savedDraft).canvasSize}
+                testimonials={(previewDraft || savedDraft).testimonials}
+                schoolName={(previewDraft || savedDraft).schoolName}
+              />
             </div>
           </section>
         </div>

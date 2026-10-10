@@ -10,9 +10,12 @@ export default function PublicSiteCanvas({
   schoolName = "School",
   onBannerDragOver,
   onBannerDrop,
+  onContactSubmit,
   uploadingBannerId = null,
 }) {
   const [contact, setContact] = useState({ name: "", email: "", message: "" });
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactFeedback, setContactFeedback] = useState(null);
   const canvasRef = useRef(null);
   if (!nodes.length) return null;
 
@@ -105,15 +108,35 @@ export default function PublicSiteCanvas({
               <span className={styles.eyebrow}>LET’S CONNECT</span>
               <h2>{node.title || "Come say hello"}</h2>
               <p>Tell us a little about your family. Our admissions team would love to meet you.</p>
-              <form onSubmit={(event) => {
+              <form onSubmit={async (event) => {
                 event.preventDefault();
-                window.alert("Success: Contact form message payload parsed successfully! Simulation dispatched to admin mailbox.");
-                setContact({ name: "", email: "", message: "" });
+                if (!onContactSubmit || contactSubmitting) return;
+                setContactSubmitting(true);
+                setContactFeedback(null);
+                try {
+                  await onContactSubmit(contact);
+                  setContact({ name: "", email: "", message: "" });
+                  setContactFeedback({ type: "success", message: "Thank you. Your message has been sent to the school." });
+                } catch (error) {
+                  setContactFeedback({
+                    type: "error",
+                    message: error?.response?.data?.detail || error?.message || "Your message could not be sent. Please try again.",
+                  });
+                } finally {
+                  setContactSubmitting(false);
+                }
               }}>
-                <label>Your name<input required value={contact.name} onChange={(event) => setContact({ ...contact, name: event.target.value })} /></label>
-                <label>Email address<input required type="email" value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /></label>
-                <label>Message<textarea required rows="3" value={contact.message} onChange={(event) => setContact({ ...contact, message: event.target.value })} /></label>
-                <button type="submit">Submit Message</button>
+                <label>Your name<input required maxLength={120} value={contact.name} onChange={(event) => setContact({ ...contact, name: event.target.value })} /></label>
+                <label>Email address<input required type="email" maxLength={254} value={contact.email} onChange={(event) => setContact({ ...contact, email: event.target.value })} /></label>
+                <label>Message<textarea required maxLength={5000} rows="3" value={contact.message} onChange={(event) => setContact({ ...contact, message: event.target.value })} /></label>
+                <button type="submit" disabled={!onContactSubmit || contactSubmitting}>
+                  {contactSubmitting ? "Sending..." : "Submit Message"}
+                </button>
+                {contactFeedback ? (
+                  <p className={`${styles.contactFeedback} ${styles[contactFeedback.type]}`} role={contactFeedback.type === "error" ? "alert" : "status"}>
+                    {contactFeedback.message}
+                  </p>
+                ) : null}
               </form>
             </div>
           ) : null}
