@@ -205,11 +205,14 @@ test("public website is reachable by school slug after builder publish", () => {
   assert.match(website, /client\.post\("\/website\/builder\/publish"\)/);
   assert.match(website, /form\.append\("file", file\)/);
   assert.match(website, /client\.post\("\/website\/builder\/assets", form\)/);
+  assert.match(website, /client\.get\("\/website\/queries"\)/);
+  assert.match(website, /axios\.post\(`\$\{BASE_URL\}\/public\/sites\/\$\{schoolId\}\/queries`, payload\)/);
   assert.match(website, /\/website\/builder\/publish/);
   assert.match(website, /\/public\/sites\/by-name/);
   assert.match(website, /axios\.get\(`\$\{BASE_URL\}\/public\/sites\/\$\{schoolId\}`\)/);
   const publicPage = source("src/pages/PublicWebsite.jsx");
   assert.match(publicPage, /getPublicSiteByName/);
+  assert.match(publicPage, /submitWebsiteQuery\(site\.school_id, payload\)/);
   assert.match(publicPage, /getPublicSite\(/);
   assert.match(publicPage, /nodes=\{site\.nodes\}/);
   assert.match(publicPage, /canvasSize=\{site\.canvas_size\}/);
@@ -230,6 +233,8 @@ test("admin website builder saves and publishes the canvas through the API", () 
   assert.match(builder, /pending_testimonials: pendingTestimonials/);
   assert.match(builder, /apiErrorMessage\(error\)/);
   assert.match(builder, /disabled=\{publishing \|\| !savedDraft \|\| dirty \|\| Boolean\(previewDraft\)\}/);
+  assert.match(builder, /websiteApi\.getWebsiteQueries\(\)/);
+  assert.match(builder, /User queries/);
   assert.match(builder, /setPreviewDraft\(null\);\s*setShowPreview\(true\)/);
 });
 

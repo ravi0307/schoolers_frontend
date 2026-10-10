@@ -69,6 +69,10 @@
 .contactBlock input, .contactBlock textarea { width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: .4rem; background: #fff; padding: .4rem .5rem; color: #1e293b; font: inherit; font-size: .75rem; }
 .contactBlock textarea { resize: vertical; }
 .contactBlock button { justify-self: start; border: 0; border-radius: 999px; background: #0f766e; padding: .55rem .9rem; color: #fff; cursor: pointer; font-size: .75rem; font-weight: 800; }
+.contactBlock button:disabled { cursor: not-allowed; opacity: .6; }
+.contactFeedback { grid-column: 1 / -1; margin: 0; font-size: .8rem; }
+.success { color: #166534; }
+.error { color: #b91c1c; }
 .uploadOverlay { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; background: rgba(15,23,42,.62); color: #fff; backdrop-filter: blur(8px); text-align: center; }
 .uploadOverlay small { color: #cbd5e1; }
 .spinner { width: 2rem; height: 2rem; border: 3px solid rgba(255,255,255,.35); border-top-color: #67e8f9; border-radius: 50%; animation: spin .8s linear infinite; }

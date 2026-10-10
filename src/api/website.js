@@ -31,6 +31,12 @@ export const uploadBuilderAsset = (file) => {
   return client.post("/website/builder/assets", form).then((response) => response.data);
 };
 
+export const getWebsiteQueries = () =>
+  client.get("/website/queries").then((response) => response.data);
+
+export const submitWebsiteQuery = (schoolId, payload) =>
+  axios.post(`${BASE_URL}/public/sites/${schoolId}/queries`, payload).then((response) => response.data);
+
 /** Public, unauthenticated — anyone can view a school's published site. */
 export const getPublicSite = (schoolId) =>
   axios.get(`${BASE_URL}/public/sites/${schoolId}`).then((response) => response.data);
