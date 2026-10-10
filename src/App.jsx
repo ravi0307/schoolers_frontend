@@ -48,6 +48,7 @@ import AdminStaff from "./pages/admin/AdminStaff";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminLeave from "./pages/admin/AdminLeave";
 import AdminWebsite from "./pages/admin/AdminWebsite";
+import AdminWebsiteBuilder from "./pages/admin/AdminWebsiteBuilder";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
@@ -179,6 +180,7 @@ export default function App() {
               <Route path="trips" element={<AdminTripHistory />} />
               <Route path="leave" element={<AdminLeave />} />
               <Route path="website" element={<AdminWebsite />} />
+              <Route path="my_website2" element={<AdminWebsiteBuilder />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />

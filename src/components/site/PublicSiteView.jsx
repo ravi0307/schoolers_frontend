@@ -1,10 +1,13 @@
 import { resolveMediaUrl } from "../../api/client";
 import { sanitizeRichText } from "../../components/ui/richText";
+import PublicSiteCanvas from "./PublicSiteCanvas";
+import { parseWebsiteBuilderContent } from "../../utils/websiteBuilder";
 
 export default function PublicSiteView({ site }) {
   const settings = site?.settings || {};
   const home = site?.pages?.home;
   const testimonials = site?.testimonials || [];
+  const builder = parseWebsiteBuilderContent(home?.body);
 
   return (
     <main className="public-site" style={{ "--site-accent": settings.accent_color }}>
@@ -32,7 +35,7 @@ export default function PublicSiteView({ site }) {
           {home?.subheading ? (
             <p className="public-site-subheading" dangerouslySetInnerHTML={{ __html: sanitizeRichText(home.subheading) }} />
           ) : null}
-          {home?.body ? (
+          {home?.body && !builder ? (
             <p className="public-site-body" dangerouslySetInnerHTML={{ __html: sanitizeRichText(home.body) }} />
           ) : null}
         </div>
@@ -51,6 +54,8 @@ export default function PublicSiteView({ site }) {
           </div>
         </section>
       ) : null}
+
+      {builder ? <PublicSiteCanvas nodes={builder.nodes} /> : null}
 
       {settings.footer_address || settings.footer_phone || settings.footer_email || settings.footer_copyright ? (
         <footer className="public-site-footer">

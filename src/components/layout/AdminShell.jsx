@@ -17,6 +17,7 @@ import {
   Users,
   Wallet,
   Globe,
+  PanelsTopLeft,
 } from "lucide-react";
 
 const NAV = [
@@ -37,6 +38,7 @@ const NAV = [
   { to: "/admin/accounts", icon: Wallet, label: "Accounts" },
   { to: "/admin/reports", icon: BarChart3, label: "Reporting" },
   { to: "/admin/website", icon: Globe, label: "School Website" },
+  { to: "/admin/my_website2", icon: PanelsTopLeft, label: "my_website2" },
 ];
 
 export default function AdminShell({ children }) {

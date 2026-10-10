@@ -1,0 +1,36 @@
+.canvas {
+  position: relative;
+  width: 100%;
+  min-height: 48rem;
+  overflow: hidden;
+  background-color: #fff;
+  background-image: radial-gradient(#d7e0e8 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+}
+
+.node {
+  position: absolute;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #dce4eb;
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #1e293b;
+}
+
+.header,
+.footer {
+  display: flex;
+  align-items: center;
+  background: #f0f4f8;
+}
+
+.footer { justify-content: flex-end; }
+.testimonial { background: #f8fafc; }
+.nav { display: flex; flex-wrap: wrap; gap: 1rem; }
+.nav a { color: var(--site-accent); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .canvas { min-height: 42rem; }
+  .node { padding: 0.55rem; font-size: 0.8rem; }
+}

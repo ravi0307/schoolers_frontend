@@ -178,7 +178,7 @@ test("key frontend workflows remain represented by application routes", () => {
     parent: ["home", "pickdrop", "attendance", "timetable", "marks", "gallery", "leave", "barter"],
     teacher: ["dashboard", "attendance", "marks", "timetable", "broadcast", "gallery", "report"],
     staff: ["broadcast", "gallery", "report"],
-    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "notifications", "support"],
+    admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "my_website2", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave", "report"],
     master: ["schools", "schools/:schoolId", "system-health", "support"],
   };
@@ -963,6 +963,7 @@ const ADMIN_NAV = [
   "/admin/accounts",
   "/admin/reports",
   "/admin/website",
+  "/admin/my_website2",
 ];
 // "Set up" is a real sequence: each entry feeds the one below it.
 const SET_UP_SEQUENCE = [
