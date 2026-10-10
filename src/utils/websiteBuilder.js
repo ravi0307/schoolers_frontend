@@ -5,6 +5,8 @@ export const WEBSITE_CANVAS_LIMITS = Object.freeze({
   minHeight: 560,
   maxHeight: 5000,
 });
+export const WEBSITE_VERSION_HISTORY_PREFIX = "schoolers-website-version-history:";
+export const WEBSITE_DRAFT_PREFIX = "schoolers-website-builder-draft:";
 export const MOCK_BANNER_SLIDES = Object.freeze([
   {
     id: "banner-slide-1",
@@ -54,6 +56,81 @@ export function normalizeWebsiteCanvasSize(size = {}) {
       DEFAULT_WEBSITE_CANVAS_SIZE.height
     ),
   };
+}
+
+export function websiteDraftStorageKey(schoolId) {
+  return `${WEBSITE_DRAFT_PREFIX}${String(schoolId || "default").replace(/[^a-zA-Z0-9_-]/g, "") || "default"}`;
+}
+
+export function websiteVersionHistoryStorageKey(schoolId) {
+  return `${WEBSITE_VERSION_HISTORY_PREFIX}${String(schoolId || "default").replace(/[^a-zA-Z0-9_-]/g, "") || "default"}`;
+}
+
+export function readLocalWebsiteDraft(storage, schoolId) {
+  const raw = storage.getItem(websiteDraftStorageKey(schoolId));
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.nodes)) {
+    throw new Error("The local website draft has an unsupported format.");
+  }
+  return {
+    school_name: parsed.school_name || parsed.schoolName || "School website",
+    canvas_size: normalizeWebsiteCanvasSize(parsed.canvas_size || parsed.canvasSize),
+    nodes: normalizeWebsiteBuilderNodes(parsed.nodes),
+    testimonials: Array.isArray(parsed.testimonials) ? parsed.testimonials : [],
+    pending_testimonials: Array.isArray(parsed.pending_testimonials)
+      ? parsed.pending_testimonials
+      : Array.isArray(parsed.pendingTestimonials) ? parsed.pendingTestimonials : [],
+  };
+}
+
+export function writeLocalWebsiteDraft(storage, schoolId, draft) {
+  storage.setItem(websiteDraftStorageKey(schoolId), JSON.stringify({
+    ...draft,
+    canvas_size: normalizeWebsiteCanvasSize(draft.canvas_size || draft.canvasSize),
+    nodes: normalizeWebsiteBuilderNodes(draft.nodes),
+  }));
+}
+
+export function readWebsiteVersionHistory(storage, schoolId) {
+  const raw = storage.getItem(websiteVersionHistoryStorageKey(schoolId));
+  if (!raw) return { versions: [], activeVersionId: null };
+  const parsed = JSON.parse(raw);
+  if (!parsed || !Array.isArray(parsed.versions)) {
+    throw new Error("The saved website version history has an unsupported format.");
+  }
+  return {
+    versions: parsed.versions.filter((version) =>
+      version && typeof version.id === "string" && Number.isInteger(version.number) &&
+      version.content && Array.isArray(version.content.nodes)
+    ),
+    activeVersionId: typeof parsed.activeVersionId === "string" ? parsed.activeVersionId : null,
+  };
+}
+
+export function writeWebsiteVersionHistory(storage, schoolId, history) {
+  storage.setItem(websiteVersionHistoryStorageKey(schoolId), JSON.stringify({
+    versions: history.versions,
+    activeVersionId: history.activeVersionId,
+  }));
+}
+
+export function addWebsiteVersion(history, content, deployedAt = new Date().toISOString()) {
+  const number = Math.max(0, ...history.versions.map((version) => version.number)) + 1;
+  const version = {
+    id: `website-version-${number}`,
+    number,
+    deployedAt,
+    content: structuredClone(content),
+  };
+  return {
+    versions: [version, ...history.versions],
+    activeVersionId: version.id,
+  };
+}
+
+export function restoreWebsiteVersionContent(version) {
+  return structuredClone(version.content);
 }
 
 export function transformWebsiteNode(node, mode, dx, dy) {
