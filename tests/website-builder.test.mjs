@@ -10,73 +10,14 @@ import {
   createDefaultWebsiteNodes,
   normalizeWebsiteCanvasSize,
   normalizeWebsiteBuilderNodes,
-  parseWebsiteBuilderContent,
   resizeHandleClassName,
   resizeDimensionsTooltip,
   resizeHandleTooltip,
   resizeTooltipPosition,
-  readWebsiteBuilderDraft,
-  serializeWebsiteBuilderContent,
   transformWebsiteNode,
-  websiteBuilderDraftKey,
-  writeWebsiteBuilderDraft,
 } from "../src/utils/websiteBuilder.js";
 
 const source = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-
-test("website builder canvas config round-trips through the existing home page body", () => {
-  const nodes = [{
-    id: "section-a",
-    anchorId: "services",
-    type: "center",
-    title: "Services",
-    x: 10,
-    y: 20,
-    width: 40,
-    height: 30,
-    html: "<p>Our services</p>",
-    labels: [],
-    slides: [],
-  }];
-  assert.deepEqual(parseWebsiteBuilderContent(serializeWebsiteBuilderContent(nodes)).nodes, nodes);
-  assert.equal(parseWebsiteBuilderContent("<p>legacy body</p>"), null);
-});
-
-test("website builder draft is isolated by school and persists in local storage", () => {
-  const values = new Map();
-  const storage = {
-    getItem: (key) => values.get(key) || null,
-    setItem: (key, value) => values.set(key, value),
-  };
-  const draft = {
-    schoolName: "Sunrise School",
-    savedAt: "2026-10-10T12:00:00.000Z",
-    canvasSize: { width: 1440, height: 1100 },
-    testimonials: [],
-    pendingTestimonials: [],
-    nodes: [{
-      id: "saved-content",
-      anchorId: "welcome",
-      type: "center",
-      title: "Welcome",
-      x: 10,
-      y: 15,
-      width: 50,
-      height: 35,
-      html: "<p>Welcome!</p>",
-      labels: [],
-    }],
-  };
-
-  writeWebsiteBuilderDraft(storage, 17, draft);
-  assert.equal(websiteBuilderDraftKey(17), "schoolers-website-builder-draft:17");
-  assert.deepEqual(readWebsiteBuilderDraft(storage, 17), {
-    ...draft,
-    version: 1,
-    nodes: normalizeWebsiteBuilderNodes(draft.nodes),
-  });
-  assert.equal(readWebsiteBuilderDraft(storage, 18), null);
-});
 
 test("canvas dimensions use defaults and stay inside supported limits", () => {
   assert.deepEqual(normalizeWebsiteCanvasSize(), DEFAULT_WEBSITE_CANVAS_SIZE);
@@ -88,14 +29,6 @@ test("canvas dimensions use defaults and stay inside supported limits", () => {
     width: 1800,
     height: 1200,
   });
-});
-
-test("invalid local website drafts produce an explicit error", () => {
-  const storage = {
-    getItem: () => JSON.stringify({ version: 99, nodes: [] }),
-    setItem: () => {},
-  };
-  assert.throws(() => readWebsiteBuilderDraft(storage, 1), /unsupported format/);
 });
 
 test("starter layout contains header navigation, banner, content, testimonials, contact, and footer", () => {
@@ -137,10 +70,10 @@ test("normalizes coordinates, node types, and anchor ids before rendering", () =
   assert.equal(node.labels[0].anchorId, "servicesnews");
 });
 
-test("default canvas preserves existing home page copy as a content node", () => {
-  const nodes = createDefaultWebsiteNodes({ body: "<p>Legacy school content</p>" });
+test("default canvas begins with editable school copy", () => {
+  const nodes = createDefaultWebsiteNodes();
   assert.equal(nodes.length, 9);
-  assert.equal(nodes.find((node) => node.id === "home-content").html, "<p>Legacy school content</p>");
+  assert.match(nodes.find((node) => node.id === "home-content").html, /Growing bright minds/);
 });
 
 test("canvas nodes resize horizontally and vertically from each edge and corner", () => {
@@ -193,7 +126,7 @@ test("resize tooltip remains outside the active handle edge and inside the viewp
   assert.deepEqual(resizeTooltipPosition("s", 300, 380, bounds, 1000, 800), { left: 312, top: 392 });
 });
 
-test("admin canvas route exposes local draft saving and saved-site preview", () => {
+test("admin canvas route exposes server draft saving, publishing, and saved-site preview", () => {
   const app = source("src/App.jsx");
   const shell = source("src/components/layout/AdminShell.jsx");
   const builder = source("src/pages/admin/AdminWebsiteBuilder.jsx");
@@ -219,11 +152,13 @@ test("admin canvas route exposes local draft saving and saved-site preview", () 
   assert.match(builder, /id="website-resize-tooltip"/);
   assert.match(builder, /event\.currentTarget\.setPointerCapture\(event\.pointerId\)/);
   assert.match(builder, /onLostPointerCapture={finishTransform}/);
-  assert.match(builder, /writeWebsiteBuilderDraft\(window\.localStorage/);
+  assert.match(builder, /websiteApi\.saveBuilderDraft\(content\)/);
+  assert.match(builder, /websiteApi\.publishBuilderSite\(\)/);
+  assert.match(builder, /Publish website/);
   assert.match(builder, /Preview saved website/);
   assert.match(builder, /<PublicSiteCanvas nodes={savedDraft\.nodes}/);
   assert.match(builder, /onDrop=\{node\.type === "banner"/);
-  assert.match(builder, /MOCK_DROP_BANNER_IMAGE/);
+  assert.match(builder, /websiteApi\.uploadBuilderAsset\(imageFile\)/);
   assert.match(builder, /Add Header Navigation Label/);
   assert.match(builder, /Add New Center Content Box/);
   assert.match(builder, /Insert Mock Testimonial Section/);
@@ -232,4 +167,15 @@ test("admin canvas route exposes local draft saving and saved-site preview", () 
   assert.match(builder, /Canvas height in pixels/);
   assert.match(builder, /style=\{\{ width: `\$\{canvasSize\.width\}px`, height: `\$\{canvasSize\.height\}px` \}\}/);
   assert.doesNotMatch(builder, /websiteApi\.upsertPage/);
+});
+
+test("legacy multi-page website UI and browser-only persistence are retired", () => {
+  const builder = source("src/pages/admin/AdminWebsiteBuilder.jsx");
+  const api = source("src/api/website.js");
+  const publicPage = source("src/pages/PublicWebsite.jsx");
+
+  assert.doesNotMatch(builder, /localStorage/);
+  assert.doesNotMatch(api, /website\/settings|website\/pages|website\/go-live/);
+  assert.match(publicPage, /<PublicSiteCanvas/);
+  assert.doesNotMatch(publicPage, /PublicSiteView/);
 });

@@ -97,7 +97,7 @@ test("every frontend API module is wired to its required backend surface", () =>
   assertContains("src/api/barter.js", [/\/barter/]);
   assertContains("src/api/activities.js", [/\/activities/]);
   assertContains("src/api/communication.js", [/\/broadcasts/, /\/media/]);
-  assertContains("src/api/website.js", [/\/website\/settings/, /\/website\/pages/, /\/website\/go-live/, /\/public\/sites\/by-name/, /\/public\/sites/]);
+  assertContains("src/api/website.js", [/\/website\/builder/, /\/builder\/draft/, /\/builder\/publish/, /\/builder\/assets/, /\/public\/sites\/by-name/, /\/public\/sites/]);
   assertContains("src/api/media.js", [/\/media/]);
   assertContains("src/api/uploads.js", [/\/schools\/\$\{schoolId\}\/upload/, /\/documents\/upload/, /School ID is required/]);
   assertContains("src/api/systemHealth.js", [/\/health/, /\/health\/services/]);
@@ -193,27 +193,39 @@ test("key frontend workflows remain represented by application routes", () => {
   }
 });
 
-test("public website is reachable by school slug and supports go-live", () => {
+test("public website is reachable by school slug after builder publish", () => {
   const app = source("src/App.jsx");
   assert.ok(app.includes('path="/website/:schoolName"'), "public website slug route is not registered");
   const website = source("src/api/website.js");
-  assert.match(website, /\/website\/go-live/);
+  assert.match(website, /client\.get\("\/website\/builder"\)/);
+  assert.match(website, /client\.put\("\/website\/builder\/draft", content\)/);
+  assert.match(website, /client\.post\("\/website\/builder\/publish"\)/);
+  assert.match(website, /form\.append\("file", file\)/);
+  assert.match(website, /client\.post\("\/website\/builder\/assets", form\)/);
+  assert.match(website, /\/website\/builder\/publish/);
   assert.match(website, /\/public\/sites\/by-name/);
+  assert.match(website, /axios\.get\(`\$\{BASE_URL\}\/public\/sites\/\$\{schoolId\}`\)/);
   const publicPage = source("src/pages/PublicWebsite.jsx");
   assert.match(publicPage, /getPublicSiteByName/);
   assert.match(publicPage, /getPublicSite\(/);
+  assert.match(publicPage, /nodes=\{site\.nodes\}/);
+  assert.match(publicPage, /canvasSize=\{site\.canvas_size\}/);
+  assert.doesNotMatch(publicPage, /PublicSiteView/);
 });
 
-test("admin website publishes from the preview and edits every content section", () => {
-  const admin = source("src/pages/admin/AdminWebsite.jsx");
-  assert.match(admin, /website-preview-overlay/);
-  assert.match(admin, /Go Live/);
-  assert.match(admin, /RichTextEditor/);
-  assert.match(admin, /Footer/);
-  assert.match(admin, /Testimonials/);
-  const editor = source("src/components/ui/RichTextEditor.jsx");
-  assert.match(editor, /contentEditable/);
-  assert.match(source("src/components/site/PublicSiteView.jsx"), /dangerouslySetInnerHTML/);
+test("admin website builder saves and publishes the canvas through the API", () => {
+  const builder = source("src/pages/admin/AdminWebsiteBuilder.jsx");
+  assert.match(builder, /websiteApi\.getBuilderState\(\)/);
+  assert.match(builder, /websiteApi\.saveBuilderDraft\(content\)/);
+  assert.match(builder, /websiteApi\.publishBuilderSite\(\)/);
+  assert.match(builder, /Publish website/);
+  assert.match(builder, /getPublicSite|publicSitePath/);
+  assert.doesNotMatch(builder, /writeWebsiteBuilderDraft\(window\.localStorage/);
+  assert.match(builder, /school_name: user\?\.schoolName/);
+  assert.match(builder, /canvas_size: canvasSize/);
+  assert.match(builder, /pending_testimonials: pendingTestimonials/);
+  assert.match(builder, /apiErrorMessage\(error\)/);
+  assert.match(builder, /disabled=\{publishing \|\| !savedDraft \|\| dirty\}/);
 });
 
 test("student records capture photo, identity numbers, and documents in the roster workflow", () => {
@@ -637,7 +649,6 @@ test("pagination caps every list at 25 records per page", () => {
     "src/pages/admin/AdminLeave.jsx",
     "src/pages/admin/AdminNotifications.jsx",
     "src/components/gallery/GalleryView.jsx",
-    "src/pages/admin/AdminWebsite.jsx",
     "src/pages/master/MasterSchools.jsx",
     "src/pages/master/MasterSchoolDetail.jsx",
     "src/pages/teacher/TeacherDashboard.jsx",

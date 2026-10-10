@@ -7,6 +7,7 @@ export default function PublicSiteCanvas({
   nodes = [],
   canvasSize,
   testimonials = MOCK_ACTIVE_TESTIMONIALS,
+  schoolName = "School",
   onBannerDragOver,
   onBannerDrop,
   uploadingBannerId = null,
@@ -48,7 +49,7 @@ export default function PublicSiteCanvas({
         >
           {node.type === "header" ? (
             <nav className={styles.nav} aria-label="Website navigation">
-              <a className={styles.siteBrand} href="#top" onClick={(event) => scrollToSection(event, "top")}>SUNRISE SCHOOL</a>
+              <a className={styles.siteBrand} href="#top" onClick={(event) => scrollToSection(event, "top")}>{schoolName}</a>
               <span className={styles.navSpacer} />
               {node.labels.filter((label) => label.text).map((label) => (
                 <a key={label.id} href={`#${label.anchorId || node.anchorId || node.id}`} onClick={(event) => scrollToSection(event, label.anchorId || node.anchorId || node.id)}>{label.text}</a>
@@ -63,7 +64,7 @@ export default function PublicSiteCanvas({
               onDrop={(event) => onBannerDrop?.(event, node.id)}
             >
               <div className={styles.bannerCopy}>
-                <span className={styles.eyebrow}>SUNRISE SCHOOL · LEARN TO SHINE</span>
+                <span className={styles.eyebrow}>{schoolName} · LEARN TO SHINE</span>
                 <h1>{node.slides?.[0]?.title || "A bright beginning for every learner"}</h1>
                 <p>{node.slides?.[0]?.subtitle || "Curiosity, confidence and community—every day."}</p>
                 <a className={styles.bannerCta} href="#about" onClick={(event) => scrollToSection(event, "about")}>Discover our school</a>

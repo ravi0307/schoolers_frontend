@@ -4,7 +4,7 @@
 .headerActions button { display: inline-flex; align-items: center; gap: 0.45rem; }
 .prototypeNotice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .35rem .8rem; margin: 0 0 .85rem; border: 1px solid #b6e0e8; border-radius: .75rem; background: #ecfeff; padding: .75rem .9rem; color: #155e75; font-size: .8rem; }
 .prototypeNotice strong { color: #0e7490; }
-.savedTimestamp { color: #476777; white-space: nowrap; }
+.savedTimestamp { display: inline-flex; align-items: center; gap: .3rem; color: #476777; white-space: nowrap; }
 .storageError { margin-bottom: .75rem; border: 1px solid #fecaca; border-radius: .6rem; background: #fff1f2; padding: .65rem .8rem; color: #9f1239; font-size: .82rem; }
 .instructions { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem 0.8rem; margin-bottom: 0.8rem; color: var(--ink-soft); font-size: 0.82rem; }
 .instructions strong { color: var(--ink); }

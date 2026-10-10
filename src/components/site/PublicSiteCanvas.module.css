@@ -3,6 +3,7 @@
   width: 1200px;
   height: 900px;
   overflow: hidden;
+  max-width: 100%;
   background-color: #fff;
   background-image: radial-gradient(#d7e0e8 0.7px, transparent 0.7px);
   background-size: 18px 18px;

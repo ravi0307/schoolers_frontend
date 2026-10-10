@@ -1,5 +1,3 @@
-export const WEBSITE_BUILDER_PREFIX = "schoolers-canvas:v1:";
-export const WEBSITE_BUILDER_DRAFT_VERSION = 1;
 export const DEFAULT_WEBSITE_CANVAS_SIZE = Object.freeze({ width: 1200, height: 1900 });
 export const WEBSITE_CANVAS_LIMITS = Object.freeze({
   minWidth: 650,
@@ -21,8 +19,6 @@ export const MOCK_BANNER_SLIDES = Object.freeze([
     subtitle: "A caring environment where every student can find their spark.",
   },
 ]);
-export const MOCK_DROP_BANNER_IMAGE = "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1800&q=85";
-
 export const MOCK_ACTIVE_TESTIMONIALS = Object.freeze([
   { id: "live-1", name: "Divya Shah", role: "Parent", quote: "A warm, thoughtful school where our child feels seen and supported." },
   { id: "live-2", name: "Rohan Das", role: "Alumnus", quote: "The teachers helped me discover what I love and gave me the confidence to pursue it." },
@@ -33,50 +29,6 @@ export const MOCK_PENDING_TESTIMONIALS = Object.freeze([
   { id: "pending-2", name: "Karthik Menon", role: "Parent of Grade 2 student", quote: "We have seen our son become more confident, independent, and curious since joining Sunrise." },
   { id: "pending-3", name: "Meera Iyer", role: "School alumna", quote: "The supportive teachers and friendships I found here still inspire me today." },
 ]);
-
-export function websiteBuilderDraftKey(schoolId) {
-  const identifier = String(schoolId || "default").replace(/[^a-zA-Z0-9_-]/g, "");
-  return `schoolers-website-builder-draft:${identifier || "default"}`;
-}
-
-export function readWebsiteBuilderDraft(storage, schoolId) {
-  const raw = storage.getItem(websiteBuilderDraftKey(schoolId));
-  if (!raw) return null;
-  const draft = JSON.parse(raw);
-  if (draft?.version !== WEBSITE_BUILDER_DRAFT_VERSION || !Array.isArray(draft.nodes)) {
-    throw new Error("The saved website draft has an unsupported format. Clear this browser's draft and try again.");
-  }
-  return {
-    ...draft,
-    canvasSize: normalizeWebsiteCanvasSize(draft.canvasSize),
-    nodes: normalizeWebsiteBuilderNodes(draft.nodes),
-    testimonials: normalizeTestimonials(draft.testimonials, MOCK_ACTIVE_TESTIMONIALS),
-    pendingTestimonials: normalizeTestimonials(draft.pendingTestimonials, MOCK_PENDING_TESTIMONIALS),
-  };
-}
-
-export function writeWebsiteBuilderDraft(storage, schoolId, draft) {
-  storage.setItem(websiteBuilderDraftKey(schoolId), JSON.stringify({
-    ...draft,
-    version: WEBSITE_BUILDER_DRAFT_VERSION,
-    canvasSize: normalizeWebsiteCanvasSize(draft.canvasSize),
-    nodes: normalizeWebsiteBuilderNodes(draft.nodes),
-    testimonials: normalizeTestimonials(draft.testimonials, []),
-    pendingTestimonials: normalizeTestimonials(draft.pendingTestimonials, []),
-  }));
-}
-
-export function normalizeTestimonials(items, fallback = []) {
-  if (!Array.isArray(items)) return fallback.map((item) => ({ ...item }));
-  return items
-    .filter((item) => item && typeof item.id === "string")
-    .map((item) => ({
-      id: item.id.slice(0, 100),
-      name: typeof item.name === "string" ? item.name.slice(0, 120) : "School community",
-      role: typeof item.role === "string" ? item.role.slice(0, 120) : "",
-      quote: typeof item.quote === "string" ? item.quote.slice(0, 2000) : "",
-    }));
-}
 
 export function approveQueuedTestimonial(pending, live, id) {
   const testimonial = pending.find((item) => item.id === id);
@@ -102,21 +54,6 @@ export function normalizeWebsiteCanvasSize(size = {}) {
       DEFAULT_WEBSITE_CANVAS_SIZE.height
     ),
   };
-}
-
-export function parseWebsiteBuilderContent(value) {
-  if (typeof value !== "string" || !value.startsWith(WEBSITE_BUILDER_PREFIX)) return null;
-  try {
-    const parsed = JSON.parse(value.slice(WEBSITE_BUILDER_PREFIX.length));
-    if (!Array.isArray(parsed.nodes)) return null;
-    return { nodes: normalizeWebsiteBuilderNodes(parsed.nodes) };
-  } catch {
-    return null;
-  }
-}
-
-export function serializeWebsiteBuilderContent(nodes) {
-  return `${WEBSITE_BUILDER_PREFIX}${JSON.stringify({ nodes })}`;
 }
 
 export function transformWebsiteNode(node, mode, dx, dy) {
@@ -185,7 +122,7 @@ export function resizeTooltipPosition(mode, clientX, clientY, bounds, viewportWi
   };
 }
 
-export function createDefaultWebsiteNodes(homePage = {}) {
+export function createDefaultWebsiteNodes() {
   return [
     {
       id: "site-header", anchorId: "top", type: "header", title: "School header",
@@ -208,7 +145,7 @@ export function createDefaultWebsiteNodes(homePage = {}) {
     {
       id: "home-content", anchorId: "about", type: "center", title: "Welcome to Sunrise",
       x: 6, y: 39, width: 54, height: 14, labels: [],
-      html: homePage.body?.trim() || "<h2>Growing bright minds, together</h2><p>At Sunrise School, every child is known, encouraged and inspired. Our joyful classrooms combine strong foundations with hands-on discovery, helping students build the skills and confidence to shape their future.</p><p>Explore a school community where learning has purpose and every day brings something new.</p>",
+      html: "<h2>Growing bright minds, together</h2><p>At Sunrise School, every child is known, encouraged and inspired. Our joyful classrooms combine strong foundations with hands-on discovery, helping students build the skills and confidence to shape their future.</p><p>Explore a school community where learning has purpose and every day brings something new.</p>",
     },
     {
       id: "programs-content", anchorId: "programs", type: "center", title: "Learning at Sunrise",

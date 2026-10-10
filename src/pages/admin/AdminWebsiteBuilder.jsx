@@ -14,11 +14,15 @@ import {
   Sparkles,
   Trash2,
   X,
+  ExternalLink,
 } from "lucide-react";
 import AdminShell from "../../components/layout/AdminShell";
 import PublicSiteCanvas from "../../components/site/PublicSiteCanvas";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
+import * as websiteApi from "../../api/website";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { publicSitePath } from "../../utils/siteFlow";
 import { sanitizeRichText } from "../../components/ui/richText";
 import {
   DEFAULT_WEBSITE_CANVAS_SIZE,
@@ -27,16 +31,13 @@ import {
   createDefaultWebsiteNodes,
   MOCK_ACTIVE_TESTIMONIALS,
   MOCK_PENDING_TESTIMONIALS,
-  MOCK_DROP_BANNER_IMAGE,
   approveQueuedTestimonial,
   normalizeWebsiteBuilderNodes,
   resizeHandleClassName,
   resizeDimensionsTooltip,
   resizeHandleTooltip,
   resizeTooltipPosition,
-  readWebsiteBuilderDraft,
   transformWebsiteNode,
-  writeWebsiteBuilderDraft,
 } from "../../utils/websiteBuilder";
 import styles from "./AdminWebsiteBuilder.module.css";
 
@@ -140,7 +141,6 @@ export default function AdminWebsiteBuilder() {
   const transformRef = useRef(null);
   const resizeTooltipRef = useRef(null);
   const hoverTooltipTimerRef = useRef(null);
-  const bannerUploadTimerRef = useRef(null);
   const [nodes, setNodes] = useState([]);
   const [canvasSize, setCanvasSize] = useState(DEFAULT_WEBSITE_CANVAS_SIZE);
   const [testimonials, setTestimonials] = useState(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
@@ -153,29 +153,43 @@ export default function AdminWebsiteBuilder() {
   const [uploadingBannerId, setUploadingBannerId] = useState(null);
   const [showGuides, setShowGuides] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [publishedAt, setPublishedAt] = useState(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [storageError, setStorageError] = useState("");
 
   useEffect(() => {
-    try {
-      const draft = readWebsiteBuilderDraft(window.localStorage, user?.schoolId);
-      const initialNodes = draft?.nodes || createDefaultWebsiteNodes();
-      setNodes(normalizeWebsiteBuilderNodes(initialNodes));
-      setCanvasSize(normalizeWebsiteCanvasSize(draft?.canvasSize));
+    let active = true;
+    setLoading(true);
+    websiteApi.getBuilderState().then((state) => {
+      if (!active) return;
+      const draft = state.draft;
+      setNodes(normalizeWebsiteBuilderNodes(draft?.nodes || createDefaultWebsiteNodes()));
+      setCanvasSize(normalizeWebsiteCanvasSize(draft?.canvas_size));
       setTestimonials(draft?.testimonials || MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
-      setPendingTestimonials(draft?.pendingTestimonials || MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
-      setSavedDraft(draft);
+      setPendingTestimonials(draft?.pending_testimonials || MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
+      setSavedDraft(draft ? {
+        schoolName: draft.school_name,
+        savedAt: state.updated_at,
+        canvasSize: draft.canvas_size,
+        nodes: draft.nodes,
+        testimonials: draft.testimonials,
+      } : null);
+      setPublishedAt(state.published_at);
       setDirty(!draft);
       setStorageError("");
-    } catch (error) {
-      setStorageError(error instanceof Error ? error.message : "The local website draft could not be loaded.");
-      setNodes(createDefaultWebsiteNodes());
-      setCanvasSize(DEFAULT_WEBSITE_CANVAS_SIZE);
-      setTestimonials(MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
-      setPendingTestimonials(MOCK_PENDING_TESTIMONIALS.map((item) => ({ ...item })));
+    }).catch((error) => {
+      if (!active) return;
+      setStorageError(apiErrorMessage(error));
+      setNodes([]);
       setSavedDraft(null);
-    }
-  }, [user?.schoolId]);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [user?.schoolId, loadAttempt]);
 
   useEffect(() => {
     if (!menu) return undefined;
@@ -247,7 +261,6 @@ export default function AdminWebsiteBuilder() {
     window.addEventListener("pointercancel", cancelTransform);
     return () => {
       clearHoverTimer();
-      if (bannerUploadTimerRef.current) window.clearTimeout(bannerUploadTimerRef.current);
       window.removeEventListener("pointermove", moveTransform);
       window.removeEventListener("pointerup", finishTransform);
       window.removeEventListener("pointercancel", cancelTransform);
@@ -330,21 +343,25 @@ export default function AdminWebsiteBuilder() {
     setMenu(null);
   }
 
-  function startMockMediaDrop(event, nodeId) {
+  async function uploadBannerImage(event, nodeId) {
     event.preventDefault();
-    const imageFile = Array.from(event.dataTransfer?.files || []).some((file) => file.type.startsWith("image/"));
+    const imageFile = Array.from(event.dataTransfer?.files || [])
+      .find((file) => file.type.startsWith("image/"));
     if (!imageFile) return;
-    if (bannerUploadTimerRef.current) window.clearTimeout(bannerUploadTimerRef.current);
     setUploadingBannerId(nodeId);
-    bannerUploadTimerRef.current = window.setTimeout(() => {
+    try {
+      const asset = await websiteApi.uploadBuilderAsset(imageFile);
       updateNode(nodeId, (node) => ({
         slides: node.slides?.length
-          ? node.slides.map((slide, index) => index === 0 ? { ...slide, imageUrl: MOCK_DROP_BANNER_IMAGE } : slide)
-          : [{ id: makeId(), imageUrl: MOCK_DROP_BANNER_IMAGE, title: "A bright beginning for every learner", subtitle: "Curiosity, confidence and community—every day." }],
+          ? node.slides.map((slide, index) => index === 0 ? { ...slide, imageUrl: resolveMediaUrl(asset.url) } : slide)
+          : [{ id: makeId(), imageUrl: resolveMediaUrl(asset.url), title: "A bright beginning for every learner", subtitle: "Curiosity, confidence and community—every day." }],
       }));
+      toast("Banner image uploaded");
+    } catch (error) {
+      toast(apiErrorMessage(error));
+    } finally {
       setUploadingBannerId(null);
-      bannerUploadTimerRef.current = null;
-    }, 1500);
+    }
   }
 
   function approveTestimonial(id) {
@@ -428,22 +445,28 @@ export default function AdminWebsiteBuilder() {
         html: sanitizeRichText(node.html, { allowAlignment: true }),
         labels: node.labels.filter((label) => label.text.trim()).map((label) => ({ ...label, editing: false })),
       }));
-      const draft = {
-        schoolName: user?.schoolName || "School website",
-        savedAt: new Date().toISOString(),
+      const content = {
+        school_name: user?.schoolName || "School website",
+        canvas_size: canvasSize,
+        nodes: safeNodes,
+        testimonials,
+        pending_testimonials: pendingTestimonials,
+      };
+      const result = await websiteApi.saveBuilderDraft(content);
+      setNodes(safeNodes);
+      setSavedDraft({
+        schoolName: content.school_name,
+        savedAt: result.updated_at,
         canvasSize,
         nodes: safeNodes,
         testimonials,
-        pendingTestimonials,
-      };
-      writeWebsiteBuilderDraft(window.localStorage, user?.schoolId, draft);
-      setNodes(safeNodes);
-      setSavedDraft(draft);
+      });
+      setPublishedAt(result.published_at);
       setDirty(false);
       setStorageError("");
-      toast("Website draft saved on this device");
+      toast("Website draft saved");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save the website draft in this browser.";
+      const message = apiErrorMessage(error);
       setStorageError(message);
       toast(message);
     } finally {
@@ -451,11 +474,29 @@ export default function AdminWebsiteBuilder() {
     }
   }
 
+  async function publish() {
+    setPublishing(true);
+    try {
+      const site = await websiteApi.publishBuilderSite();
+      setPublishedAt(site.published_at);
+      toast("Website published");
+    } catch (error) {
+      toast(apiErrorMessage(error));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  if (loading) {
+    return <AdminShell><div className="card white">Loading website builder…</div></AdminShell>;
+  }
+
   if (storageError && !nodes.length) {
     return (
       <AdminShell>
         <div className="card white" role="alert">
-          <p>{storageError}</p>
+          <p>Could not load the website builder: {storageError}</p>
+          <button type="button" className="btn primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Retry</button>
         </div>
       </AdminShell>
     );
@@ -479,12 +520,16 @@ export default function AdminWebsiteBuilder() {
             <button className="btn primary" type="button" onClick={save} disabled={saving || !dirty}>
               <Save size={17} aria-hidden="true" /> {saving ? "Saving..." : "Save draft"}
             </button>
+            <button className="btn primary" type="button" onClick={publish} disabled={publishing || !savedDraft || dirty}>
+              {publishing ? "Publishing..." : "Publish website"}
+            </button>
           </div>
         </header>
         <div className={styles.prototypeNotice} role="status">
-          <strong>Frontend prototype</strong>
-          <span>Drafts are saved only in this browser on this device. Preview is available after saving. Publishing to the public website will be connected when the backend is ready.</span>
+          <strong>Website builder</strong>
+          <span>Drafts and published versions are saved to your school website. Save changes before publishing.</span>
           {savedDraft?.savedAt ? <span className={styles.savedTimestamp}>Last saved {new Date(savedDraft.savedAt).toLocaleString()}</span> : null}
+          {publishedAt ? <a className={styles.savedTimestamp} href={publicSitePath(savedDraft?.schoolName || user?.schoolName)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> View live website</a> : null}
         </div>
         {storageError ? <div className={styles.storageError} role="alert">{storageError}</div> : null}
         <div className={styles.modeTabs} role="tablist" aria-label="Website builder views">
@@ -516,7 +561,7 @@ export default function AdminWebsiteBuilder() {
         <div className={styles.instructions}>
           <strong>Canvas builder</strong>
           <span>Right-click the canvas or header/footer for actions. Drag the banner image here to simulate replacing it. Drag and resize sections; click a content box to edit.</span>
-          <span className={styles.saveState} aria-live="polite">{dirty ? "Unsaved changes" : savedDraft ? "Saved on this device" : "Not saved yet"}</span>
+          <span className={styles.saveState} aria-live="polite">{dirty ? "Unsaved changes" : savedDraft ? "Saved to your school website" : "Not saved yet"}</span>
         </div>
         <div className={styles.canvasControls}>
           <strong>Canvas size</strong>
@@ -582,7 +627,7 @@ export default function AdminWebsiteBuilder() {
                   event.preventDefault();
                   event.dataTransfer.dropEffect = "copy";
                 } : undefined}
-                onDrop={node.type === "banner" ? (event) => startMockMediaDrop(event, node.id) : undefined}
+                onDrop={node.type === "banner" ? (event) => uploadBannerImage(event, node.id) : undefined}
                 aria-label={`${node.title} canvas section`}
               >
                 <div className={styles.nodeToolbar} onPointerDown={(event) => beginTransform(event, node, "move")}>
@@ -625,7 +670,7 @@ export default function AdminWebsiteBuilder() {
                 ) : node.type === "banner" ? (
                   <div className={styles.bannerEditor}>
                     <img src={node.slides?.[0]?.imageUrl} alt="Mock school banner preview" />
-                    <div><strong>{node.slides?.[0]?.title}</strong><span>Drop an image file here to simulate a local banner replacement</span></div>
+                    <div><strong>{node.slides?.[0]?.title}</strong><span>Drop an image file here to upload it to your school website</span></div>
                     {uploadingBannerId === node.id ? <div className={styles.bannerLoader}><span className={styles.spinner} />Uploading media layout asset...</div> : null}
                   </div>
                 ) : node.type === "testimonials" ? (
@@ -710,7 +755,7 @@ export default function AdminWebsiteBuilder() {
             <header className={styles.previewToolbar}>
               <div>
                 <h2 id="website-preview-title">Saved website preview</h2>
-                <p>This is a local preview of the saved draft. It is not public yet.</p>
+                <p>This is the latest saved draft. Publish it to make it publicly available.</p>
               </div>
               <button type="button" className={styles.iconButton} onClick={() => setShowPreview(false)} aria-label="Close preview"><X /></button>
             </header>
@@ -719,7 +764,7 @@ export default function AdminWebsiteBuilder() {
                 <span className={styles.previewLogo} aria-hidden="true">{(savedDraft.schoolName || user?.schoolName || "S").slice(0, 1).toUpperCase()}</span>
                 <strong>{savedDraft.schoolName || user?.schoolName || "School website"}</strong>
               </header>
-              <PublicSiteCanvas nodes={savedDraft.nodes} canvasSize={savedDraft.canvasSize} testimonials={savedDraft.testimonials} />
+              <PublicSiteCanvas nodes={savedDraft.nodes} canvasSize={savedDraft.canvasSize} testimonials={savedDraft.testimonials} schoolName={savedDraft.schoolName} />
             </div>
           </section>
         </div>
