@@ -36,7 +36,7 @@ const NAV = [
   { to: "/admin/holidays", icon: PartyPopper, label: "Holidays" },
   { to: "/admin/accounts", icon: Wallet, label: "Accounts" },
   { to: "/admin/reports", icon: BarChart3, label: "Reporting" },
-  { to: "/admin/my_website2", icon: PanelsTopLeft, label: "My_website2" },
+  { to: "/admin/build-your-site", icon: PanelsTopLeft, label: "Build Your Site" },
 ];
 
 export default function AdminShell({ children }) {
