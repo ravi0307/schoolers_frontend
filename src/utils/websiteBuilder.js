@@ -279,6 +279,61 @@ export function normalizeWebsiteBackground(value) {
   return DEFAULT_WEBSITE_BACKGROUND;
 }
 
+export function websiteNodeBackgroundColor(node) {
+  const color = normalizeWebsiteBackground(node?.backgroundColor);
+  const opacity = clampNumber(node?.backgroundOpacity, 0, 1, 1);
+  if (opacity === 1) return color;
+  const hex = color.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+  if (hex) {
+    const digits = hex[1].length <= 4
+      ? [...hex[1]].map((digit) => digit + digit).join("")
+      : hex[1];
+    const red = Number.parseInt(digits.slice(0, 2), 16);
+    const green = Number.parseInt(digits.slice(2, 4), 16);
+    const blue = Number.parseInt(digits.slice(4, 6), 16);
+    const colorOpacity = digits.length === 8 ? Number.parseInt(digits.slice(6, 8), 16) / 255 : 1;
+    return `rgba(${red}, ${green}, ${blue}, ${colorOpacity * opacity})`;
+  }
+  const rgb = color.match(/^rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)(?:\s*,\s*([\d.]+))?\s*\)$/i);
+  if (!rgb) return color;
+  const channels = rgb.slice(1, 4).map((channel) => (
+    channel.endsWith("%")
+      ? Math.round(Number.parseFloat(channel) * 2.55)
+      : Number.parseFloat(channel)
+  ));
+  const colorOpacity = rgb[4] === undefined ? 1 : Number(rgb[4]);
+  return `rgba(${channels.join(", ")}, ${colorOpacity * opacity})`;
+}
+
+export function createSchoolIdentityNode({
+  id,
+  x = 40,
+  y = 60,
+  schoolName = "Blue Horizon Academy",
+  canvasSize = DEFAULT_WEBSITE_CANVAS_SIZE,
+} = {}) {
+  const size = normalizeWebsiteCanvasSize(canvasSize);
+  const width = Math.min(100, (450 / size.width) * 100);
+  const height = Math.min(100, (180 / size.height) * 100);
+  return {
+    id: id || `school-profile-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
+    anchorId: "",
+    type: "school-identity",
+    title: "School Profile Info Block",
+    x: clampNumber(x, 0, 100 - width, 40),
+    y: clampNumber(y, 0, 100 - height, 60),
+    width,
+    height,
+    data: {
+      schoolName: typeof schoolName === "string" && schoolName.trim() ? schoolName.trim().slice(0, 120) : "Blue Horizon Academy",
+      tagline: "A place to learn and grow",
+      logoUrl: "",
+    },
+    html: "",
+    labels: [],
+  };
+}
+
 function normalizeWebsiteImageUrl(value) {
   if (typeof value !== "string") return "";
   const url = value.trim();
@@ -295,15 +350,29 @@ export function normalizeWebsiteBuilderNodes(nodes) {
     .map((node) => {
       const x = clampNumber(node.x, 0, 92, 2);
       const y = clampNumber(node.y, 0, 92, 2);
+      const nodeType = ["header", "footer", "testimonial", "testimonials", "banner", "contact", "center", "school-profile", "school-identity"].includes(node.type)
+        ? node.type === "school-profile" ? "school-identity" : node.type
+        : "center";
       return {
         id: node.id.slice(0, 100),
         anchorId: typeof node.anchorId === "string" ? node.anchorId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) : "",
-        type: ["header", "footer", "testimonial", "testimonials", "banner", "contact", "center", "school-profile"].includes(node.type) ? node.type : "center",
+        type: nodeType,
         title: typeof node.title === "string" ? node.title.slice(0, 120) : "Content",
         variant: ["minimal", "centered", "accented"].includes(node.variant) ? node.variant : "minimal",
-        profileName: typeof node.profileName === "string" ? node.profileName.slice(0, 120) : "",
-        profileMotto: typeof node.profileMotto === "string" ? node.profileMotto.slice(0, 240) : "",
-        profileLogo: normalizeWebsiteImageUrl(node.profileLogo),
+        boxBgColor: typeof node.boxBgColor === "string" && node.boxBgColor.trim()
+          ? normalizeWebsiteBackground(node.boxBgColor)
+          : null,
+        backgroundColor: normalizeWebsiteBackground(node.backgroundColor),
+        backgroundOpacity: clampNumber(node.backgroundOpacity, 0, 1, 1),
+        ...(nodeType === "school-identity" ? { data: {
+          schoolName: typeof node.data?.schoolName === "string"
+            ? node.data.schoolName.slice(0, 120)
+            : typeof node.profileName === "string" ? node.profileName.slice(0, 120) : "Blue Horizon Academy",
+          tagline: typeof node.data?.tagline === "string"
+            ? node.data.tagline.slice(0, 240)
+            : typeof node.profileMotto === "string" ? node.profileMotto.slice(0, 240) : "A place to learn and grow",
+          logoUrl: normalizeWebsiteImageUrl(node.data?.logoUrl || node.profileLogo),
+        } } : {}),
         x,
         y,
         width: clampNumber(node.width, 8, 100 - x, 40),

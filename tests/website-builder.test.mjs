@@ -12,6 +12,8 @@ import {
   normalizeWebsiteCanvasSize,
   normalizeWebsiteBackground,
   normalizeWebsiteBuilderNodes,
+  websiteNodeBackgroundColor,
+  createSchoolIdentityNode,
   addWebsiteVersion,
   readLocalWebsiteDraft,
   readWebsiteVersionHistory,
@@ -46,6 +48,26 @@ test("canvas background accepts safe hex and rgba colors and falls back for inva
   assert.equal(normalizeWebsiteBackground("#0f766e"), "#0f766e");
   assert.equal(normalizeWebsiteBackground("rgba(15, 118, 110, 0.35)"), "rgba(15, 118, 110, 0.35)");
   assert.equal(normalizeWebsiteBackground("url(javascript:alert(1))"), DEFAULT_WEBSITE_BACKGROUND);
+});
+
+test("Div block colors combine their selected color alpha with block opacity", () => {
+  assert.equal(websiteNodeBackgroundColor({ backgroundColor: "#0f766e", backgroundOpacity: 0.5 }), "rgba(15, 118, 110, 0.5)");
+  assert.equal(websiteNodeBackgroundColor({ backgroundColor: "rgba(15, 118, 110, 0.4)", backgroundOpacity: 0.5 }), "rgba(15, 118, 110, 0.2)");
+  assert.equal(websiteNodeBackgroundColor({ backgroundColor: "#0f766e", backgroundOpacity: 1 }), "#0f766e");
+});
+
+test("school profile toolkit nodes use valid nested data and canvas-relative dimensions", () => {
+  const node = createSchoolIdentityNode({ id: "identity", canvasSize: { width: 900, height: 900 } });
+  assert.equal(node.type, "school-identity");
+  assert.deepEqual(node.data, {
+    schoolName: "Blue Horizon Academy",
+    tagline: "A place to learn and grow",
+    logoUrl: "",
+  });
+  assert.equal(node.width, 50);
+  assert.equal(node.height, 20);
+  assert.equal(node.x + node.width <= 100, true);
+  assert.equal(node.y + node.height <= 100, true);
 });
 
 test("starter layout contains header navigation, banner, content, testimonials, contact, and footer", () => {
@@ -95,10 +117,12 @@ test("normalizes school identity content and header/footer presentation variants
     },
     { id: "header", type: "header", variant: "accented" },
   ]);
-  assert.equal(profile.type, "school-profile");
-  assert.equal(profile.profileName, "Sunrise School");
-  assert.equal(profile.profileMotto, "Learn together");
-  assert.equal(profile.profileLogo, "/api/v1/website/uploads/logo.png");
+  assert.equal(profile.type, "school-identity");
+  assert.deepEqual(profile.data, {
+    schoolName: "Sunrise School",
+    tagline: "Learn together",
+    logoUrl: "/api/v1/website/uploads/logo.png",
+  });
   assert.equal(header.variant, "accented");
 });
 
@@ -225,7 +249,7 @@ test("admin canvas route exposes server draft saving, publishing, and saved-site
   assert.match(publicCanvas, /Submit Message/);
   assert.match(publicCanvas, /setInterval/);
   assert.match(publicCanvas, /Previous banner slide/);
-  assert.match(publicCanvas, /school-profile/);
+  assert.match(publicCanvas, /node\.type === "school-identity"/);
   assert.match(publicCanvas, /canvasBackground/);
   assert.doesNotMatch(publicCanvas, /width: `\$\{canvasSize\.width\}px`/);
   assert.match(builder, /Uploading media layout asset\.\.\./);
@@ -273,6 +297,11 @@ test("admin canvas route exposes server draft saving, publishing, and saved-site
   assert.match(builder, /aspectRatio: `\$\{canvasSize\.width\} \/ \$\{canvasSize\.height\}`/);
   assert.match(builder, /Canvas background hex or RGBA value/);
   assert.match(builder, /Add school profile node/i);
+  assert.match(builder, /School Profile Info Block/);
+  assert.match(builder, /application\/x-schoolers-node/);
+  assert.match(builder, /Div block background opacity/);
+  assert.match(builder, /Text box background hex or RGBA/);
+  assert.match(builder, /Save Layout/);
   assert.match(builder, /Add carousel images/);
   assert.match(builder, /Font family/);
   assert.match(builder, /Highlight color/);

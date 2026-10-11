@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { sanitizeRichText } from "../ui/richText";
 import styles from "./PublicSiteCanvas.module.css";
-import { MOCK_ACTIVE_TESTIMONIALS, normalizeWebsiteBackground } from "../../utils/websiteBuilder";
+import {
+  MOCK_ACTIVE_TESTIMONIALS,
+  normalizeWebsiteBackground,
+  normalizeWebsiteBuilderNodes,
+  websiteNodeBackgroundColor,
+} from "../../utils/websiteBuilder";
 
 function groupPublicNodes(nodes) {
   const groups = [];
@@ -32,7 +37,7 @@ export default function PublicSiteCanvas({
   const [contactFeedback, setContactFeedback] = useState(null);
   const [activeSlides, setActiveSlides] = useState({});
   const canvasRef = useRef(null);
-  const orderedNodes = [...nodes].sort((first, second) => first.y - second.y || first.x - second.x);
+  const orderedNodes = normalizeWebsiteBuilderNodes(nodes).sort((first, second) => first.y - second.y || first.x - second.x);
   const nodeGroups = groupPublicNodes(orderedNodes);
 
   useEffect(() => {
@@ -88,7 +93,10 @@ export default function PublicSiteCanvas({
             key={node.id}
             id={node.anchorId || node.id}
             className={`${styles.node} ${styles[node.type] || ""} ${styles[`${node.type}-${variant}`] || ""}`}
-            style={{ "--desktop-span": group.length > 1 ? Math.max(1, relativeSpan) : 12 }}
+            style={{
+              "--desktop-span": group.length > 1 ? Math.max(1, relativeSpan) : 12,
+              backgroundColor: node.type === "center" ? websiteNodeBackgroundColor(node) : undefined,
+            }}
           >
             {node.type === "header" ? (
               <nav className={styles.nav} aria-label="Website navigation">
@@ -131,10 +139,10 @@ export default function PublicSiteCanvas({
                 ) : null}
               </div>
             ) : null}
-            {node.type === "school-profile" ? (
+            {node.type === "school-identity" ? (
               <div className={styles.schoolProfile}>
-                {node.profileLogo ? <img src={node.profileLogo} alt={`${node.profileName || schoolName} logo`} /> : <div className={styles.logoPlaceholder} aria-hidden="true">{(node.profileName || schoolName).slice(0, 1)}</div>}
-                <div><h1>{node.profileName || schoolName}</h1>{node.profileMotto ? <p>{node.profileMotto}</p> : null}</div>
+                {node.data.logoUrl ? <img src={node.data.logoUrl} alt={`${node.data.schoolName || schoolName} logo`} /> : <div className={styles.logoPlaceholder} aria-hidden="true">{(node.data.schoolName || schoolName).slice(0, 1)}</div>}
+                <div><h1>{node.data.schoolName || schoolName}</h1>{node.data.tagline ? <p>{node.data.tagline}</p> : null}</div>
               </div>
             ) : null}
             {node.type === "testimonials" ? (
@@ -155,7 +163,13 @@ export default function PublicSiteCanvas({
                 </div>
               </div>
             ) : null}
-            {node.html ? <div className={styles.richContent} dangerouslySetInnerHTML={{ __html: sanitizeRichText(node.html, { allowAlignment: true }) }} /> : null}
+            {node.html ? (
+              <div
+                className={styles.richContent}
+                style={node.boxBgColor ? { backgroundColor: normalizeWebsiteBackground(node.boxBgColor) } : undefined}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichText(node.html, { allowAlignment: true }) }}
+              />
+            ) : null}
             {node.type === "contact" ? (
               <div className={styles.contactBlock}>
                 <span className={styles.eyebrow}>LET’S CONNECT</span>
