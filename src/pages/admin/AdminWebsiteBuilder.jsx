@@ -12,6 +12,7 @@ import {
   ListOrdered,
   MessageSquareText,
   Save,
+  School,
   Sparkles,
   Trash2,
   X,
@@ -43,7 +44,9 @@ import {
   MOCK_ACTIVE_TESTIMONIALS,
   MOCK_PENDING_TESTIMONIALS,
   approveQueuedTestimonial,
+  createSchoolIdentityNode,
   normalizeWebsiteBuilderNodes,
+  websiteNodeBackgroundColor,
   resizeHandleClassName,
   resizeDimensionsTooltip,
   resizeHandleTooltip,
@@ -55,7 +58,7 @@ import styles from "./AdminWebsiteBuilder.module.css";
 const SPAWN_OPTIONS = [
   { type: "center", label: "Add New Center Content Box" },
   { type: "testimonials", label: "Insert Mock Testimonial Section" },
-  { type: "school-profile", label: "Add School Profile Node" },
+  { type: "school-identity", label: "Add School Profile Node" },
 ];
 const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
@@ -95,19 +98,30 @@ function richColorPickerValue(value) {
   return "#1e293b";
 }
 
-function RichTextModal({ initialHtml, onClose, onSave, onChange, onUploadImage }) {
+function RichTextModal({ initialHtml, initialBoxBgColor, onClose, onSave, onChange, onBoxBgColorChange, onUploadImage }) {
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const imageInputRef = useRef(null);
   const [html, setHtml] = useState(initialHtml || "");
   const [textColor, setTextColor] = useState("#1e293b");
   const [highlightColor, setHighlightColor] = useState("#fff7b2");
+  const [boxBgColor, setBoxBgColor] = useState(initialBoxBgColor || "");
 
   useEffect(() => {
     const editor = editorRef.current;
     const safeHtml = sanitizeRichText(initialHtml || "", { allowAlignment: true });
     if (editor && editor.innerHTML !== safeHtml) editor.innerHTML = safeHtml;
   }, [initialHtml]);
+
+  useEffect(() => {
+    setBoxBgColor(initialBoxBgColor || "");
+  }, [initialBoxBgColor]);
+
+  function updateBoxBackground(value) {
+    setBoxBgColor(value);
+    if (!value.trim()) onBoxBgColorChange("");
+    else if (isRichColor(value)) onBoxBgColorChange(normalizeWebsiteBackground(value));
+  }
 
   function saveSelection() {
     const selection = window.getSelection();
@@ -188,6 +202,12 @@ function RichTextModal({ initialHtml, onClose, onSave, onChange, onUploadImage }
           }} /><input type="text" aria-label="Highlight hex or RGBA" value={highlightColor} onChange={(event) => setHighlightColor(event.target.value)} onBlur={() => {
             if (isRichColor(highlightColor)) format("hiliteColor", highlightColor);
           }} /></label>
+          <label className={styles.colorTool}>Box background
+            <input type="color" aria-label="Text box background color" value={richColorPickerValue(boxBgColor || "#ffffff")} onChange={(event) => updateBoxBackground(event.target.value)} />
+            <input type="text" aria-label="Text box background hex or RGBA" placeholder="transparent" value={boxBgColor} onChange={(event) => updateBoxBackground(event.target.value)} onBlur={() => {
+              if (boxBgColor && !isRichColor(boxBgColor)) setBoxBgColor(initialBoxBgColor || "");
+            }} />
+          </label>
           <button type="button" title="Upload image" aria-label="Upload image" onMouseDown={(event) => event.preventDefault()} onClick={() => imageInputRef.current?.click()}><ImagePlus /></button>
           <button type="button" title="Insert image URL" onMouseDown={(event) => event.preventDefault()} onClick={insertImageUrl}>Image URL</button>
           <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden onChange={insertImages} />
@@ -214,7 +234,7 @@ function RichTextModal({ initialHtml, onClose, onSave, onChange, onUploadImage }
         />
         <footer className={styles.modalActions}>
           <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn primary" onClick={() => onSave(sanitizeRichText(html, { allowAlignment: true }))}>Save content</button>
+          <button type="button" className="btn primary" onClick={() => onSave(sanitizeRichText(html, { allowAlignment: true }), boxBgColor)}>Save content</button>
         </footer>
       </section>
     </div>
@@ -230,6 +250,7 @@ export default function AdminWebsiteBuilder() {
   const resizeTooltipRef = useRef(null);
   const hoverTooltipTimerRef = useRef(null);
   const [nodes, setNodes] = useState([]);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [canvasSize, setCanvasSize] = useState(DEFAULT_WEBSITE_CANVAS_SIZE);
   const [canvasBackground, setCanvasBackground] = useState(DEFAULT_WEBSITE_BACKGROUND);
   const [canvasBackgroundOpacity, setCanvasBackgroundOpacity] = useState(1);
@@ -256,6 +277,7 @@ export default function AdminWebsiteBuilder() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [storageError, setStorageError] = useState("");
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
 
   useEffect(() => {
     let active = true;
@@ -426,22 +448,35 @@ export default function AdminWebsiteBuilder() {
   }
 
   function addSchoolProfileNode() {
-    setNodes((current) => [...current, {
-      id: makeId(),
-      anchorId: `school-profile-${makeId().slice(0, 8)}`,
-      type: "school-profile",
-      title: "School profile",
-      x: 10,
-      y: 18,
-      width: 80,
-      height: 14,
-      profileName: user?.schoolName || "",
-      profileMotto: "",
-      profileLogo: "",
-      labels: [],
-      html: "",
-    }]);
+    const node = createSchoolIdentityNode({
+      id: `school-profile-${makeId()}`,
+      schoolName: user?.schoolName || "Blue Horizon Academy",
+      canvasSize,
+    });
+    setNodes((current) => [...current, node]);
+    setSelectedNodeId(node.id);
     setDirty(true);
+  }
+
+  function dropSchoolIdentity(event) {
+    if (event.dataTransfer.getData("application/x-schoolers-node") !== "school-identity") return;
+    event.preventDefault();
+    const bounds = canvasRef.current.getBoundingClientRect();
+    const node = createSchoolIdentityNode({
+      id: `school-profile-${makeId()}`,
+      x: ((event.clientX - bounds.left) / bounds.width) * 100,
+      y: ((event.clientY - bounds.top) / bounds.height) * 100,
+      schoolName: user?.schoolName || "Blue Horizon Academy",
+      canvasSize,
+    });
+    setNodes((current) => [...current, node]);
+    setSelectedNodeId(node.id);
+    setDirty(true);
+  }
+
+  function beginSchoolIdentityDrag(event) {
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/x-schoolers-node", "school-identity");
   }
 
   async function uploadBannerImages(event, nodeId) {
@@ -475,7 +510,8 @@ export default function AdminWebsiteBuilder() {
     if (!file) return;
     try {
       const asset = await websiteApi.uploadBuilderAsset(file);
-      updateNode(nodeId, { profileLogo: resolveMediaUrl(asset.url) });
+      const logoUrl = resolveMediaUrl(asset.url);
+      updateNode(nodeId, (node) => ({ data: { ...node.data, logoUrl } }));
       toast("School logo uploaded");
     } catch (error) {
       toast(apiErrorMessage(error));
@@ -513,6 +549,20 @@ export default function AdminWebsiteBuilder() {
     const bounds = canvasRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(82, (menu.x / bounds.width) * 100));
     const y = Math.max(0, Math.min(82, (menu.y / bounds.height) * 100));
+    if (type === "school-identity") {
+      const identityNode = createSchoolIdentityNode({
+        id: `school-profile-${makeId()}`,
+        x,
+        y,
+        schoolName: user?.schoolName || "Blue Horizon Academy",
+        canvasSize,
+      });
+      setNodes((current) => [...current, identityNode]);
+      setSelectedNodeId(identityNode.id);
+      setDirty(true);
+      setMenu(null);
+      return;
+    }
     const title = type === "center" ? "New content block" : type === "school-profile" ? "School profile" : "Families say it best";
     const node = {
       id: makeId(),
@@ -808,7 +858,7 @@ export default function AdminWebsiteBuilder() {
               <History size={16} aria-hidden="true" /> History
             </button>
             <button className="btn primary" type="button" onClick={save} disabled={saving || !dirty}>
-              <Save size={17} aria-hidden="true" /> {saving ? "Saving..." : "Save draft"}
+              <Save size={17} aria-hidden="true" /> {saving ? "Saving..." : "Save Layout"}
             </button>
           </div>
         </header>
@@ -964,14 +1014,83 @@ export default function AdminWebsiteBuilder() {
             ))}
           </div>
         </section>
-        <div className={styles.canvasViewport}>
+        <div className={styles.builderWorkspace}>
+        <aside className={styles.elementToolkit} aria-label="Element toolkit">
+          <header><School size={17} aria-hidden="true" /><h2>Element Toolkit</h2></header>
+          <button
+            type="button"
+            className={styles.toolNode}
+            draggable
+            onDragStart={beginSchoolIdentityDrag}
+            onClick={addSchoolProfileNode}
+            title="Drag onto the canvas or click to place"
+          >
+            <School size={18} aria-hidden="true" />
+            <span><strong>School Profile Info Block</strong><small>Drag to place on the canvas</small></span>
+          </button>
+          <section className={styles.propertyPanel} aria-label="Selected element properties">
+            <h3>{selectedNode?.type === "school-identity" ? "School profile properties" : selectedNode?.type === "center" ? "Div block properties" : "Element properties"}</h3>
+            {!selectedNode || !["school-identity", "center"].includes(selectedNode.type) ? (
+              <p>Select a school profile or content block to edit its properties.</p>
+            ) : selectedNode.type === "school-identity" ? (
+              <>
+                <label>School name
+                  <input value={selectedNode.data.schoolName} maxLength={120} onChange={(event) => updateNode(selectedNode.id, (node) => ({ data: { ...node.data, schoolName: event.target.value } }))} />
+                </label>
+                <label>Tagline / motto
+                  <textarea value={selectedNode.data.tagline} maxLength={240} rows={3} onChange={(event) => updateNode(selectedNode.id, (node) => ({ data: { ...node.data, tagline: event.target.value } }))} />
+                </label>
+                <label>Logo URL
+                  <input value={selectedNode.data.logoUrl} placeholder="https://..." onChange={(event) => updateNode(selectedNode.id, (node) => ({ data: { ...node.data, logoUrl: event.target.value } }))} />
+                </label>
+                <label>Upload institutional logo
+                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={(event) => uploadProfileLogo(event, selectedNode.id)} />
+                </label>
+              </>
+            ) : (
+              <>
+                <label>Background color
+                  <span className={styles.divColorControl}>
+                    <input type="color" aria-label="Div block background color picker" value={backgroundColorInputValue(selectedNode.backgroundColor)} onChange={(event) => updateNode(selectedNode.id, { backgroundColor: event.target.value })} />
+                    <input aria-label="Div block background hex or RGBA" value={selectedNode.backgroundColor} onChange={(event) => updateNode(selectedNode.id, { backgroundColor: event.target.value })} onBlur={() => updateNode(selectedNode.id, (node) => ({ backgroundColor: normalizeWebsiteBackground(node.backgroundColor) }))} />
+                  </span>
+                </label>
+                <div className={styles.backgroundSwatches} role="group" aria-label="Div block color presets">
+                  {WEBSITE_BACKGROUND_PRESETS.map((color) => (
+                    <button key={color} type="button" title={color} aria-label={`Set div block background to ${color}`} onClick={() => updateNode(selectedNode.id, { backgroundColor: color, backgroundOpacity: 1 })} style={{ backgroundColor: color }} />
+                  ))}
+                </div>
+                <label>Transparency
+                  <span className={styles.sliderRow}>
+                    <input type="range" min="0" max="1" step="0.05" aria-label="Div block background opacity" value={selectedNode.backgroundOpacity} onChange={(event) => updateNode(selectedNode.id, { backgroundOpacity: Number(event.target.value) })} />
+                    <output>{Math.round(selectedNode.backgroundOpacity * 100)}%</output>
+                  </span>
+                </label>
+                <p>Changes apply to the block fill only, keeping its text fully readable.</p>
+              </>
+            )}
+          </section>
+        </aside>
+        <div
+          className={styles.canvasViewport}
+          onDragOver={(event) => {
+            if (event.dataTransfer.types.includes("application/x-schoolers-node")) {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDrop={dropSchoolIdentity}
+        >
           <div
             ref={canvasRef}
             className={styles.canvas}
             style={{ width: "100%", aspectRatio: `${canvasSize.width} / ${canvasSize.height}`, backgroundColor: normalizeWebsiteBackground(canvasBackground) }}
             onContextMenu={openContextMenu}
             onPointerDown={(event) => {
-              if (event.target === event.currentTarget) setMenu(null);
+              if (event.target === event.currentTarget) {
+                setMenu(null);
+                setSelectedNodeId(null);
+              }
             }}
             aria-label="Website layout canvas"
           >
@@ -982,14 +1101,16 @@ export default function AdminWebsiteBuilder() {
                 data-builder-node
                 data-node-id={node.id}
                 data-node-type={node.type}
-                className={`${styles.node} ${styles[node.type] || ""}`}
+                className={`${styles.node} ${styles[node.type] || ""} ${selectedNodeId === node.id ? styles.selectedNode : ""}`}
                 style={{
                   left: `${node.x}%`,
                   top: `${node.y}%`,
                   width: `${node.width}%`,
                   height: `${node.height}%`,
+                  backgroundColor: node.type === "center" ? websiteNodeBackgroundColor(node) : undefined,
                 }}
                 onClick={(event) => {
+                  setSelectedNodeId(node.id);
                   if (node.type === "center" && !event.target.closest("input, button, a")) {
                     setActiveEditor(node.id);
                   }
@@ -1057,12 +1178,10 @@ export default function AdminWebsiteBuilder() {
                     </div>
                     {uploadingBannerId === node.id ? <div className={styles.bannerLoader}><span className={styles.spinner} />Uploading media layout asset...</div> : null}
                   </div>
-                ) : node.type === "school-profile" ? (
-                  <div className={styles.profileEditor}>
-                    <label>School name<input value={node.profileName || ""} onChange={(event) => updateNode(node.id, { profileName: event.target.value })} /></label>
-                    <label>Tagline / motto<input value={node.profileMotto || ""} onChange={(event) => updateNode(node.id, { profileMotto: event.target.value })} /></label>
-                    <label>Logo URL<input value={node.profileLogo || ""} placeholder="https://..." onChange={(event) => updateNode(node.id, { profileLogo: event.target.value })} /></label>
-                    <label>Upload school logo<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={(event) => uploadProfileLogo(event, node.id)} /></label>
+                ) : node.type === "school-identity" ? (
+                  <div className={styles.profilePreview} onClick={() => setSelectedNodeId(node.id)}>
+                    <div className={styles.profileLogoSlot}>{node.data.logoUrl ? <img src={node.data.logoUrl} alt="" /> : <School size={20} aria-hidden="true" />}</div>
+                    <div><strong>{node.data.schoolName || "School name"}</strong><span>{node.data.tagline || "Add your school motto"}</span></div>
                   </div>
                 ) : node.type === "testimonials" ? (
                   <div className={styles.nodeContent}>
@@ -1084,7 +1203,7 @@ export default function AdminWebsiteBuilder() {
                 ) : (
                   <div className={styles.nodeContent}>
                     {node.html
-                      ? <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(node.html, { allowAlignment: true }) }} />
+                      ? <div style={node.boxBgColor ? { backgroundColor: node.boxBgColor } : undefined} dangerouslySetInnerHTML={{ __html: sanitizeRichText(node.html, { allowAlignment: true }) }} />
                       : <span>Click to edit this content block</span>}
                   </div>
                 )}
@@ -1121,6 +1240,7 @@ export default function AdminWebsiteBuilder() {
               </div>
             ) : null}
           </div>
+        </div>
         </div>
         <p className={styles.canvasNote}>Tip: section positions and sizes are responsive percentages, so the published layout adapts to different screen widths.</p>
         <div ref={resizeTooltipRef} id="website-resize-tooltip" className={styles.resizeTooltip} role="tooltip" aria-hidden="true" data-visible="false" />
@@ -1166,12 +1286,14 @@ export default function AdminWebsiteBuilder() {
       {activeEditor ? (
         <RichTextModal
           initialHtml={nodes.find((node) => node.id === activeEditor)?.html || ""}
+          initialBoxBgColor={nodes.find((node) => node.id === activeEditor)?.boxBgColor || ""}
           onClose={() => setActiveEditor(null)}
-          onSave={(html) => {
-            updateNode(activeEditor, { html });
+          onSave={(html, boxBgColor) => {
+            updateNode(activeEditor, { html, boxBgColor });
             setActiveEditor(null);
           }}
           onChange={(html) => updateNode(activeEditor, { html })}
+          onBoxBgColorChange={(boxBgColor) => updateNode(activeEditor, { boxBgColor })}
           onUploadImage={async (file) => {
             const asset = await websiteApi.uploadBuilderAsset(file);
             return resolveMediaUrl(asset.url);

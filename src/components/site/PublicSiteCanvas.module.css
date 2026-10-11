@@ -81,11 +81,13 @@
 .slideDots button { width: .6rem; height: .6rem; padding: 0; border: 0; border-radius: 999px; background: rgb(255 255 255 / 55%); cursor: pointer; transition: width 160ms ease, background 160ms ease; }
 .slideDots .activeDot { width: 1.6rem; background: #fff; }
 
-.school-profile { display: flex; align-items: center; gap: 1rem; background: #f8fafc; }
+.school-identity { display: flex; align-items: center; gap: 1rem; background: #f8fafc; }
+.schoolProfile { display: flex; width: min(100%, 76rem); align-items: center; gap: clamp(.75rem, 3vw, 1.5rem); align-self: center; }
 .schoolProfile img, .logoPlaceholder { width: clamp(3.5rem, 10vw, 6rem); height: clamp(3.5rem, 10vw, 6rem); flex: none; border-radius: 1rem; object-fit: contain; }
 .logoPlaceholder { display: grid; place-items: center; background: #ccfbf1; color: #134e4a; font-size: 2rem; font-weight: 800; }
 .schoolProfile h1 { margin: 0; color: #1e293b; font-size: clamp(1.5rem, 4vw, 2.75rem); }
 .schoolProfile p { margin: .35rem 0 0; color: #64748b; font-size: clamp(.9rem, 2vw, 1.15rem); }
+.richContent { padding: clamp(.5rem, 2vw, 1.5rem); border-radius: .75rem; }
 
 .richContent { width: min(100%, 76rem); align-self: center; line-height: 1.7; }
 .richContent img { display: block; max-width: 100%; height: auto; margin-block: 1rem; border-radius: .75rem; }
@@ -129,7 +131,7 @@
   .slideArrow { opacity: 1; }
   .contactBlock form { grid-template-columns: 1fr; }
   .contactBlock label:last-of-type { grid-column: auto; }
-  .school-profile { align-items: flex-start; }
+  .school-identity { align-items: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
