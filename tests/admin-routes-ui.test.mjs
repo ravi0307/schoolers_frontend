@@ -9,10 +9,15 @@ const globalStyles = readFileSync(new URL("../src/styles/global.css", import.met
 test("Commute page uses responsive module styles and keyboard-operable route rows", () => {
   assert.match(component, /AdminRoutes\.module\.css/);
   assert.match(component, /className=\{styles\.page\}/);
+  assert.match(component, /<PageHeader\b/);
+  assert.match(component, /styles\.vehicleActions/);
+  assert.match(component, /styles\.studentItem/);
   assert.doesNotMatch(component, /style=\{\{/);
   assert.match(component, /<button[^>]*className=\{`listitem \$\{styles\.routeItem\}`\}[^>]*onClick=\{\(\) => setSelected\(r\)\}/);
   assert.match(component, /<BusFront size=\{18\} aria-hidden="true" \/>/);
   assert.match(styles, /@media \(max-width:\s*48rem\)/);
+  assert.match(styles, /\.vehicleActions\s*\{/);
+  assert.match(styles, /\.studentItem\s*\{[^}]*flex-wrap:\s*wrap/s);
   assert.match(styles, /color:\s*var\(--color-text-muted\)/);
   assert.doesNotMatch(globalStyles, /\.route-assignment\b/);
 });

@@ -1,5 +1,10 @@
 .tableCard {
+  max-width: 100%;
+  min-width: 0;
   padding: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 
 .timetableCell {

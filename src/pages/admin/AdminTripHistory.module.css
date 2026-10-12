@@ -1,5 +1,6 @@
 .page {
   min-height: 100%;
+  min-width: 0;
   background: var(--color-background);
   color: var(--color-text-on-dark);
 }
@@ -15,14 +16,15 @@
 
 .filtersBar {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--filter-col-min)), 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-3);
+  min-width: 0;
   padding: var(--space-4);
-  border: 1px solid #d1dce6;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #f0f4f8;
-  color: #1e293b;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .filtersBar label {
@@ -30,7 +32,7 @@
   min-width: 0;
   flex-direction: column;
   gap: var(--space-1);
-  color: #536a77;
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
@@ -39,30 +41,30 @@
 .filterInput {
   width: 100%;
   min-width: 0;
-  height: 2.75rem;
+  height: var(--control-height);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid #bacbd3;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-regular);
 }
 
 .filterSelect:focus-visible,
 .filterInput:focus-visible {
-  border-color: #2aa9b5;
-  outline: 3px solid rgb(43 191 203 / 30%);
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
   outline-offset: 1px;
 }
 
 .messageCard,
 .tripTable {
   min-width: 0;
-  border: 1px solid #d1dce6;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #f0f4f8;
-  color: #1e293b;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .messageCard {
@@ -71,7 +73,7 @@
 
 .messageCard :global(.loading-state),
 .messageCard :global(.empty-state) {
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .tripTable {
@@ -80,12 +82,14 @@
 
 .tableScroll {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 
 .tableScroll:focus-visible {
-  outline-color: #178c9a;
+  outline-color: var(--color-focus);
   outline-offset: -3px;
 }
 
@@ -97,21 +101,22 @@
 }
 
 .tripTable thead {
-  background: #f8fafc;
+  background: var(--color-surface-raised);
 }
 
 .tripTable th,
 .tripTable td {
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid #bacbd3;
-  color: #1e293b;
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+  color: var(--color-text);
   text-align: left;
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .tripTable th {
-  height: 2.75rem;
-  color: #536a77;
+  height: var(--control-height);
+  color: var(--color-text-muted);
   font-size: 0.6875rem;
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
@@ -134,11 +139,11 @@
 }
 
 .tripRow:hover {
-  background: #e7eef4;
+  background: var(--color-row-hover);
 }
 
 .tripRow:last-of-type td {
-  border-bottom-color: #bacbd3;
+  border-bottom-color: var(--color-border);
 }
 
 .tripDate {
@@ -153,11 +158,12 @@
 
 .routeName {
   font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
 }
 
 .routeType {
   margin-top: 0.125rem;
-  color: #536a77;
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }
 
@@ -175,46 +181,47 @@
 }
 
 .statusCompleted {
-  background: #dff3ec;
-  color: #176b49;
+  background: var(--ok-green-light);
+  color: var(--color-success);
 }
 
 .statusInProgress,
 .statusScheduled {
-  background: #dceef7;
-  color: #17618b;
+  background: var(--ruled-blue-light);
+  color: var(--ruled-blue);
 }
 
 .statusCancelled {
-  background: #f8e3e1;
-  color: #9e302c;
+  background: var(--red-pen-light);
+  color: var(--color-danger);
 }
 
 .summaryCell {
-  color: #536a77;
+  color: var(--color-text-muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .summaryCell .summaryError {
-  color: #9e302c;
+  color: var(--color-danger);
 }
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
-  white-space: nowrap;
 }
 
 .detailsButton,
 .reopenButton {
   min-height: 2rem;
   padding: 0.375rem 0.75rem;
-  border: 1px solid #bacbd3;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
-  color: #1e293b;
+  color: var(--color-text);
   cursor: pointer;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -222,24 +229,24 @@
 
 .detailsButton:hover,
 .cancelButton:hover {
-  background: #e4edf3;
+  background: color-mix(in srgb, var(--color-focus) 10%, var(--color-surface));
 }
 
 .reopenButton {
-  border-color: #85dce4;
-  background: #83dce5;
-  color: #073047;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-background);
 }
 
 .reopenButton:hover {
-  background: #65ceda;
+  background: color-mix(in srgb, var(--color-accent) 80%, var(--color-primary));
 }
 
 .detailsButton:focus-visible,
 .reopenButton:focus-visible,
 .modalReopenButton:focus-visible,
 .cancelButton:focus-visible {
-  outline-color: #168c9a;
+  outline-color: var(--color-focus);
 }
 
 .detailRow > td {
@@ -249,13 +256,13 @@
 
 .detailPanel {
   padding: var(--space-6) var(--space-4);
-  background: #fff;
-  color: #1e293b;
+  background: var(--color-neutral-0);
+  color: var(--color-text);
 }
 
 .detailSummary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-8);
   margin-bottom: var(--space-6);
 }
@@ -263,7 +270,7 @@
 .detailSummary h2,
 .detailsSection h2 {
   margin-bottom: var(--space-3);
-  color: #536a77;
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
@@ -274,25 +281,31 @@
   margin: 0 0 var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
 }
 
 .detailsSection {
   margin-top: var(--space-6);
+  min-width: 0;
 }
 
 .rosterNotice {
   margin: 0 0 var(--space-3);
   padding: var(--space-3);
-  border-left: 3px solid #b7791f;
-  background: #fffbeb;
-  color: #713f12;
+  border-left: 3px solid var(--color-warning-border);
+  background: var(--color-warning-surface);
+  color: var(--color-warning-text);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
 }
 
 .nestedTableWrap {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 
 .tripTable .nestedTable {
@@ -305,7 +318,8 @@
 .nestedTable th,
 .nestedTable td {
   padding: var(--space-3);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: var(--border-width-thin) solid var(--color-neutral-200);
+  overflow-wrap: anywhere;
 }
 
 .nestedTable th {
@@ -319,7 +333,7 @@
 }
 
 .nestedTable .missingCell {
-  color: #64748b;
+  color: var(--color-neutral-600);
   text-align: center;
 }
 
@@ -329,13 +343,14 @@
 }
 
 .childName {
-  color: #1e293b;
+  color: var(--color-text);
   font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
 }
 
 .childGrade {
   margin-top: var(--space-1);
-  color: #64748b;
+  color: var(--color-neutral-600);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
 }
@@ -347,32 +362,33 @@
 }
 
 .outcomeSuccess {
-  color: #176b49;
+  color: var(--color-success);
 }
 
 .outcomeMissed {
-  color: #9e302c;
+  color: var(--color-danger);
 }
 
 .outcomePending {
-  color: #64748b;
+  color: var(--color-neutral-600);
 }
 
 .noStops {
-  color: #536a77 !important;
+  color: var(--color-text-muted) !important;
   font-weight: var(--font-weight-regular) !important;
 }
 
 .auditNotes {
   margin-top: var(--space-6);
   padding-top: var(--space-3);
-  border-top: 1px solid #bacbd3;
-  color: #536a77;
+  border-top: var(--border-width-thin) solid var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .auditNotes p {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
 }
 
 .detailLoading {
@@ -380,19 +396,20 @@
 }
 
 .detailLoading :global(.error-banner) {
-  color: #9e302c;
+  color: var(--color-danger);
 }
 
 .tripTable :global(.pager) {
   padding: var(--space-3) var(--space-4);
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .reopenModal {
-  max-width: 44rem;
+  max-width: min(100%, 44rem);
+  width: 100%;
   padding: var(--space-6);
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
 }
 
 .reopenModal h2 {
@@ -402,7 +419,7 @@
 
 .reopenDescription {
   margin: 0 0 var(--space-4);
-  color: #536a77;
+  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
 }
@@ -410,36 +427,37 @@
 .reasonLabel {
   display: block;
   margin-bottom: var(--space-1);
-  color: #536a77;
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
 
 .reasonInput {
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid #bacbd3;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #fff;
-  color: #1e293b;
+  background: var(--color-neutral-0);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
 }
 
 .reasonInput:focus {
-  border-color: #20b7c3;
-  outline: 3px solid rgb(32 183 195 / 30%);
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
   outline-offset: 1px;
 }
 
 .reopenError {
   margin: var(--space-2) 0 0;
-  color: #9e302c;
+  color: var(--color-danger);
   font-size: var(--font-size-sm);
 }
 
 .modalActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-3);
@@ -449,24 +467,24 @@
 .modalReopenButton {
   min-height: 2.625rem;
   padding: var(--space-2) var(--space-4);
-  border: 1px solid #bacbd3;
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
-  color: #1e293b;
+  color: var(--color-text);
   cursor: pointer;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
 }
 
 .modalReopenButton {
-  border-color: #104863;
+  border-color: var(--color-primary);
   border-radius: var(--radius-full);
-  background: #104863;
-  color: #f8fafc;
+  background: var(--color-primary);
+  color: var(--color-surface-raised);
 }
 
 .modalReopenButton:hover:not(:disabled) {
-  background: #0b394f;
+  background: color-mix(in srgb, var(--color-primary) 88%, black);
 }
 
 .cancelButton:disabled,
@@ -476,14 +494,6 @@
 }
 
 @media (max-width: 56rem) {
-  .filtersBar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .filtersBar label:last-child {
-    grid-column: 1 / -1;
-  }
-
   .detailSummary {
     gap: var(--space-4);
   }
@@ -496,7 +506,7 @@
   }
 
   .detailSummary {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .detailPanel {
@@ -505,5 +515,14 @@
 
   .reopenModal {
     padding: var(--space-4);
+  }
+
+  .modalActions {
+    justify-content: stretch;
+  }
+
+  .cancelButton,
+  .modalReopenButton {
+    flex: 1 1 auto;
   }
 }

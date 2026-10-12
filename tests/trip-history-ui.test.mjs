@@ -137,4 +137,9 @@ test("admin completed trip details expose stop and child outcome breakdowns", ()
   assert.match(page, /student_name \|\| `Child #/);
   assert.match(styles, /\.detailRow > td\s*\{[^}]*background:\s*#fff/s);
   assert.match(styles, /\.nestedTable \.missingCell\s*\{[^}]*text-align:\s*center/s);
+  assert.match(styles, /\.filtersBar\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*var\(--filter-col-min\)\),\s*1fr\)\)/s);
+  assert.match(styles, /\.tableScroll\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.match(styles, /\.nestedTableWrap\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.match(styles, /\.reopenModal\s*\{[^}]*max-width:\s*min\(100%,\s*44rem\)/s);
+  assert.match(styles, /@media \(max-width:\s*40rem\)[\s\S]*?\.detailSummary\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
 });

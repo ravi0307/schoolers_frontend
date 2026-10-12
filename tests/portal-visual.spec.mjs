@@ -10,6 +10,7 @@ const viewportWidths = [360, 390, 768, 1024, 1440];
 const screens = [
   { role: "parent", path: "/parent/home" },
   { role: "parent", path: "/parent/pickdrop" },
+  { role: "parent", path: "/parent/trips" },
   { role: "parent", path: "/parent/attendance" },
   { role: "parent", path: "/parent/timetable" },
   { role: "parent", path: "/parent/marks" },

@@ -184,8 +184,10 @@
 
 .detailsTableWrap {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 
 .detailsTable {
@@ -200,6 +202,7 @@
   padding: var(--space-3);
   border-bottom: 1px solid #e1e8ec;
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .detailsTable th {

@@ -58,7 +58,7 @@ export default function TeacherTimetable() {
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
-        <div className="card white" style={{ overflowX: "auto" }}>
+        <div className="card white table-scroll">
           {hasEntries ? (
             <table className="data-table">
               <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} />

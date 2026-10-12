@@ -1,5 +1,6 @@
 import Card from "../../components/ui/Card";
 import DataTable from "../../components/ui/DataTable";
+import PageHeader from "../../components/ui/PageHeader";
 import { useParentContext } from "../../context/ParentContext";
 import { useApi } from "../../hooks/useApi";
 import * as accountsApi from "../../api/accounts";
@@ -73,14 +74,10 @@ export default function ParentReport() {
 
   return (
     <>
-      <div className="scr-title-row">
-        <div className="scr-title-text">
-          <div className="scr-title">My Report</div>
-          <div className="scr-sub">
-            {selectedChild ? `${selectedChild.name} · attendance, fees and marks` : ""}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="My Report"
+        subtitle={selectedChild ? `${selectedChild.name} · attendance, fees and marks` : ""}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={errors} />
 

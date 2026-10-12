@@ -9,6 +9,7 @@ import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
 import { BusFront } from "lucide-react";
+import PageHeader from "../../components/ui/PageHeader";
 import styles from "./AdminRoutes.module.css";
 
 function parseTime(value) {
@@ -238,12 +239,18 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
   );
   return (
     <main className={styles.page}>
-      <button className={`btn ghost sm ${styles.back}`} onClick={onBack}>← Back to Routes</button>
-      <div className="scr-title">{routeSummary.name}</div>
-      <div className={styles.routeAssignment}>
-        <div className="scr-sub">{routeSummary.vehicle || "Van"} · Driver: {routeSummary.driver_name || "Not assigned"}</div>
-        <button className="btn ghost sm" type="button" onClick={openRouteEditor}>Edit</button>
-      </div>
+      <button className={`btn ghost sm ${styles.back}`} type="button" onClick={onBack}>← Back to Routes</button>
+      <PageHeader
+        title={routeSummary.name}
+        subtitle={(
+          <>
+            {routeSummary.vehicle || "Van"} · Driver: {routeSummary.driver_name || "Not assigned"}
+          </>
+        )}
+        action={(
+          <button className="btn ghost sm" type="button" onClick={openRouteEditor}>Edit</button>
+        )}
+      />
       {routeEditOpen && (
         <form className={`card white ${styles.routeAssignmentForm}`} onSubmit={updateRouteAssignment}>
           <div className="grid2">
@@ -353,7 +360,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
             );
 
             return (
-              <div key={studentId || rs.id} className="listitem">
+              <div key={studentId || rs.id} className={`listitem ${styles.studentItem}`}>
                 <div className="meta">
                   <b>{studentName || "Student name unavailable"}</b>
                   {admissionNo && <span>Admission no: {admissionNo}</span>}
@@ -532,7 +539,10 @@ export default function AdminRoutes() {
   return (
     <AdminShell>
       <main className={styles.page}>
-      <div className="scr-title">Commute Management</div>
+      <PageHeader
+        title="Commute Management"
+        subtitle="Routes, vehicles, pickup and drop points, and assigned students."
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
@@ -593,8 +603,10 @@ export default function AdminRoutes() {
                         <input className={styles.vehicleInput} value={vehicleDraft} onChange={(e) => setVehicleDraft(e.target.value)} placeholder="Vehicle number" />
                         <input className={styles.vehicleInput} value={vehicleTypeDraft} onChange={(e) => setVehicleTypeDraft(e.target.value)} placeholder="Type" />
                         <input className={styles.vehicleInput} value={vehicleRegistrationDraft} onChange={(e) => setVehicleRegistrationDraft(e.target.value)} placeholder="Registration number" />
-                        <button className="btn primary sm" type="button" onClick={() => updateVehicle(record.id)}>Save</button>
-                        <button className="btn ghost sm" type="button" onClick={() => setEditingVehicleId(null)}>Cancel</button>
+                        <div className={styles.vehicleActions}>
+                          <button className="btn primary sm" type="button" onClick={() => updateVehicle(record.id)}>Save</button>
+                          <button className="btn ghost sm" type="button" onClick={() => setEditingVehicleId(null)}>Cancel</button>
+                        </div>
                       </>
                     ) : (
                       <>
@@ -602,15 +614,17 @@ export default function AdminRoutes() {
                           <div className={styles.vehicleName}>{record.number}</div>
                           <div className={styles.vehicleMeta}>Type: {record.type} · Registration: {record.registration}</div>
                         </div>
-                        <button className="btn ghost sm" type="button" onClick={() => {
-                          setEditingVehicleId(record.id);
-                          setVehicleDraft(record.number);
-                          setVehicleTypeDraft(record.type);
-                          setVehicleRegistrationDraft(record.registration);
-                        }}>Edit</button>
-                        <button className="btn ghost sm" type="button" onClick={() => deactivateVehicle(record.id)}>
-                          Remove
-                        </button>
+                        <div className={styles.vehicleActions}>
+                          <button className="btn ghost sm" type="button" onClick={() => {
+                            setEditingVehicleId(record.id);
+                            setVehicleDraft(record.number);
+                            setVehicleTypeDraft(record.type);
+                            setVehicleRegistrationDraft(record.registration);
+                          }}>Edit</button>
+                          <button className="btn ghost sm" type="button" onClick={() => deactivateVehicle(record.id)}>
+                            Remove
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>

@@ -192,9 +192,11 @@
   }
 
   .content {
+    min-width: 0;
     min-height: calc(100dvh - 3.5rem);
     flex: 1;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
     padding: var(--content-padding);
     padding-bottom: calc(var(--content-padding) + env(safe-area-inset-bottom));
   }
