@@ -2067,6 +2067,23 @@ test("the profile page renders inside the signed-in role's own shell", () => {
   ]);
 });
 
+test("shared form grids and table scroll hosts shrink safely on narrow viewports", () => {
+  const css = source("src/styles/global.css");
+  const tokens = source("src/styles/tokens.css");
+  assert.match(tokens, /--table-min-width:\s*38\.75rem/);
+  assert.match(tokens, /--filter-col-min:\s*10rem/);
+  assert.match(tokens, /--control-height:\s*2\.75rem/);
+  assert.match(css, /\.grid2 \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+  assert.match(css, /\.grid2 > \*, \.grid3 > \*, \.grid4 > \* \{ min-width: 0; \}/);
+  assert.match(css, /@media \(max-width: 640px\) \{\s*\.grid2, \.grid3, \.grid4 \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  assert.match(css, /\.filters-bar \{[^}]*repeat\(auto-fit, minmax\(min\(100%, var\(--filter-col-min\)\), 1fr\)\)/s);
+  assert.match(css, /\.table-scroll \{[^}]*overflow-x:\s*auto/s);
+  assert.match(css, /\.data-table \{[^}]*min-width:\s*var\(--table-min-width\)/s);
+  assert.match(css, /\.cta-row \{[^}]*flex-wrap:\s*wrap/s);
+  const layout = source("src/components/layout/WebLayout.module.css");
+  assert.match(layout, /@media \(max-width: 1023px\)[\s\S]*?\.content\s*\{[^}]*overflow-x:\s*clip/s);
+});
+
 test("the profile page lays its cards out in a grid, not one tall stack", () => {
   // Four stacked cards on one page is a long scroll with nothing beside
   // anything. Row 1 is the account beside the password form, row 2 is the

@@ -177,14 +177,23 @@
   font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
   color: var(--ink-soft); font-weight: 700; margin: 20px 0 10px;
 }
-.table-card { padding: 0; overflow-x: auto; }
-.table-scroll { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; min-width: 620px; }
-.data-table th, .data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; }
+.table-card { padding: 0; overflow-x: auto; overscroll-behavior-inline: contain; }
+.table-scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+.data-table { width: 100%; border-collapse: collapse; min-width: var(--table-min-width); }
+.data-table th, .data-table td {
+  padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px;
+  overflow-wrap: anywhere;
+}
 .data-table th { color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; background: var(--paper-light); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table td:first-child { font-weight: 700; }
-.table-actions { display: flex; justify-content: flex-end; gap: 7px; }
+.table-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .btn {
   font-weight: 600; font-size: 13px; border: none; padding: 10px 16px;
   border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
@@ -218,9 +227,20 @@
 .field select option:disabled {
   color: var(--ink-soft); background: var(--paper);
 }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid2 > *, .grid3 > *, .grid4 > * { min-width: 0; }
+/* Shared filter / control strips used by Trip History and similar admin pages. */
+.filters-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--filter-col-min)), 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  min-width: 0;
+}
+.filters-bar > * { min-width: 0; }
 .timetable-class-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 31rem), 1fr)); gap: 12px;
   margin-bottom: 16px;
@@ -501,9 +521,14 @@
 
 .section-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
 @media (max-width: 960px) {
-  .grid4 { grid-template-columns: 1fr 1fr; }
+  .grid3, .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.cta-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+@media (max-width: 640px) {
+  .grid2, .grid3, .grid4 { grid-template-columns: minmax(0, 1fr); }
+}
+.cta-row {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 6px;
+}
 
 .btn.toggle-on { background: var(--ok-green); color: var(--color-neutral-0); border: none; }
 .btn.toggle-off { background: var(--line); color: var(--ink); border: none; }
@@ -545,8 +570,8 @@
 }
 .listitem-interactive:hover { background: var(--color-neutral-100); }
 .listitem .meta { flex: 1; min-width: 0; }
-.listitem .meta b { display: block; font-size: 13.5px; }
-.listitem .meta span { font-size: 11.5px; color: var(--ink-soft); }
+.listitem .meta b { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+.listitem .meta span { display: block; font-size: 11.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .avatar {
   width: 40px; height: 40px; border-radius: 50%; background: var(--ruled-blue);
   color: var(--color-neutral-0); display: flex; align-items: center; justify-content: center;

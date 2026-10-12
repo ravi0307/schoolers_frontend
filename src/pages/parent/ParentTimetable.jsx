@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import ParentShell from "../../components/layout/ParentShell";
+import PageHeader from "../../components/ui/PageHeader";
 import WeekSelector from "../../components/ui/WeekSelector";
 import TimetableWeekHeader from "../../components/ui/TimetableWeekHeader";
 import { useParentContext } from "../../context/ParentContext";
@@ -13,6 +13,7 @@ import {
   buildWeekColumns,
   mergeWeekColumns,
 } from "../../utils/timetableFlow";
+import styles from "./ParentTimetable.module.css";
 
 export default function ParentTimetable() {
   const { selectedChild } = useParentContext();
@@ -44,11 +45,11 @@ export default function ParentTimetable() {
   const hasEntries = weekColumns.some((column) => column.entries.length > 0);
 
   return (
-    <ParentShell>
-      <div className="scr-title">Timetable</div>
-      <div className="scr-sub">
-        {selectedChild ? `${selectedChild.name}'s weekly schedule` : "Weekly schedule"}
-      </div>
+    <>
+      <PageHeader
+        title="Timetable"
+        subtitle={selectedChild ? `${selectedChild.name}'s weekly schedule` : "Weekly schedule"}
+      />
 
       {classId && <WeekSelector weekStart={weekStart} onChange={setWeekStart} busy={loading} />}
 
@@ -56,7 +57,7 @@ export default function ParentTimetable() {
       <ErrorBanner message={error} />
       {!classId && <div className="empty">No class has been assigned to this child yet.</div>}
       {classId && !loading && !error && (
-        <div className="card white" style={{ overflowX: "auto" }}>
+        <div className={`card white ${styles.tableCard}`}>
           {hasEntries ? (
             <table className="data-table">
               <TimetableWeekHeader columns={weekColumns} weekStart={weekStart} />
@@ -68,25 +69,20 @@ export default function ParentTimetable() {
                   {weekColumns.map((column) => (
                     <td
                       key={column.day}
-                      style={{ verticalAlign: "top" }}
-                      className={column.isHoliday ? "timetable-day-holiday" : undefined}
+                      className={[styles.timetableCell, column.isHoliday ? "timetable-day-holiday" : ""]
+                        .filter(Boolean)
+                        .join(" ")}
                     >
                       {column.entries.map((entry) => {
                         const timeLabel = getEntryTime(entry, periodById);
                         return (
-                          <div
-                            key={entry.entry_id}
-                            className="pill"
-                            style={{ display: "block", marginBottom: 4, background: "var(--paper)" }}
-                          >
-                            <div style={{ fontWeight: 700 }}>
+                          <div key={entry.entry_id} className={`pill ${styles.timetableEntry}`}>
+                            <div className={styles.entrySubject}>
                               {entry.subject_id
                                 ? subjectNames.get(String(entry.subject_id)) || `Subject #${entry.subject_id}`
                                 : "Unassigned"}
                             </div>
-                            {timeLabel ? (
-                              <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>{timeLabel}</div>
-                            ) : null}
+                            {timeLabel ? <div className={styles.entryTime}>{timeLabel}</div> : null}
                           </div>
                         );
                       })}
@@ -103,6 +99,6 @@ export default function ParentTimetable() {
           )}
         </div>
       )}
-    </ParentShell>
+    </>
   );
 }

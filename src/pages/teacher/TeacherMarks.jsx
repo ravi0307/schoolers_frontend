@@ -84,8 +84,8 @@ export default function TeacherMarks() {
       {loading && <Spinner />}
       <ErrorBanner message={error || marksError} />
       {!loading && !error && !marksError && (
-        <div className="card white" style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="card white table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th style={{ textAlign: "left", padding: 8, fontSize: 11 }}>Student</th>

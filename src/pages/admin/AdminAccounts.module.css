@@ -40,9 +40,7 @@
   flex: 1 1 30rem;
   margin: 0;
   max-width: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .help {
@@ -772,7 +770,11 @@
   }
 
   .pageHeader :global(.scr-sub) {
+    flex: 1 1 auto;
     max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .sheetCard {
