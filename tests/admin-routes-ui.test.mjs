@@ -38,7 +38,12 @@ test("Add Student form offers a labelled stop-point dropdown with validation", (
   assert.match(component, /Select a stop point for the student/);
   assert.match(component, /Add a stop point to this route first/);
   assert.match(component, /resetStudentForm/);
+  assert.match(component, /setSelectedStudentId\(""\)/);
+  assert.match(component, /setSelectedStopId\(""\)/);
   assert.match(component, /No stop points yet/);
+  assert.match(component, /disabled=\{\!/);
+  assert.match(component, /Pickup \$/);
+  assert.match(component, /Drop \$/);
   assert.match(transport, /addStudentToRoute = \(routeId, studentId, data\)/);
   assert.match(transport, /client\.post\(`\/routes\/\$\{routeId\}\/students\/\$\{studentId\}`, data\)/);
   assert.match(styles, /\.routeRow\s*\{[^}]*cursor:\s*pointer/s);
