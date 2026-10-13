@@ -5,6 +5,7 @@ import {
   monthAnchorParts,
   yearOptions,
 } from "../../utils/accountsFlow";
+import Select from "./Select";
 
 /**
  * A month and a year, as two dropdowns.
@@ -64,7 +65,7 @@ export default function MonthYearPicker({
 
   return (
     <>
-      <select
+      <Select
         className="week-selector-pick"
         value={String(parts.month).padStart(2, "0")}
         onChange={(event) => onPickMonth(event.target.value)}
@@ -80,8 +81,8 @@ export default function MonthYearPicker({
             {option.label}
           </option>
         ))}
-      </select>
-      <select
+      </Select>
+      <Select
         className="week-selector-pick"
         value={String(parts.year)}
         onChange={(event) => onPickYear(event.target.value)}
@@ -93,7 +94,7 @@ export default function MonthYearPicker({
             {year}
           </option>
         ))}
-      </select>
+      </Select>
     </>
   );
 }

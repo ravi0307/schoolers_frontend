@@ -7,6 +7,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import PageHeader from "../../components/ui/PageHeader";
 import styles from "./AdminRoutes.module.css";
@@ -276,21 +277,21 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
           <div className="grid2">
             <div className="field">
               <label>Vehicle</label>
-              <select value={routeVehicle} onChange={(e) => setRouteVehicle(e.target.value)} disabled={!vehicleRecords.length}>
+              <Select value={routeVehicle} onChange={(e) => setRouteVehicle(e.target.value)} disabled={!vehicleRecords.length} aria-label="Vehicle">
                 <option value="">Select vehicle</option>
                 {vehicleRecords.map((record) => (
                   <option key={record.id} value={record.number}>{record.number} · {record.type}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Driver</label>
-              <select value={routeDriver} onChange={(e) => setRouteDriver(e.target.value)} disabled={!pilotRecords.length}>
+              <Select value={routeDriver} onChange={(e) => setRouteDriver(e.target.value)} disabled={!pilotRecords.length} aria-label="Driver">
                 <option value="">Select driver</option>
                 {pilotRecords.map((record) => (
                   <option key={record.id} value={record.value}>{record.value} · {record.username}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="cta-row">
@@ -424,25 +425,26 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
           <div className="grid2">
             <div className="field">
               <label>Select student</label>
-              <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
+              <Select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)} aria-label="Select student">
                 <option value="">Select a student</option>
                 {availableStudents.map((student) => (
                   <option key={student.student_id ?? student.id} value={student.student_id ?? student.id}>{student.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Stop point</label>
-              <select
+              <Select
                 value={selectedStopId}
                 onChange={(e) => setSelectedStopId(e.target.value)}
+                aria-label="Stop point"
                 disabled={!(stops && stops.length)}
               >
                 <option value="">{stops && stops.length ? "Select a stop point" : "No stop points yet"}</option>
                 {(stops || []).map((stop) => (
                   <option key={stop.stop_id} value={stop.stop_id}>{stopOptionLabel(stop)}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           {!(stops && stops.length) && (
@@ -730,25 +732,25 @@ export default function AdminRoutes() {
           <div className="grid2">
             <div className="field">
               <label>Vehicle</label>
-              <select value={vehicle} onChange={(e) => setVehicle(e.target.value)} disabled={!vehicles}>
+              <Select value={vehicle} onChange={(e) => setVehicle(e.target.value)} disabled={!vehicles} aria-label="Vehicle">
                 <option value="">Select vehicle</option>
                 {vehicleRecords.map((record) => (
                   <option key={record.id} value={record.number}>
                     {record.number} · {record.type}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Driver</label>
-              <select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots}>
+              <Select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots} aria-label="Driver">
                 <option value="">Select driver</option>
                 {pilotRecords.map((record) => (
                   <option key={record.id} value={record.id}>
                     {record.value} · {record.username}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="cta-row">

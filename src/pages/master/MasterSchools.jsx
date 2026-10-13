@@ -6,6 +6,7 @@ import * as schoolsApi from "../../api/schools";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { LOCATION_DATA, countries } from "../../data/locations";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -111,26 +112,26 @@ export default function MasterSchools() {
             <div className="field"><label>Pincode</label><input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} required /></div>
             <div className="field">
               <label>Country</label>
-              <select value={form.country} onChange={(e) => updateLocation("country", e.target.value)} required>
+              <Select value={form.country} onChange={(e) => updateLocation("country", e.target.value)} required aria-label="Country">
                 <option value="">Select country</option>
                 {countries.map((country) => <option key={country} value={country}>{country}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="grid2">
             <div className="field">
               <label>State</label>
-              <select value={form.state} onChange={(e) => updateLocation("state", e.target.value)} disabled={!states.length} required>
+              <Select value={form.state} onChange={(e) => updateLocation("state", e.target.value)} disabled={!states.length} required aria-label="State">
                 <option value="">Select state</option>
                 {states.map((state) => <option key={state} value={state}>{state}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>City</label>
-              <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} disabled={!cities.length} required>
+              <Select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} disabled={!cities.length} required aria-label="City">
                 <option value="">Select city</option>
                 {cities.map((city) => <option key={city} value={city}>{city}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="grid2">

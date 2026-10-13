@@ -193,7 +193,7 @@
   min-width: 0;
 }
 
-.headerControls > :global(div) select {
+.headerControls > :global(div) :global([data-select-trigger]) {
   height: var(--account-control-height);
   min-width: 0;
   width: 100%;
@@ -230,6 +230,8 @@
 
 .sortSelect {
   width: 100%;
+  padding-left: var(--space-2);
+  padding-right: 2.25rem;
 }
 
 .period,
@@ -241,7 +243,7 @@
 }
 
 .sheetCard .period :global(.week-selector-pick) {
-  background: var(--color-input-bg);
+  background-color: var(--color-input-bg);
   border: var(--account-border-width) solid var(--color-input-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
@@ -249,7 +251,8 @@
   font-size: var(--font-size-xs);
   height: var(--account-control-height);
   min-width: 0;
-  padding-inline: var(--space-2);
+  padding-left: var(--space-2);
+  padding-right: 2.25rem;
   width: auto;
 }
 
@@ -825,7 +828,7 @@
     width: 100%;
   }
 
-  .headerControls > :global(div) select {
+  .headerControls > :global(div) :global([data-select-trigger]) {
     height: var(--account-touch-height);
   }
 

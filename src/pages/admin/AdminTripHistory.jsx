@@ -4,6 +4,7 @@ import * as transportApi from "../../api/transport";
 import PageHeader from "../../components/ui/PageHeader";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import Modal from "../../components/ui/Modal";
+import Select from "../../components/ui/Select";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
@@ -370,27 +371,27 @@ export default function AdminTripHistory() {
       <section className={styles.filtersBar} aria-label="Trip filters">
         <label>
           Route
-          <select className={styles.filterSelect} value={filterRoute} onChange={(event) => setFilterRoute(event.target.value)}>
+          <Select className={styles.filterSelect} value={filterRoute} onChange={(event) => setFilterRoute(event.target.value)} aria-label="Route">
             <option value="">All routes</option>
             {routes.map((route) => <option key={route} value={route}>{route}</option>)}
-          </select>
+          </Select>
         </label>
         <label>
           Status
-          <select className={styles.filterSelect} value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+          <Select className={styles.filterSelect} value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} aria-label="Status">
             <option value="">All statuses</option>
             {["scheduled", "in_progress", "completed", "cancelled"].map((status) => (
               <option key={status} value={status}>{STATUS_LABELS[status]}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           Direction
-          <select className={styles.filterSelect} value={filterDirection} onChange={(event) => setFilterDirection(event.target.value)}>
+          <Select className={styles.filterSelect} value={filterDirection} onChange={(event) => setFilterDirection(event.target.value)} aria-label="Direction">
             <option value="">Both directions</option>
             <option value="pickup">Pickup</option>
             <option value="drop">Drop</option>
-          </select>
+          </Select>
         </label>
         <label>
           From

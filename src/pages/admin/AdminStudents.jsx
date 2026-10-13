@@ -9,6 +9,7 @@ import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import styles from "./AdminStudents.module.css";
 
@@ -246,12 +247,12 @@ export default function AdminStudents() {
                       </div>
                       <div className="field">
                         <label>Class</label>
-                        <select value={editClassId} onChange={(e) => setEditClassId(e.target.value)}>
+                        <Select value={editClassId} onChange={(e) => setEditClassId(e.target.value)} aria-label="Class">
                           <option value="">Select a class</option>
                           {(classes || []).map((c) => (
                             <option key={c.class_id} value={c.class_id}>{c.name}</option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       <div className="field">
                         <label>Date of birth</label>
@@ -259,12 +260,12 @@ export default function AdminStudents() {
                       </div>
                       <div className="field">
                         <label>Gender</label>
-                        <select value={editGender} onChange={(e) => setEditGender(e.target.value)}>
+                        <Select value={editGender} onChange={(e) => setEditGender(e.target.value)} aria-label="Gender">
                           <option value="">Select gender</option>
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
                           <option value="Other">Other</option>
-                        </select>
+                        </Select>
                       </div>
                       <ImageUpload
                         label="Photo (passport size)"
@@ -396,12 +397,12 @@ export default function AdminStudents() {
           </div>
           <div className="field">
             <label>Class</label>
-            <select value={classId} onChange={(e) => setClassId(e.target.value)}>
+            <Select value={classId} onChange={(e) => setClassId(e.target.value)} aria-label="Class">
               <option value="">Select a class</option>
               {(classes || []).map((c) => (
                 <option key={c.class_id} value={c.class_id}>{c.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="field">
             <label>Date of birth</label>
@@ -409,12 +410,12 @@ export default function AdminStudents() {
           </div>
           <div className="field">
             <label>Gender</label>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
               <option value="">Select gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
-            </select>
+            </Select>
           </div>
           <ImageUpload
             label="Image (passport size)"

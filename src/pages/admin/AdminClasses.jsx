@@ -6,6 +6,7 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import styles from "./AdminClasses.module.css";
 
@@ -180,10 +181,11 @@ export default function AdminClasses() {
                       </div>
                       <div className="field">
                         <label>Class teacher</label>
-                        <select
+                        <Select
                           value={editClassTeacherId}
                           onChange={(e) => setEditClassTeacherId(e.target.value)}
                           disabled={teachersLoading}
+                          aria-label="Class teacher"
                         >
                           <option value="">No class teacher</option>
                           {(teachers || []).map((teacher) => (
@@ -196,7 +198,7 @@ export default function AdminClasses() {
                               {teacherLabel(teacher)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       <ErrorBanner message={teachersError} />
                       <div className={`cta-row ${styles.formActions}`}>
@@ -247,7 +249,7 @@ export default function AdminClasses() {
           </div>
           <div className="field">
             <label>Class teacher</label>
-            <select value={classTeacherId} onChange={(e) => setClassTeacherId(e.target.value)} disabled={teachersLoading}>
+            <Select value={classTeacherId} onChange={(e) => setClassTeacherId(e.target.value)} disabled={teachersLoading} aria-label="Class teacher">
               <option value="">No class teacher</option>
               {(teachers || []).map((teacher) => (
                 <option
@@ -259,7 +261,7 @@ export default function AdminClasses() {
                   {teacherLabel(teacher)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <ErrorBanner message={teachersError} />
           <div className="cta-row">

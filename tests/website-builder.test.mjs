@@ -21,6 +21,7 @@ import {
   resizeDimensionsTooltip,
   resizeHandleTooltip,
   resizeTooltipPosition,
+  contextMenuPosition,
   restoreWebsiteVersionContent,
   transformWebsiteNode,
   websiteDraftStorageKey,
@@ -229,6 +230,21 @@ test("resize tooltip remains outside the active handle edge and inside the viewp
   assert.deepEqual(resizeTooltipPosition("w", 100, 180, bounds, 1000, 800), { left: 8, top: 192 });
   assert.deepEqual(resizeTooltipPosition("n", 300, 80, bounds, 1000, 800), { left: 312, top: 34 });
   assert.deepEqual(resizeTooltipPosition("s", 300, 380, bounds, 1000, 800), { left: 312, top: 392 });
+});
+
+test("context menu position uses its measured size to stay inside the viewport", () => {
+  assert.deepEqual(
+    contextMenuPosition(980, 760, { width: 200, height: 180 }, 1000, 800),
+    { left: 792, top: 612 },
+  );
+  assert.deepEqual(
+    contextMenuPosition(0, 0, { width: 200, height: 180 }, 1000, 800),
+    { left: 8, top: 8 },
+  );
+  assert.deepEqual(
+    contextMenuPosition(400, 300, { width: 1200, height: 900 }, 800, 600),
+    { left: 8, top: 8 },
+  );
 });
 
 test("admin canvas route exposes server draft saving, publishing, and saved-site preview", () => {

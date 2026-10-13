@@ -6,6 +6,7 @@ import * as attendanceApi from "../../api/attendance";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
 import styles from "./AdminStaff.module.css";
@@ -448,15 +449,15 @@ export default function AdminStaff() {
           </div>
           <div className="field">
             <label>Role / Title <span className="required-mark">*</span></label>
-            <select required value={roleCategory} onChange={(e) => {
+            <Select required value={roleCategory} onChange={(e) => {
               setRoleCategory(e.target.value);
               if (e.target.value !== "Other staff") setCustomRoleTitle("");
-            }}>
+            }} aria-label="Role / Title">
               <option value="">Select role</option>
               <option value="Teacher">Teacher</option>
               <option value="Pilot">Pilot</option>
               <option value="Other staff">Other staff</option>
-            </select>
+            </Select>
           </div>
           {roleCategory === "Other staff" ? (
             <div className="field">
@@ -493,22 +494,22 @@ export default function AdminStaff() {
           </div>
           <div className="field">
             <label>Marital status <span className="required-mark">*</span></label>
-            <select required value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)}>
+            <Select required value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} aria-label="Marital status">
               <option value="">Select marital status</option>
               <option value="Single">Single</option>
               <option value="Married">Married</option>
               <option value="Divorced">Divorced</option>
               <option value="Widowed">Widowed</option>
-            </select>
+            </Select>
           </div>
           <div className="field">
             <label>Gender <span className="required-mark">*</span></label>
-            <select required value={gender} onChange={(e) => setGender(e.target.value)}>
+            <Select required value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
               <option value="">Select gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
-            </select>
+            </Select>
           </div>
           <div className="field">
             <label>Present address <span className="required-mark">*</span></label>

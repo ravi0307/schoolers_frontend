@@ -9,6 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import { ErrorBanner } from "../../components/ui/Primitives";
 import DurationSelect from "../../components/ui/DurationSelect";
 import WeekSelector from "../../components/ui/WeekSelector";
+import Select from "../../components/ui/Select";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import DataTable from "../../components/ui/DataTable";
@@ -713,10 +714,10 @@ export default function AdminTimetable() {
           <div className="grid4">
             <div className="field">
               <label>Days</label>
-              <select value={newDayOfWeek} onChange={(event) => setNewDayOfWeek(event.target.value)}>
+              <Select value={newDayOfWeek} onChange={(event) => setNewDayOfWeek(event.target.value)} aria-label="Days">
                 <option value="">All days</option>
                 {DAYS.map((day) => <option key={day} value={day}>{day}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Start time</label>
@@ -741,23 +742,23 @@ export default function AdminTimetable() {
             </div>
             <div className="field">
               <label>Subject</label>
-              <select value={newSubjectId} onChange={(event) => setNewSubjectId(event.target.value)}>
+              <Select value={newSubjectId} onChange={(event) => setNewSubjectId(event.target.value)} aria-label="Subject">
                 <option value="">Select subject</option>
                 {activeSubjects.map((subject) => (
                   <option key={subject.subject_id} value={subject.subject_id}>{subject.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Teacher</label>
-              <select value={newTeacherId} onChange={(event) => setNewTeacherId(event.target.value)}>
+              <Select value={newTeacherId} onChange={(event) => setNewTeacherId(event.target.value)} aria-label="Teacher">
                 <option value="">Select teacher</option>
                 {availableTeachersForNew.map((teacher) => (
                   <option key={teacher.teacher_id} value={teacher.teacher_id} disabled={teacher.busy}>
                     {teacher.name}{teacher.busy ? " (busy)" : ""}
                   </option>
                 ))}
-              </select>
+              </Select>
               {newTeacherId && availableTeachersForNew.find(t => String(t.teacher_id) === String(newTeacherId))?.busy && (
                 <span className="field-error">This teacher already has a class at this time</span>
               )}
@@ -905,23 +906,23 @@ export default function AdminTimetable() {
             </div>
             <div className="field">
               <label>Subject</label>
-              <select value={editSubjectId} onChange={(event) => setEditSubjectId(event.target.value)}>
+              <Select value={editSubjectId} onChange={(event) => setEditSubjectId(event.target.value)} aria-label="Subject">
                 <option value="">Select subject</option>
                 {activeSubjects.map((subject) => (
                   <option key={subject.subject_id} value={subject.subject_id}>{subject.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="field">
               <label>Teacher</label>
-              <select value={editTeacherId} onChange={(event) => setEditTeacherId(event.target.value)}>
+              <Select value={editTeacherId} onChange={(event) => setEditTeacherId(event.target.value)} aria-label="Teacher">
                 <option value="">Select teacher</option>
                 {availableTeachersForEdit.map((teacher) => (
                   <option key={teacher.teacher_id} value={teacher.teacher_id} disabled={teacher.busy}>
                     {teacher.name}{teacher.busy ? " (busy)" : ""}
                   </option>
                 ))}
-              </select>
+              </Select>
               {editTeacherId && availableTeachersForEdit.find(t => String(t.teacher_id) === String(editTeacherId))?.busy && (
                 <span className="field-error">This teacher already has a class at this time</span>
               )}

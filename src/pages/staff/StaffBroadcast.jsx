@@ -4,6 +4,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import FormField from "../../components/ui/FormField";
+import Select from "../../components/ui/Select";
 import { Megaphone, Plus } from "lucide-react";
 import EmptyState from "../../components/ui/EmptyState";
 import styles from "./StaffBroadcast.module.css";
@@ -276,31 +277,31 @@ export default function StaffBroadcast() {
           {!editingBroadcastId && (
             <div className="grid2">
               <FormField id="broadcast-audience" label="Audience">
-                <select id="broadcast-audience" value={scope} onChange={(event) => changeScope(event.target.value)}>
+                <Select id="broadcast-audience" value={scope} onChange={(event) => changeScope(event.target.value)}>
                   <option value="school">Entire school</option>
                   <option value="class">Specific class</option>
                   <option value="route">Specific route</option>
                   <option value="pilot">Pilots</option>
-                </select>
+                </Select>
               </FormField>
               {scope === "class" && (
                 <FormField id="broadcast-class" label="Class" required>
-                  <select id="broadcast-class" required value={classId} onChange={(event) => setClassId(event.target.value)}>
+                  <Select id="broadcast-class" required value={classId} onChange={(event) => setClassId(event.target.value)}>
                     <option value="">Select class</option>
                     {(classes || []).map((item) => (
                       <option key={item.class_id} value={item.class_id}>{item.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </FormField>
               )}
               {scope === "route" && (
                 <FormField id="broadcast-route" label="Route" required>
-                  <select id="broadcast-route" required value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+                  <Select id="broadcast-route" required value={routeId} onChange={(event) => setRouteId(event.target.value)}>
                     <option value="">Select route</option>
                     {(routes || []).map((item) => (
                       <option key={item.route_id} value={item.route_id}>{item.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </FormField>
               )}
             </div>
@@ -330,7 +331,7 @@ export default function StaffBroadcast() {
                 />
               </FormField>
               <FormField id="broadcast-audience-filter" label="Filter by audience">
-                <select id="broadcast-audience-filter" value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
+                <Select id="broadcast-audience-filter" value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
                   <option value="all">All audiences</option>
                   <option value="school">Entire school</option>
                   <option value="class">Specific class</option>
@@ -338,14 +339,14 @@ export default function StaffBroadcast() {
                   <option value="pilot">Pilots</option>
                   <option value="role_teacher">Teachers</option>
                   <option value="role_admin">School Admin</option>
-                </select>
+                </Select>
               </FormField>
             </div>
             <FormField id="broadcast-sort" label="Sort by creation date">
-              <select id="broadcast-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+              <Select id="broadcast-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
-              </select>
+              </Select>
             </FormField>
           </Card>
           <div className={styles.broadcastColumns}>

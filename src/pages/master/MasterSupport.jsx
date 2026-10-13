@@ -4,6 +4,7 @@ import { useApi } from "../../hooks/useApi";
 import * as supportApi from "../../api/support";
 import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
 import SupportTicketPanel from "../../components/support/SupportTicketPanel";
 import { SUPPORT_STATUSES, statusTone, formatTicketTime } from "../../utils/support";
 
@@ -34,7 +35,7 @@ export default function MasterSupport() {
       <div className="card support-filter">
         <div className="field">
           <label htmlFor="support-status-filter">Filter by status</label>
-          <select
+          <Select
             id="support-status-filter"
             value={statusFilter}
             onChange={(e) => {
@@ -48,7 +49,7 @@ export default function MasterSupport() {
                 {status}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
