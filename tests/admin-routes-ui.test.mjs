@@ -44,3 +44,20 @@ test("Add Student form offers a labelled stop-point dropdown with validation", (
   assert.match(styles, /\.routeRow\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(styles, /\.formHint\s*\{/);
 });
+
+test("Students on route show picture, class, parent, and stop point", () => {
+  assert.match(component, /initials/);
+  assert.match(component, /resolveMediaUrl/);
+  assert.match(component, /studentAvatar/);
+  assert.match(component, /studentPhoto/);
+  assert.match(component, /rs\.parent_name/);
+  assert.match(component, /rs\.class_name/);
+  assert.match(component, /rs\.pickup_stop_name/);
+  assert.match(component, /rs\.drop_stop_name/);
+  assert.match(component, /Parent: \$/);
+  assert.match(component, /Stop: \$/);
+  assert.match(component, /Not assigned/);
+  assert.match(component, /removeRouteStudent\(studentId\)/);
+  assert.match(styles, /\.studentAvatar\s*\{/);
+  assert.match(styles, /\.studentPhoto\s*\{[^}]*object-fit:\s*cover/s);
+});

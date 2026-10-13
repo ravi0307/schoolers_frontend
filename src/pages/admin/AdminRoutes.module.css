@@ -104,6 +104,21 @@
   flex: 0 0 auto;
 }
 
+.studentAvatar {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.studentPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .back {
   justify-self: end;
 }
