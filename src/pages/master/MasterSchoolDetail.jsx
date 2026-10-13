@@ -8,6 +8,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, Kpi, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
 
@@ -341,11 +342,11 @@ export default function MasterSchoolDetail() {
       <form className="card" onSubmit={sendNotification} style={{ marginBottom: 10 }}>
         <div className="field">
           <label>Type</label>
-          <select value={notifType} onChange={(e) => setNotifType(e.target.value)}>
+          <Select value={notifType} onChange={(e) => setNotifType(e.target.value)} aria-label="Type">
             <option value="Dues">Dues</option>
             <option value="Activation">Activation</option>
             <option value="General">General</option>
-          </select>
+          </Select>
         </div>
         <div className="field">
           <label>Message</label>

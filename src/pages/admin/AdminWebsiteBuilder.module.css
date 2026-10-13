@@ -122,7 +122,7 @@
 .deleteButton:hover, .labelItem button:hover, .iconButton:hover { background: #e2eaf1; color: #17283a; }
 .labels { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem; padding: .55rem; }
 .variantControl { display: flex; align-items: center; gap: .5rem; color: #475569; font-size: .7rem; font-weight: 700; }
-.variantControl select, .toolbar select { min-width: 0; border: 1px solid #cbd5df; border-radius: .4rem; background: #fff; padding: .38rem .5rem; color: #334155; font: inherit; font-size: .75rem; }
+.variantControl :global([data-select-trigger]), .toolbar :global([data-select-trigger]) { min-width: 0; min-height: 2rem; border: var(--border-width-thin) solid var(--color-border); border-radius: var(--radius-sm); background-color: var(--color-input-bg); padding: .38rem 1.7rem .38rem .5rem; color: var(--color-text); font: inherit; font-size: .75rem; }
 .profileEditor { display: grid; gap: .55rem; padding: .65rem; }
 .profileEditor label { display: grid; gap: .2rem; color: #64748b; font-size: .68rem; font-weight: 700; }
 .profileEditor input { min-width: 0; border: 1px solid #cbd5df; border-radius: .4rem; background: #fff; padding: .4rem .5rem; color: #1e293b; font: inherit; font-size: .76rem; touch-action: auto; }
@@ -210,9 +210,9 @@
 .previewFrame { width: 100%; max-width: none; flex: 1; overflow: auto; background: white; box-shadow: 0 0 1.2rem rgba(15,23,42,.12); }
 .previewBrand { display: flex; min-height: 4.5rem; align-items: center; gap: .75rem; border-bottom: 1px solid #e2e8f0; padding: .75rem 1.25rem; color: #1e293b; }
 .previewLogo { display: grid; width: 2.5rem; height: 2.5rem; flex: none; place-items: center; border-radius: .7rem; background: #0f766e; color: white; font-weight: 800; }
-.contextMenu { position: absolute; z-index: 10; display: grid; min-width: 12rem; padding: .3rem; border: 1px solid #dbe4ec; border-radius: .65rem; background: white; box-shadow: 0 12px 32px rgba(15,23,42,.2); }
-.contextMenu button { border: 0; border-radius: .4rem; padding: .65rem .7rem; background: white; color: #1e293b; text-align: left; cursor: pointer; font: inherit; font-size: .85rem; }
-.contextMenu button:hover, .contextMenu button:focus-visible { outline: none; background: #e8f8fa; color: #075985; }
+.contextMenu { position: fixed; z-index: 10; display: grid; box-sizing: border-box; min-width: 12rem; max-width: calc(100vw - 1rem); max-height: calc(100vh - 1rem); overflow-y: auto; overscroll-behavior: contain; padding: .3rem; border: var(--border-width-thin) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-input-bg); color: var(--color-text); box-shadow: var(--shadow-md); }
+.contextMenu button { border: 0; border-radius: var(--radius-sm); padding: .65rem .7rem; background: var(--color-input-bg); color: var(--color-text); text-align: left; cursor: pointer; font: inherit; font-size: .85rem; }
+.contextMenu button:hover, .contextMenu button:focus-visible { outline: none; background: var(--ruled-blue-light); color: var(--color-primary); }
 .canvasNote { margin: .6rem 0 0; color: var(--ink-soft); font-size: .76rem; }
 .modalBackdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15, 23, 42, .55); }
 .editorModal { display: flex; flex-direction: column; width: min(52rem, 100%); max-height: min(90vh, 55rem); overflow: hidden; border-radius: 1rem; background: white; box-shadow: 0 24px 80px rgba(15,23,42,.3); color: #1e293b; }
@@ -224,7 +224,7 @@
 .toolbar { display: flex; flex-wrap: wrap; gap: .35rem; padding: .55rem 1.25rem; border-block: 1px solid #e2e8f0; background: #f8fafc; }
 .toolbar button { display: inline-grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid #d8e0e8; border-radius: .4rem; background: white; color: #334155; cursor: pointer; }
 .toolbar button:hover { border-color: #0891b2; color: #087e8b; }
-.toolbar select { height: 2rem; }
+.toolbar :global([data-select-trigger]) { height: 2rem; }
 .colorTool { display: flex; align-items: center; gap: .35rem; margin-left: auto; color: #475569; font-size: .8rem; }
 .colorTool input[type="color"] { width: 2rem; height: 2rem; border: 0; background: transparent; cursor: pointer; }
 .colorTool input[type="text"] { width: 7.5rem; min-width: 5rem; border: 1px solid #d8e0e8; border-radius: .4rem; background: white; padding: .35rem .45rem; color: #334155; font: inherit; font-size: .72rem; }

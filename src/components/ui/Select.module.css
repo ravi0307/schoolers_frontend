@@ -1,0 +1,132 @@
+.wrapper {
+  display: contents;
+}
+
+.trigger {
+  align-items: center;
+  background: var(--color-input-bg);
+  border: var(--border-width-thin) solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  justify-content: space-between;
+  line-height: var(--line-height-normal);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+}
+
+.trigger:hover:not(:disabled),
+.triggerOpen {
+  border-color: var(--color-focus);
+}
+
+.trigger:focus-visible {
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow {
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+  font-size: var(--font-size-md);
+  line-height: 1;
+  margin-inline-start: var(--space-2);
+  transform: translateY(-0.1em);
+  transition: transform var(--transition-fast);
+}
+
+.triggerOpen .arrow {
+  transform: rotate(180deg) translateY(0.1em);
+}
+
+.nativeSelect {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.menu {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-neutral-0);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  max-height: min(calc(var(--space-12) * 10), calc(100vh - var(--space-4)));
+  padding: var(--space-1);
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+.option {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  user-select: none;
+}
+
+.menu .option {
+  color: var(--color-text);
+}
+
+.option:hover,
+.optionActive {
+  background: var(--color-neutral-100);
+}
+
+.optionSelected {
+  background: var(--color-row-hover);
+  font-weight: var(--font-weight-semibold);
+}
+
+.optionSelected.optionActive,
+.optionSelected:hover {
+  background: var(--color-neutral-100);
+}
+
+.optionDisabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.menu .optionDisabled {
+  color: var(--color-text-muted);
+}
+
+.optionDisabled:hover {
+  background: transparent;
+}

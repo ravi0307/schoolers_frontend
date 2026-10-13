@@ -217,15 +217,85 @@
 .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
 .required-mark { color: var(--red-pen); }
 .field input, .field select, .field textarea {
-  width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
+  width: 100%; border: 1.5px solid var(--line); background-color: var(--paper-light);
   border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
 }
 
-/* Shared select/styling for elements outside .field */
+/*
+ * Native selects are used throughout the portals. Keep the control and the
+ * browser-rendered option list on the same light surface so a dark OS theme or
+ * a page-level dark surface cannot make the menu unreadable. `appearance: none`
+ * gives every selector the same arrow; the options remain native, preserving
+ * keyboard navigation, type-ahead, and the browser's viewport-aware popup.
+ */
+select,
 .select-input {
-  width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
-  border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
+  min-width: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-input-bg);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1rem) 50%,
+    calc(100% - 0.75rem) 50%;
+  background-repeat: no-repeat;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  color: var(--color-text);
+  color-scheme: light;
+  font: inherit;
+  line-height: var(--line-height-normal);
+  min-height: var(--control-height);
+  padding: 0.625rem 2.25rem 0.625rem 0.75rem;
+  appearance: none;
 }
+
+.field select,
+.select-input {
+  width: 100%;
+}
+
+select:hover:not(:disabled),
+.select-input:hover:not(:disabled) {
+  border-color: var(--color-focus);
+}
+
+select:focus-visible,
+.select-input:focus-visible {
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+}
+
+select:disabled,
+.select-input:disabled {
+  background-color: var(--color-neutral-100);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+select option,
+.select-input option {
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+
+select option:checked,
+.select-input option:checked,
+select option:hover,
+.select-input option:hover {
+  background: var(--ruled-blue-light);
+  color: var(--color-text);
+}
+
+select option:disabled,
+.select-input option:disabled {
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+
 .field-error {
   display: block; margin-top: 5px; font-size: 11.5px; font-weight: 600;
   color: var(--red-pen);
@@ -457,10 +527,11 @@
   padding: 6px 8px;
   border-radius: 8px;
   border: 1.5px solid var(--ruled-blue);
-  background: var(--paper);
+  background-color: var(--paper);
   color: var(--ink);
   cursor: pointer;
   min-width: 108px;
+  padding-right: 2.25rem;
 }
 /* Inside the deposit dialog the pair belongs to a field, not to a row of
    controls, so it is stacked and allowed to be as wide as the field. */
@@ -1289,6 +1360,7 @@
   font: inherit;
   font-size: 13px;
   padding: 5px 7px;
+  padding-right: 2.25rem;
 }
 .sr-note { color: var(--ink-soft); font-size: 12px; line-height: 1.5; margin: 6px 0 0; }
 .sr-foot { color: var(--ink-soft); font-size: 11.5px; line-height: 1.5; margin: 16px 0 0; }
@@ -1370,7 +1442,7 @@
 .support-thread-subject { font-size: 16px; font-weight: 600; }
 .support-thread-meta { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
 .support-thread-actions { display: flex; align-items: center; gap: 8px; }
-.support-status-select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.support-status-select { padding: 6px 2.25rem 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
 
 .support-messages { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .support-message {

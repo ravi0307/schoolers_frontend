@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import { FONT_SIZE_OPTIONS, sanitizeRichText } from "./richText";
 import styles from "./RichTextEditor.module.css";
+import Select from "./Select";
 
 export default function RichTextEditor({ id, value, onChange, minHeight = 150 }) {
   const editorRef = useRef(null);
@@ -122,7 +123,7 @@ export default function RichTextEditor({ id, value, onChange, minHeight = 150 })
             onChange={(event) => format("foreColor", event.target.value)}
           />
         </label>
-        <select
+        <Select
           className={styles.fontSize}
           aria-label="Font size"
           defaultValue="3"
@@ -132,7 +133,7 @@ export default function RichTextEditor({ id, value, onChange, minHeight = 150 })
           {FONT_SIZE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
-        </select>
+        </Select>
         <button className={styles.toolButton} title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}><ImagePlus aria-hidden="true" /> Image</button>
         <button className={styles.toolButton} title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
         <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={insertImage} hidden />

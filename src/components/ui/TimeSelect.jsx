@@ -1,5 +1,6 @@
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+import Select from "./Select";
 
 export const EMPTY_TIME = { hour: "", minute: "", meridiem: "AM" };
 
@@ -25,22 +26,22 @@ export default function TimeSelect({ label, value, onChange }) {
     <div className="field">
       <label>{label}</label>
       <div className="grid3">
-        <select value={value.hour} onChange={(e) => set({ hour: e.target.value })}>
+        <Select value={value.hour} onChange={(e) => set({ hour: e.target.value })} aria-label={`${label} hour`}>
           <option value="">Hour</option>
           {HOURS.map((h) => (
             <option key={h} value={h}>{h}</option>
           ))}
-        </select>
-        <select value={value.minute} onChange={(e) => set({ minute: e.target.value })}>
+        </Select>
+        <Select value={value.minute} onChange={(e) => set({ minute: e.target.value })} aria-label={`${label} minute`}>
           <option value="">Min</option>
           {MINUTES.map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
-        </select>
-        <select value={value.meridiem} onChange={(e) => set({ meridiem: e.target.value })}>
+        </Select>
+        <Select value={value.meridiem} onChange={(e) => set({ meridiem: e.target.value })} aria-label={`${label} AM/PM`}>
           <option value="AM">AM</option>
           <option value="PM">PM</option>
-        </select>
+        </Select>
       </div>
     </div>
   );

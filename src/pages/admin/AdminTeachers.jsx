@@ -5,6 +5,7 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
 
@@ -286,12 +287,12 @@ export default function AdminTeachers() {
           </div>
           <div className="field">
             <label>Gender</label>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
               <option value="">Select gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
-            </select>
+            </Select>
           </div>
           <div className="cta-row">
             <button className="btn primary" type="submit" disabled={submitting}>

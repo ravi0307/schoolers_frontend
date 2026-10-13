@@ -4,6 +4,7 @@ import { useParentContext } from "../../context/ParentContext";
 import { Spinner } from "../ui/Primitives";
 import Card from "../ui/Card";
 import EmptyState from "../ui/EmptyState";
+import Select from "../ui/Select";
 import styles from "./ParentShell.module.css";
 import { Backpack, BarChart3, Bus, CalendarDays, CalendarRange, Check, History, House, Image, Trophy } from "lucide-react";
 
@@ -27,13 +28,13 @@ export default function ParentShell({ children }) {
     !loading && kids.length > 1 ? (
       <Card className={`card white ${styles.childPicker}`}>
         <label htmlFor="parent-child-select">Viewing</label>
-        <select id="parent-child-select" value={selectedChildId || ""} onChange={(e) => setSelectedChildId(Number(e.target.value))}>
+        <Select id="parent-child-select" value={selectedChildId || ""} onChange={(e) => setSelectedChildId(Number(e.target.value))}>
           {kids.map((k) => (
             <option key={k.student_id} value={k.student_id}>
               {k.name} · Class {k.class_id}
             </option>
           ))}
-        </select>
+        </Select>
       </Card>
     ) : null;
 

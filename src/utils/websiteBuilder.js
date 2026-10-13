@@ -206,6 +206,17 @@ export function resizeTooltipPosition(mode, clientX, clientY, bounds, viewportWi
   };
 }
 
+export function contextMenuPosition(clientX, clientY, menuRect, viewportWidth, viewportHeight, padding = 8) {
+  const width = Math.max(0, Number(menuRect?.width) || 0);
+  const height = Math.max(0, Number(menuRect?.height) || 0);
+  const maxLeft = Math.max(padding, viewportWidth - width - padding);
+  const maxTop = Math.max(padding, viewportHeight - height - padding);
+  return {
+    left: Math.max(padding, Math.min(Number(clientX) || 0, maxLeft)),
+    top: Math.max(padding, Math.min(Number(clientY) || 0, maxTop)),
+  };
+}
+
 export function createDefaultWebsiteNodes() {
   return [
     {
