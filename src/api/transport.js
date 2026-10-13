@@ -20,8 +20,8 @@ export const removeStop = (stopId) => client.delete(`/routes/stops/${stopId}`);
 
 export const listRouteStudents = (routeId) =>
   client.get(`/routes/${routeId}/students`).then((r) => r.data);
-export const addStudentToRoute = (routeId, studentId) =>
-  client.post(`/routes/${routeId}/students/${studentId}`).then((r) => r.data);
+export const addStudentToRoute = (routeId, studentId, data) =>
+  client.post(`/routes/${routeId}/students/${studentId}`, data).then((r) => r.data);
 export const removeStudentFromRoute = (routeId, studentId) =>
   client.delete(`/routes/${routeId}/students/${studentId}`);
 export const updatePickupStatus = (routeId, studentId, status) =>
