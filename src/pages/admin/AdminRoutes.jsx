@@ -41,6 +41,13 @@ function pilotNameForId(pilotId, pilotRecords) {
   return match ? match.value : "";
 }
 
+function stopOptionLabel(stop) {
+  const legs = [];
+  if (stop.pickup_time) legs.push(`Pickup ${stop.pickup_time}`);
+  if (stop.drop_time) legs.push(`Drop ${stop.drop_time}`);
+  return legs.length ? `${stop.stop_name} — ${legs.join(" · ")}` : stop.stop_name;
+}
+
 // The route payload only carries the derived driver_name, so match it back to a
 // pilot id for the edit form.
 function pilotIdOf(route, pilotRecords) {
@@ -76,6 +83,7 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
   const [editingStop, setEditingStop] = useState(null);
   const [studentForm, setStudentForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStopId, setSelectedStopId] = useState("");
 
   function openRouteEditor() {
     setRouteVehicle(routeSummary.vehicle || "");
@@ -194,17 +202,30 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
     }
   }
 
+  function resetStudentForm() {
+    setSelectedStudentId("");
+    setSelectedStopId("");
+    setStudentForm(false);
+  }
+
   async function addRouteStudent(e) {
     e.preventDefault();
     if (!selectedStudentId) {
       toast("Pick a student to add to the route");
       return;
     }
+    const stopGroup = (stops || []).find((stop) => String(stop.stop_id) === String(selectedStopId));
+    if (!selectedStopId || !stopGroup) {
+      toast(stops && stops.length ? "Select a stop point for the student" : "Add a stop point to this route first");
+      return;
+    }
     try {
-      await transportApi.addStudentToRoute(route.route_id, Number(selectedStudentId));
+      await transportApi.addStudentToRoute(route.route_id, Number(selectedStudentId), {
+        pickup_stop_id: stopGroup.pickup_stop_id ?? null,
+        drop_stop_id: stopGroup.drop_stop_id ?? null,
+      });
       toast("Student added to route");
-      setSelectedStudentId("");
-      setStudentForm(false);
+      resetStudentForm();
       refetchStudents();
     } catch (err) {
       toast(apiErrorMessage(err));
@@ -376,18 +397,36 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
       </div>
       {studentForm ? (
         <form className="card white" onSubmit={addRouteStudent}>
-          <div className="field">
-            <label>Select student</label>
-            <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
-              <option value="">Select a student</option>
-              {availableStudents.map((student) => (
-                <option key={student.student_id ?? student.id} value={student.student_id ?? student.id}>{student.name}</option>
-              ))}
-            </select>
+          <div className="grid2">
+            <div className="field">
+              <label>Select student</label>
+              <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
+                <option value="">Select a student</option>
+                {availableStudents.map((student) => (
+                  <option key={student.student_id ?? student.id} value={student.student_id ?? student.id}>{student.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Stop point</label>
+              <select
+                value={selectedStopId}
+                onChange={(e) => setSelectedStopId(e.target.value)}
+                disabled={!(stops && stops.length)}
+              >
+                <option value="">{stops && stops.length ? "Select a stop point" : "No stop points yet"}</option>
+                {(stops || []).map((stop) => (
+                  <option key={stop.stop_id} value={stop.stop_id}>{stopOptionLabel(stop)}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          {!(stops && stops.length) && (
+            <div className={styles.formHint}>Add a pickup / drop point above before assigning students to stops.</div>
+          )}
           <div className="cta-row">
             <button className="btn primary" type="submit">Add Student</button>
-            <button className="btn ghost" type="button" onClick={() => setStudentForm(false)}>Cancel</button>
+            <button className="btn ghost" type="button" onClick={resetStudentForm}>Cancel</button>
           </div>
         </form>
       ) : (
@@ -573,7 +612,7 @@ export default function AdminRoutes() {
                     </thead>
                     <tbody>
                       {routePager.pageItems.map((r) => (
-                        <tr key={r.route_id} onClick={() => setSelected(r)} style={{ cursor: 'pointer' }}>
+                        <tr key={r.route_id} onClick={() => setSelected(r)} className={styles.routeRow}>
                           <td>
                             <b>{r.name}</b>
                           </td>

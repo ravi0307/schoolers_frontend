@@ -80,6 +80,16 @@
   margin-top: var(--space-3);
 }
 
+.routeRow {
+  cursor: pointer;
+}
+
+.formHint {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
 .studentItem {
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
