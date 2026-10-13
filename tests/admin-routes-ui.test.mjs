@@ -13,11 +13,16 @@ test("Commute page uses responsive module styles and keyboard-operable route row
   assert.match(component, /styles\.vehicleActions/);
   assert.match(component, /styles\.studentItem/);
   assert.doesNotMatch(component, /style=\{\{/);
-  assert.match(component, /<button[^>]*className=\{`listitem \$\{styles\.routeItem\}`\}[^>]*onClick=\{\(\) => setSelected\(r\)\}/);
-  assert.match(component, /<BusFront size=\{18\} aria-hidden="true" \/>/);
+  assert.match(component, /<table>/);  // Stops table still exists
+  assert.match(component, /<thead>/);  // Route list now has table header
+  assert.match(component, /<tbody>/);  // Route list now has table body
+  assert.match(component, /className="data-table"/);  // Uses global table styles
+  assert.match(component, /className="table-scroll"/); // Scroll wrapper
+  assert.match(component, /className="table-card"/);  // Card wrapper
   assert.match(styles, /@media \(max-width:\s*48rem\)/);
   assert.match(styles, /\.vehicleActions\s*\{/);
   assert.match(styles, /\.studentItem\s*\{[^}]*flex-wrap:\s*wrap/s);
   assert.match(styles, /color:\s*var\(--color-text-muted\)/);
+  assert.match(styles, /\.tableActions\s*\{/);  // New table actions style
   assert.doesNotMatch(globalStyles, /\.route-assignment\b/);
 });

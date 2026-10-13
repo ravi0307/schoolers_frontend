@@ -220,6 +220,12 @@
   width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
   border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
 }
+
+/* Shared select/styling for elements outside .field */
+.select-input {
+  width: 100%; border: 1.5px solid var(--line); background: var(--paper-light);
+  border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
+}
 .field-error {
   display: block; margin-top: 5px; font-size: 11.5px; font-weight: 600;
   color: var(--red-pen);

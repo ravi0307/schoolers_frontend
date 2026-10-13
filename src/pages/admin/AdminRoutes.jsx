@@ -8,7 +8,6 @@ import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitive
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import { apiErrorMessage } from "../../api/client";
-import { BusFront } from "lucide-react";
 import PageHeader from "../../components/ui/PageHeader";
 import styles from "./AdminRoutes.module.css";
 
@@ -560,16 +559,42 @@ export default function AdminRoutes() {
           </div>
           <div className={styles.routeListBody}>
             {data && data.length ? (
-              routePager.pageItems.map((r) => (
-                <button key={r.route_id} type="button" className={`listitem ${styles.routeItem}`} onClick={() => setSelected(r)}>
-                  <div className="avatar r"><BusFront size={18} aria-hidden="true" /></div>
-                  <div className="meta">
-                    <b>{r.name}</b>
-                    <span>{r.driver_name}</span>
-                  </div>
-                  <Pill tone={r.status === "On route" ? "ok" : "mute"}>{r.status}</Pill>
-                </button>
-              ))
+              <div className={`card table-card`}>
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Route</th>
+                        <th>Vehicle</th>
+                        <th>Driver</th>
+                        <th>Status</th>
+                        <th className={styles.tableActions}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {routePager.pageItems.map((r) => (
+                        <tr key={r.route_id} onClick={() => setSelected(r)} style={{ cursor: 'pointer' }}>
+                          <td>
+                            <b>{r.name}</b>
+                          </td>
+                          <td>{r.vehicle || "—"}</td>
+                          <td>{r.driver_name || "Not assigned"}</td>
+                          <td>
+                            <Pill tone={r.status === "On route" ? "ok" : "mute"}>{r.status}</Pill>
+                          </td>
+                          <td className={styles.tableActions}>
+                            <button className="btn ghost sm" onClick={(e) => {
+                              e.stopPropagation();
+                              setSelected(r);
+                            }}>View</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination {...routePager} />
+              </div>
             ) : (
               <Empty>No routes yet.</Empty>
             )}
