@@ -4,11 +4,11 @@ import { useApi } from "../../hooks/useApi";
 import * as transportApi from "../../api/transport";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty, Pill } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import TimeSelect, { EMPTY_TIME, formatTime, isTimeIncomplete } from "../../components/ui/TimeSelect";
 import Select from "../../components/ui/Select";
-import { apiErrorMessage } from "../../api/client";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import PageHeader from "../../components/ui/PageHeader";
 import styles from "./AdminRoutes.module.css";
 
@@ -379,12 +379,36 @@ function RouteDetail({ route, onBack, onChanged, vehicleRecords, pilotRecords })
               student?.admission_no,
               student?.admission_number
             );
+            const photoUrl = firstValue(rs.photo_url, nestedStudent?.photo_url, student?.photo_url);
+            const parentName = firstValue(rs.parent_name, nestedStudent?.parent_name, student?.parent_name);
+            const grade = firstValue(rs.class_name, nestedStudent?.class_name, student?.class_name);
+            const stopName = firstValue(rs.pickup_stop_name, rs.drop_stop_name);
+            const identityDetails = [
+              grade || "",
+              parentName ? `Parent: ${parentName}` : "",
+            ].filter(Boolean).join(" · ");
+            const assignmentDetails = [
+              `Stop: ${stopName || "Not assigned"}`,
+              admissionNo ? `Admission no: ${admissionNo}` : "",
+            ].filter(Boolean).join(" · ");
 
             return (
               <div key={studentId || rs.id} className={`listitem ${styles.studentItem}`}>
+                <div className={`avatar ${styles.studentAvatar}`} aria-hidden="true">
+                  <span>{initials(studentName || "?")}</span>
+                  {photoUrl ? (
+                    <img
+                      src={resolveMediaUrl(photoUrl)}
+                      alt=""
+                      className={styles.studentPhoto}
+                      onError={(event) => { event.currentTarget.remove(); }}
+                    />
+                  ) : null}
+                </div>
                 <div className="meta">
                   <b>{studentName || "Student name unavailable"}</b>
-                  {admissionNo && <span>Admission no: {admissionNo}</span>}
+                  {identityDetails ? <span>{identityDetails}</span> : null}
+                  <span>{assignmentDetails}</span>
                 </div>
                 <Pill tone={rs.status === "dropped" ? "ok" : rs.status === "picked" ? "info" : "mute"}>{rs.status}</Pill>
                 <button className="btn ghost sm" onClick={() => removeRouteStudent(studentId)}>Remove</button>
