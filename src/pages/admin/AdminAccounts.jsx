@@ -12,6 +12,7 @@ import FormField from "../../components/ui/FormField";
 import PageHeader from "../../components/ui/PageHeader";
 import Skeleton from "../../components/ui/Skeleton";
 import MonthSelector from "../../components/ui/MonthSelector";
+import Select from "../../components/ui/Select";
 import FeeDepositDialog from "../../components/accounts/FeeDepositDialog";
 import { currentMonthAnchor } from "../../utils/accountsFlow";
 import { depositResultText } from "../../utils/feeDeposit";
@@ -325,7 +326,7 @@ function SheetTable({
             </FormField>
           </div>
           <FormField id={`${tableId}-sort`} label={`Sort ${label}`}>
-            <select
+            <Select
               id={`${tableId}-sort`}
               className={styles.sortSelect}
               value={sort}
@@ -334,7 +335,7 @@ function SheetTable({
               {Object.entries(STAFF_SORTS).map(([value, { label: text }]) => (
                 <option key={value} value={value}>{text}</option>
               ))}
-            </select>
+            </Select>
           </FormField>
           <div className={styles.period}>{period}</div>
           <span className={styles.count}>

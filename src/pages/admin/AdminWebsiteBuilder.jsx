@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlignCenter,
   AlignLeft,
@@ -28,6 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { publicSitePath } from "../../utils/siteFlow";
 import { FONT_FAMILY_OPTIONS, FONT_SIZE_OPTIONS, sanitizeRichText } from "../../components/ui/richText";
+import Select from "../../components/ui/Select";
 import {
   DEFAULT_WEBSITE_CANVAS_SIZE,
   DEFAULT_WEBSITE_BACKGROUND,
@@ -51,6 +53,7 @@ import {
   resizeDimensionsTooltip,
   resizeHandleTooltip,
   resizeTooltipPosition,
+  contextMenuPosition as contextMenuViewportPosition,
   transformWebsiteNode,
 } from "../../utils/websiteBuilder";
 import styles from "./AdminWebsiteBuilder.module.css";
@@ -184,12 +187,12 @@ function RichTextModal({ initialHtml, initialBoxBgColor, onClose, onSave, onChan
           <button type="button" title="Align left" aria-label="Align left" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyLeft")}><AlignLeft /></button>
           <button type="button" title="Align center" aria-label="Align center" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyCenter")}><AlignCenter /></button>
           <button type="button" title="Align right" aria-label="Align right" onMouseDown={(event) => event.preventDefault()} onClick={() => format("justifyRight")}><AlignRight /></button>
-          <select aria-label="Font family" defaultValue="Arial" onChange={(event) => format("fontName", event.target.value)}>
+          <Select aria-label="Font family" defaultValue="Arial" onChange={(event) => format("fontName", event.target.value)}>
             {FONT_FAMILY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <select aria-label="Font size" defaultValue="3" onChange={(event) => format("fontSize", event.target.value)}>
+          </Select>
+          <Select aria-label="Font size" defaultValue="3" onChange={(event) => format("fontSize", event.target.value)}>
             {FONT_SIZE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+          </Select>
           <label className={styles.colorTool}>Text color <input type="color" value={richColorPickerValue(textColor)} aria-label="Font color" onChange={(event) => {
             setTextColor(event.target.value);
             format("foreColor", event.target.value);
@@ -245,6 +248,7 @@ export default function AdminWebsiteBuilder() {
   const { user } = useAuth();
   const toast = useToast();
   const canvasRef = useRef(null);
+  const contextMenuRef = useRef(null);
   const bannerUploadRefs = useRef({});
   const transformRef = useRef(null);
   const resizeTooltipRef = useRef(null);
@@ -277,6 +281,7 @@ export default function AdminWebsiteBuilder() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [storageError, setStorageError] = useState("");
+  const [menuPosition, setMenuPosition] = useState(null);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
 
   useEffect(() => {
@@ -347,16 +352,63 @@ export default function AdminWebsiteBuilder() {
     return () => { active = false; };
   }, [viewMode, user?.schoolId, queriesAttempt]);
 
+  useLayoutEffect(() => {
+    if (!menu) {
+      setMenuPosition(null);
+      return undefined;
+    }
+    const menuElement = contextMenuRef.current;
+    if (!menuElement) return undefined;
+
+    function placeMenu() {
+      const rect = menuElement.getBoundingClientRect();
+      setMenuPosition(contextMenuViewportPosition(
+        menu.viewportX,
+        menu.viewportY,
+        rect,
+        window.innerWidth,
+        window.innerHeight,
+      ));
+    }
+
+    placeMenu();
+    window.addEventListener("resize", placeMenu);
+    return () => window.removeEventListener("resize", placeMenu);
+  }, [menu]);
+
   useEffect(() => {
     if (!menu) return undefined;
-    const close = () => setMenu(null);
-    window.addEventListener("pointerdown", close);
-    window.addEventListener("keydown", close);
+    const closeOnOutside = (event) => {
+      if (!contextMenuRef.current?.contains(event.target)) setMenu(null);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenu(null);
+      }
+    };
+    const closeOnScroll = () => setMenu(null);
+    window.addEventListener("pointerdown", closeOnOutside);
+    window.addEventListener("focusin", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnScroll, true);
     return () => {
-      window.removeEventListener("pointerdown", close);
-      window.removeEventListener("keydown", close);
+      window.removeEventListener("pointerdown", closeOnOutside);
+      window.removeEventListener("focusin", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnScroll, true);
     };
   }, [menu]);
+
+  useLayoutEffect(() => {
+    if (!menu) return undefined;
+    const focusFirstItem = () => {
+      contextMenuRef.current?.querySelector('[role="menuitem"]')?.focus();
+    };
+    focusFirstItem();
+    const frame = window.requestAnimationFrame(focusFirstItem);
+    return () => window.cancelAnimationFrame(frame);
+  }, [menu, menuPosition]);
 
   useEffect(() => {
     function hideTooltip() {
@@ -537,12 +589,43 @@ export default function AdminWebsiteBuilder() {
     const bounds = canvasRef.current.getBoundingClientRect();
     const target = event.target.closest("[data-builder-node]");
     const targetType = target?.dataset.nodeType;
+    const canvasX = Math.max(0, Math.min(event.clientX - bounds.left, bounds.width));
+    const canvasY = Math.max(0, Math.min(event.clientY - bounds.top, bounds.height));
+    setMenuPosition(null);
     setMenu({
-      x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 210)),
-      y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 220)),
+      x: canvasX,
+      y: canvasY,
+      viewportX: event.clientX,
+      viewportY: event.clientY,
       nodeId: targetType === "header" || targetType === "footer" ? target.dataset.nodeId : null,
       nodeType: targetType,
     });
+  }
+
+  function handleContextMenuKeyDown(event) {
+    const menuItems = Array.from(event.currentTarget.querySelectorAll('[role="menuitem"]'));
+    if (!menuItems.length) return;
+    const activeIndex = menuItems.indexOf(document.activeElement);
+    const focusMenuItem = (index) => menuItems[(index + menuItems.length) % menuItems.length]?.focus();
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusMenuItem(activeIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusMenuItem(activeIndex - 1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      focusMenuItem(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      focusMenuItem(menuItems.length - 1);
+    } else if (event.key === "Enter" || event.key === " ") {
+      const menuItem = event.target.closest?.('[role="menuitem"]');
+      if (!menuItem) return;
+      event.preventDefault();
+      menuItem.click();
+    }
   }
 
   function spawn(type) {
@@ -1146,11 +1229,11 @@ export default function AdminWebsiteBuilder() {
                   <div className={styles.labels}>
                     <label className={styles.variantControl}>
                       Presentation
-                      <select value={node.variant || "minimal"} onChange={(event) => updateNode(node.id, { variant: event.target.value })}>
+                      <Select value={node.variant || "minimal"} onChange={(event) => updateNode(node.id, { variant: event.target.value })} aria-label="Presentation">
                         <option value="minimal">Minimalist left-branded</option>
                         <option value="centered">Centered hub</option>
                         <option value="accented">High-contrast accent</option>
-                      </select>
+                      </Select>
                     </label>
                     {node.labels.map((label) => (
                       <div className={styles.labelItem} key={label.id}>
@@ -1224,21 +1307,6 @@ export default function AdminWebsiteBuilder() {
               </section>
             ))}
             {showGuides ? <div className={styles.guides} aria-hidden="true"><span /><span /></div> : null}
-            {menu ? (
-              <div
-                className={styles.contextMenu}
-                style={{ left: menu.x, top: menu.y }}
-                role="menu"
-                onPointerDown={(event) => event.stopPropagation()}
-              >
-                <button type="button" role="menuitem" onClick={() => addLabel(menu.nodeId)}>
-                  {menu.nodeType === "footer" ? "Add Footer Navigation Label" : "Add Header Navigation Label"}
-                </button>
-                {SPAWN_OPTIONS.map((option) => (
-                  <button type="button" role="menuitem" key={option.type} onClick={() => spawn(option.type)}>{option.label}</button>
-                ))}
-              </div>
-            ) : null}
           </div>
         </div>
         </div>
@@ -1247,6 +1315,30 @@ export default function AdminWebsiteBuilder() {
         </>
         )}
       </div>
+      {menu && typeof document !== "undefined" ? createPortal(
+        <div
+          ref={contextMenuRef}
+          className={styles.contextMenu}
+          style={{
+            left: `${menuPosition?.left ?? menu.viewportX}px`,
+            top: `${menuPosition?.top ?? menu.viewportY}px`,
+            visibility: menuPosition ? "visible" : "hidden",
+          }}
+          role="menu"
+          tabIndex={-1}
+          aria-orientation="vertical"
+          onKeyDown={handleContextMenuKeyDown}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button autoFocus type="button" role="menuitem" tabIndex={-1} onClick={() => addLabel(menu.nodeId)}>
+            {menu.nodeType === "footer" ? "Add Footer Navigation Label" : "Add Header Navigation Label"}
+          </button>
+          {SPAWN_OPTIONS.map((option) => (
+            <button type="button" role="menuitem" tabIndex={-1} key={option.type} onClick={() => spawn(option.type)}>{option.label}</button>
+          ))}
+        </div>,
+        document.body,
+      ) : null}
       {showHistory ? (
         <div className={styles.historyBackdrop} role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setShowHistory(false);

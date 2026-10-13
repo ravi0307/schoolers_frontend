@@ -13,6 +13,7 @@ import {
 } from "../../utils/studentReport";
 import { downloadStudentReport } from "../../utils/studentReportPdf";
 import { useReportDialogAccessibility } from "./useReportDialogAccessibility";
+import Select from "../ui/Select";
 
 /**
  * The student report, in a popup.
@@ -57,7 +58,7 @@ function MarksSection({ report, term, onTermChange }) {
       <div className="sr-sub-head">
         <h4 className="sr-h4">Marks</h4>
         {terms.length > 1 && (
-          <select
+          <Select
             className="sr-term-select"
             value={term || ""}
             onChange={(e) => onTermChange(e.target.value)}
@@ -66,7 +67,7 @@ function MarksSection({ report, term, onTermChange }) {
             {termsForSelector(terms).map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
-          </select>
+          </Select>
         )}
       </div>
 

@@ -285,3 +285,52 @@ test("captures side-by-side shared-shell comparisons for the mobile header and p
 
   await comparisonPage.close();
 });
+
+test("shared native selects keep a light readable surface and preserve selection across viewports", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await authenticate(context, "staff");
+  const page = await context.newPage();
+
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: width === 768 ? 1024 : width === 1440 ? 900 : 844 });
+    await page.goto(`${baseURL}/staff/broadcast`, { waitUntil: "networkidle" });
+
+    const audience = page.getByLabel("Filter by audience");
+    await expect(audience).toBeVisible();
+    const styles = await audience.evaluate((element) => {
+      const computed = getComputedStyle(element);
+      const selectedOption = element.options[element.selectedIndex];
+      const unselectedOption = element.options[1];
+      const selectedComputed = getComputedStyle(selectedOption);
+      const unselectedComputed = getComputedStyle(unselectedOption);
+      return {
+        backgroundColor: computed.backgroundColor,
+        color: computed.color,
+        borderColor: computed.borderTopColor,
+        appearance: computed.appearance,
+        paddingRight: computed.paddingRight,
+        selectedOptionBackground: selectedComputed.backgroundColor,
+        selectedOptionColor: selectedComputed.color,
+        unselectedOptionBackground: unselectedComputed.backgroundColor,
+        unselectedOptionColor: unselectedComputed.color,
+      };
+    });
+
+    assert.equal(styles.backgroundColor, "rgb(255, 255, 255)");
+    assert.equal(styles.color, "rgb(20, 44, 59)");
+    assert.equal(styles.borderColor, "rgb(186, 203, 211)");
+    assert.equal(styles.appearance, "none");
+    assert.equal(styles.paddingRight, "36px");
+    assert.equal(styles.selectedOptionBackground, "rgb(220, 238, 242)");
+    assert.equal(styles.selectedOptionColor, "rgb(20, 44, 59)");
+    assert.equal(styles.unselectedOptionBackground, "rgb(255, 255, 255)");
+    assert.equal(styles.unselectedOptionColor, "rgb(20, 44, 59)");
+
+    await audience.focus();
+    await expect(audience).toBeFocused();
+    await audience.selectOption("role_teacher");
+    await expect(audience).toHaveValue("role_teacher");
+  }
+
+  await context.close();
+});

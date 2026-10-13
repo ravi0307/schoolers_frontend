@@ -3,6 +3,7 @@ import { Pill } from "../ui/Primitives";
 import DocumentUpload from "../ui/DocumentUpload";
 import { resolveMediaUrl } from "../../api/client";
 import { SUPPORT_STATUSES, formatTicketTime, statusTone, isResolved } from "../../utils/support";
+import Select from "../ui/Select";
 
 /**
  * One ticket and its conversation, shared by the admin and master screens.
@@ -72,7 +73,7 @@ export default function SupportTicketThread({
         <div className="support-thread-actions">
           <Pill tone={statusTone(ticket.status)}>{ticket.status}</Pill>
           {canManageStatus && (
-            <select
+            <Select
               className="support-status-select"
               aria-label="Ticket status"
               value={ticket.status}
@@ -84,7 +85,7 @@ export default function SupportTicketThread({
                   {status}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </div>
       </div>

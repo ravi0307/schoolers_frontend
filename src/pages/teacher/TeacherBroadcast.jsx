@@ -9,6 +9,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
+import Select from "../../components/ui/Select";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
 
 function formatDate(value) {
@@ -207,7 +208,7 @@ function RichTextEditor({ value, onChange }) {
             style={{ width: 24, height: 24, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
           />
         </label>
-        <select
+        <Select
           aria-label="Font size"
           defaultValue="3"
           onMouseDown={(event) => event.stopPropagation()}
@@ -217,7 +218,7 @@ function RichTextEditor({ value, onChange }) {
           {FONT_SIZE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
-        </select>
+        </Select>
         <button className="btn ghost sm" title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}>🖼️ Image</button>
         <button className="btn ghost sm" title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
         <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={insertImage} hidden />
@@ -441,23 +442,23 @@ export default function AdminBroadcast() {
             <div className="grid2">
             <div className="field">
               <label>Audience</label>
-              <select value={scope} onChange={(event) => {
+              <Select value={scope} onChange={(event) => {
                 setScope(event.target.value);
                 if (event.target.value !== "class") setClassId("");
-              }}>
+              }} aria-label="Audience">
                 <option value="school">Entire school</option>
                 <option value="class">Specific class</option>
-              </select>
+              </Select>
             </div>
             {scope === "class" && (
               <div className="field">
                 <label>Class</label>
-                <select required value={classId} onChange={(event) => setClassId(event.target.value)}>
+                <Select required value={classId} onChange={(event) => setClassId(event.target.value)} aria-label="Class">
                   <option value="">Select class</option>
                   {(myClasses || []).map((item) => (
                     <option key={item.class_id} value={item.class_id}>{item.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
             </div>
@@ -489,22 +490,22 @@ export default function AdminBroadcast() {
             </div>
             <div className="field">
               <label>Filter by audience</label>
-              <select value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)}>
+              <Select value={audienceFilter} onChange={(event) => setAudienceFilter(event.target.value)} aria-label="Filter by audience">
                 <option value="all">All audiences</option>
                 <option value="school">Entire school</option>
                 <option value="class">Specific class</option>
                 <option value="role_pilot">Pilots</option>
                 <option value="role_teacher">Teachers</option>
                 <option value="role_admin">School Admin</option>
-              </select>
+              </Select>
             </div>
           </div>
           <div className="field">
             <label>Sort by creation date</label>
-            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+            <Select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label="Sort by creation date">
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
-            </select>
+            </Select>
           </div>
         </div>
         <div
