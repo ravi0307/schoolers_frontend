@@ -45,6 +45,35 @@ test("calendar indicator matches the muted form-control iconography", () => {
   assert.match(globalCss, /:disabled::-webkit-calendar-picker-indicator\s*\{[^}]*cursor:\s*not-allowed/s);
 });
 
+test("date picking stays native plus shared Select, with no date library", () => {
+  // Month/year jumps deliberately use the shared Select; only point-in-time
+  // picks use native inputs. A third-party picker would bring its own theme.
+  const pkg = JSON.parse(read("package.json"));
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  for (const lib of ["date-fns", "moment", "dayjs", "react-datepicker", "flatpickr", "@mui/x-date-pickers"]) {
+    assert.ok(!(lib in deps), `unexpected date library ${lib} in dependencies`);
+  }
+  assert.match(read("src/components/ui/MonthYearPicker.jsx"), /from "\.\/Select"/);
+});
+
+test("filter-panel date inputs use the tokenized filter control", () => {
+  const page = read("src/pages/admin/AdminTripHistory.jsx");
+  assert.match(page, /className=\{styles\.filterInput\} type="date"/);
+  const css = read("src/pages/admin/AdminTripHistory.module.css");
+  const body = ruleBody(css, "\\.filterInput", "trip history filter input");
+  assert.match(body, /height:\s*var\(--control-height\)/);
+  assert.match(body, /border-radius:\s*var\(--radius-md\)/);
+  assert.match(body, /background-color:\s*var\(--color-surface-raised\)/);
+  assert.match(body, /color:\s*var\(--color-text\)/);
+  assert.doesNotMatch(body, /#[0-9a-fA-F]{3,8}\b|\b\d+px\b/);
+});
+
+test("week jump date input stays labelled and disables while busy", () => {
+  const src = read("src/components/ui/WeekNavigator.jsx");
+  assert.match(src, /aria-label="Jump to week"/);
+  assert.match(src, /disabled=\{busy\}/);
+});
+
 test("every date input has an accessible label", () => {
   for (const file of [
     "src/components/ui/WeekNavigator.jsx",
