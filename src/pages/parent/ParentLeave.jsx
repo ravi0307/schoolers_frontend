@@ -10,6 +10,7 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, Pill } from "../../components/ui/Primitives";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 
 export default function ParentLeave() {
@@ -61,10 +62,10 @@ export default function ParentLeave() {
       <Card as="form" className="card" onSubmit={submit}>
         <div className="grid2">
           <FormField id="leave-from" label="From" required>
-            <input id="leave-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <DatePicker id="leave-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
           </FormField>
           <FormField id="leave-to" label="To" required>
-            <input id="leave-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            <DatePicker id="leave-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
           </FormField>
         </div>
         <FormField id="leave-reason" label="Reason">

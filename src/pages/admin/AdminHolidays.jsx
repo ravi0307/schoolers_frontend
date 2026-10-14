@@ -5,6 +5,7 @@ import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
 import PageHeader from "../../components/ui/PageHeader";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import {
   formatHolidayLength,
@@ -198,7 +199,7 @@ export default function AdminHolidays() {
               </div>
               <div className="field">
                 <label htmlFor="holiday-date">First date</label>
-                <input
+                <DatePicker
                   id="holiday-date"
                   type="date"
                   value={draft.holiday_date}
@@ -207,7 +208,7 @@ export default function AdminHolidays() {
               </div>
               <div className="field">
                 <label htmlFor="holiday-end-date">Last date (optional)</label>
-                <input
+                <DatePicker
                   id="holiday-end-date"
                   type="date"
                   value={draft.end_date}
@@ -275,7 +276,7 @@ export default function AdminHolidays() {
                           </td>
                           <td>
                             <div className={styles.editDates}>
-                              <input
+                              <DatePicker
                                 className={styles.editInput}
                                 aria-label="First date"
                                 type="date"
@@ -284,7 +285,7 @@ export default function AdminHolidays() {
                                   setDraft((d) => ({ ...d, holiday_date: e.target.value }))
                                 }
                               />
-                              <input
+                              <DatePicker
                                 className={styles.editInput}
                                 aria-label="Last date"
                                 type="date"

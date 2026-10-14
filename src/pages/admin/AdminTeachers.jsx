@@ -7,6 +7,7 @@ import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primi
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
 
@@ -188,7 +189,7 @@ export default function AdminTeachers() {
           </div>
           <div className="field">
             <label>Date of birth</label>
-            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+            <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
           </div>
           <div className="field">
             <label>Emergency contact number</label>

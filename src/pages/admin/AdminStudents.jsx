@@ -11,6 +11,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
 import Select from "../../components/ui/Select";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import styles from "./AdminStudents.module.css";
 
@@ -189,7 +190,7 @@ export default function AdminStudents() {
           </div>
           <div className="field">
             <label>Date of birth</label>
-            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+            <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
           </div>
           <div className="field">
             <label>Gender</label>
@@ -342,7 +343,7 @@ export default function AdminStudents() {
                       </div>
                       <div className="field">
                         <label>Date of birth</label>
-                        <input type="date" value={editDateOfBirth} onChange={(e) => setEditDateOfBirth(e.target.value)} />
+                        <DatePicker type="date" value={editDateOfBirth} onChange={(e) => setEditDateOfBirth(e.target.value)} aria-label="Date of birth" />
                       </div>
                       <div className="field">
                         <label>Gender</label>

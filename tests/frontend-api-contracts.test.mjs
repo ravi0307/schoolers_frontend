@@ -1617,8 +1617,9 @@ test("no accounts month control is typed, not chosen from a list", () => {
   }
   assert.doesNotMatch(source(PICKER), /type="date"/, "the window is whole months, not days");
   assert.match(source(PICKER), /<select[\s\S]*className="week-selector-pick"/);
-  // The week selector is a different control and keeps its date input.
-  assertContains("src/components/ui/WeekNavigator.jsx", [/type="date"/]);
+  // The week selector is a different control and keeps its native date behavior
+  // behind the shared DatePicker.
+  assertContains("src/components/ui/WeekNavigator.jsx", [/<DatePicker[\s\S]*type="date"/]);
 });
 
 test("the month dropdown offers the twelve months and the year dropdown a year list", () => {

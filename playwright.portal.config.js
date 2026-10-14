@@ -2,7 +2,11 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: ["portal-visual.spec.mjs", "dropdown-browser.spec.mjs"],
+  testMatch: [
+    "portal-visual.spec.mjs",
+    "dropdown-browser.spec.mjs",
+    "date-picker-browser.spec.mjs",
+  ],
   timeout: 120_000,
   expect: { timeout: 10_000 },
   workers: 1,

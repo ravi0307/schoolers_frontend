@@ -146,6 +146,7 @@
 }
 .profile-filter label { font-size: 12px; color: var(--ink-soft); }
 .profile-filter input[type="month"] { width: 160px; }
+.profile-filter [data-date-picker-root] { width: 160px; }
 .profile-pager { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .profile-salary-note { color: var(--ink-soft); font-size: 12px; }
 .profile-rule { border: none; border-top: 1px solid var(--line); margin: 20px 0 6px; }
@@ -235,6 +236,9 @@ input[type="month"] {
 .field input[type="date"],
 .field input[type="month"] {
   min-height: var(--control-height);
+}
+.field [data-date-picker-root] {
+  width: 100%;
 }
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator {

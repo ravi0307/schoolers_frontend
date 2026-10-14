@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   formatWeekRange,
   shiftWeekIso,
   startOfWeekIso,
 } from "../../utils/timetableFlow";
+import DatePicker from "./DatePicker";
 import styles from "./WeekNavigator.module.css";
 
 export default function WeekNavigator({ weekStart, onChange, busy = false }) {
@@ -70,9 +71,8 @@ export default function WeekNavigator({ weekStart, onChange, busy = false }) {
       </div>
 
       <label className={styles.dateTrigger}>
-        <CalendarDays aria-hidden="true" size={17} />
         <span>{pickedDateLabel}</span>
-        <input
+        <DatePicker
           className={`week-selector-date ${styles.dateInput}`}
           type="date"
           value={pickerValue}

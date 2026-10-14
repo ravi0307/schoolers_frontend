@@ -5,6 +5,7 @@ import * as leaveApi from "../../api/leave";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, Empty, Pill } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 
 export default function PilotLeave() {
@@ -50,8 +51,8 @@ export default function PilotLeave() {
       <div className="scr-sub">Sent to School Admin for approval</div>
       <form className="card" onSubmit={submit}>
         <div className="grid2">
-          <div className="field"><label>From</label><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></div>
-          <div className="field"><label>To</label><input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} /></div>
+          <div className="field"><label>From</label><DatePicker type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} aria-label="From" /></div>
+          <div className="field"><label>To</label><DatePicker type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} aria-label="To" /></div>
         </div>
         <div className="field"><label>Reason</label><textarea value={reason} onChange={(e) => setReason(e.target.value)} /></div>
         <button className="btn primary" type="submit" disabled={submitting}>
