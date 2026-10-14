@@ -606,7 +606,45 @@ export default function AdminRoutes() {
       <PageHeader
         title="Commute Management"
         subtitle="Routes, vehicles, pickup and drop points, and assigned students."
+        action={!formOpen && (
+          <button className="btn ghost sm" type="button" onClick={() => setFormOpen(true)}>
+            + Add Route
+          </button>
+        )}
       />
+      {formOpen && (
+        <form className={`card white ${styles.routeCreate}`} onSubmit={submit}>
+          <div className="field"><label>Route name</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="grid2">
+            <div className="field">
+              <label>Vehicle</label>
+              <Select value={vehicle} onChange={(e) => setVehicle(e.target.value)} disabled={!vehicles} aria-label="Vehicle">
+                <option value="">Select vehicle</option>
+                {vehicleRecords.map((record) => (
+                  <option key={record.id} value={record.number}>
+                    {record.number} · {record.type}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="field">
+              <label>Driver</label>
+              <Select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots} aria-label="Driver">
+                <option value="">Select driver</option>
+                {pilotRecords.map((record) => (
+                  <option key={record.id} value={record.id}>
+                    {record.value} · {record.username}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit">Create Route</button>
+            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
@@ -616,11 +654,6 @@ export default function AdminRoutes() {
             <div className={styles.listHeader}>
               Route
             </div>
-            {!formOpen && (
-              <button className="btn ghost sm" type="button" onClick={() => setFormOpen(true)}>
-                + Add Route
-              </button>
-            )}
           </div>
           <div className={styles.routeListBody}>
             {data && data.length ? (
@@ -726,39 +759,6 @@ export default function AdminRoutes() {
         </>
       )}
 
-      {formOpen && (
-        <form className={`card white ${styles.routeCreate}`} onSubmit={submit}>
-          <div className="field"><label>Route name</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="grid2">
-            <div className="field">
-              <label>Vehicle</label>
-              <Select value={vehicle} onChange={(e) => setVehicle(e.target.value)} disabled={!vehicles} aria-label="Vehicle">
-                <option value="">Select vehicle</option>
-                {vehicleRecords.map((record) => (
-                  <option key={record.id} value={record.number}>
-                    {record.number} · {record.type}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="field">
-              <label>Driver</label>
-              <Select value={driver} onChange={(e) => setDriver(e.target.value)} disabled={!pilots} aria-label="Driver">
-                <option value="">Select driver</option>
-                {pilotRecords.map((record) => (
-                  <option key={record.id} value={record.id}>
-                    {record.value} · {record.username}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit">Create Route</button>
-            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
-          </div>
-        </form>
-      )}
       </main>
     </AdminShell>
   );

@@ -47,6 +47,7 @@ test("primary Add actions live in the page header action slot", () => {
     "src/pages/admin/AdminSubjects.jsx": "Add Subject",
     "src/pages/admin/AdminStaff.jsx": "Add Staff",
     "src/pages/master/MasterSchools.jsx": "Add School",
+    "src/pages/admin/AdminRoutes.jsx": "Add Route",
   };
   for (const [file, label] of Object.entries(headerPages)) {
     const src = read(file);
@@ -111,6 +112,7 @@ test("create forms render directly below the page header", () => {
     "src/pages/admin/AdminSubjects.jsx",
     "src/pages/admin/AdminStaff.jsx",
     "src/pages/master/MasterSchools.jsx",
+    "src/pages/admin/AdminRoutes.jsx",
   ]) {
     const src = read(file);
     assert.match(

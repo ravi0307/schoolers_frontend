@@ -4,6 +4,10 @@
   min-width: 0;
 }
 
+.page > * {
+  min-width: 0;
+}
+
 .tableActions {
   display: flex;
   flex-wrap: wrap;
