@@ -222,6 +222,47 @@
 }
 
 /*
+ * Native date/month inputs are the only calendar popups in the app (month and
+ * year jumps deliberately use the shared Select instead). The popup itself is
+ * browser-rendered, so what the theme can pin down is: a light color scheme
+ * (never a dark-OS popup), the shared control height, and a calendar icon
+ * that matches the muted form-control icons instead of the default grey.
+ */
+input[type="date"],
+input[type="month"] {
+  color-scheme: light;
+}
+.field input[type="date"],
+.field input[type="month"] {
+  min-height: var(--control-height);
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0.125rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0.65;
+}
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="month"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+input[type="date"]:focus-visible::-webkit-calendar-picker-indicator,
+input[type="month"]:focus-visible::-webkit-calendar-picker-indicator {
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+  opacity: 1;
+}
+input[type="date"]:disabled::-webkit-calendar-picker-indicator,
+input[type="month"]:disabled::-webkit-calendar-picker-indicator {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/*
  * Native selects are used throughout the portals. Keep the control and the
  * browser-rendered option list on the same light surface so a dark OS theme or
  * a page-level dark surface cannot make the menu unreadable. `appearance: none`
