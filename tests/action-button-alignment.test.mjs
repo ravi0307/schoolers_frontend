@@ -47,7 +47,6 @@ test("primary Add actions live in the page header action slot", () => {
     "src/pages/admin/AdminSubjects.jsx": "Add Subject",
     "src/pages/admin/AdminStaff.jsx": "Add Staff",
     "src/pages/master/MasterSchools.jsx": "Add School",
-    "src/pages/admin/AdminRoutes.jsx": "Add Route",
   };
   for (const [file, label] of Object.entries(headerPages)) {
     const src = read(file);
@@ -112,7 +111,6 @@ test("create forms render directly below the page header", () => {
     "src/pages/admin/AdminSubjects.jsx",
     "src/pages/admin/AdminStaff.jsx",
     "src/pages/master/MasterSchools.jsx",
-    "src/pages/admin/AdminRoutes.jsx",
   ]) {
     const src = read(file);
     assert.match(
@@ -121,6 +119,18 @@ test("create forms render directly below the page header", () => {
       `${file} should render its create form immediately below the page header`
     );
   }
+});
+
+test("route create form opens inside the route card below its head", () => {
+  // The Add Route button lives in the route card head (like Add Vehicle in
+  // the vehicle card), so its form expands inside the same card.
+  const src = read("src/pages/admin/AdminRoutes.jsx");
+  const headAt = src.indexOf("routeListHead");
+  const formAt = src.indexOf("routeCreateForm");
+  const bodyAt = src.indexOf("routeListBody");
+  assert.ok(headAt !== -1 && formAt !== -1 && bodyAt !== -1);
+  assert.ok(headAt < formAt && formAt < bodyAt, "route form should sit between the card head and the card body");
+  assert.match(src, /\+ Add Route/);
 });
 
 test("gallery upload form renders before the media cards", () => {

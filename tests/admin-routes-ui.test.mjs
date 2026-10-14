@@ -67,8 +67,10 @@ test("Students on route show picture, class, parent, and stop point", () => {
   assert.match(styles, /\.studentPhoto\s*\{[^}]*object-fit:\s*cover/s);
 });
 
-test("Add Route action sits in the page header and grid children can shrink", () => {
-  assert.match(component, /action=\{!formOpen && \(/);
+test("Add Route lives in the route card head and opens inside the card", () => {
+  assert.match(component, /routeListHead/);
   assert.match(component, /\+ Add Route/);
+  assert.match(component, /routeCreateForm/);
+  assert.match(styles, /\.routeCreateForm\s*\{/);
   assert.match(styles, /\.page\s*>\s*\*\s*\{[^}]*min-width:\s*0/s);
 });

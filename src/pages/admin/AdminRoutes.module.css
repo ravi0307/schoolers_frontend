@@ -84,6 +84,11 @@
   margin-top: var(--space-3);
 }
 
+.routeCreateForm {
+  padding: var(--space-3) var(--space-6);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+}
+
 .routeRow {
   cursor: pointer;
 }
@@ -129,7 +134,8 @@
 
 @media (max-width: 48rem) {
   .routeListHead,
-  .routeListBody {
+  .routeListBody,
+  .routeCreateForm {
     padding-inline: var(--space-4);
   }
 
