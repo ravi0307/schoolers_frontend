@@ -98,3 +98,33 @@ test("shared page header aligns actions right and stacks on narrow screens", () 
   assert.match(css, /@media\s*\(max-width:\s*40rem\)[\s\S]*?\.header\s*\{[^}]*flex-direction:\s*column/s);
   assert.match(css, /\.action\s*\{[^}]*min-width:\s*0/s);
 });
+
+test("create forms render directly below the page header", () => {
+  // The primary action lives in the header, so its form must open just
+  // beneath it instead of at the bottom of the page content.
+  for (const file of [
+    "src/pages/admin/AdminBroadcast.jsx",
+    "src/pages/teacher/TeacherBroadcast.jsx",
+    "src/pages/admin/AdminStudents.jsx",
+    "src/pages/admin/AdminTeachers.jsx",
+    "src/pages/admin/AdminClasses.jsx",
+    "src/pages/admin/AdminSubjects.jsx",
+    "src/pages/admin/AdminStaff.jsx",
+    "src/pages/master/MasterSchools.jsx",
+  ]) {
+    const src = read(file);
+    assert.match(
+      src,
+      /\/>\s*\{formOpen && \(\s*<form/,
+      `${file} should render its create form immediately below the page header`
+    );
+  }
+});
+
+test("gallery upload form renders before the media cards", () => {
+  const view = read("src/components/gallery/GalleryView.jsx");
+  assert.ok(
+    view.indexOf("gallery-form") !== -1 && view.indexOf("gallery-form") < view.indexOf("pager.pageItems.map"),
+    "gallery upload form should sit above the media cards, just below the header action"
+  );
+});

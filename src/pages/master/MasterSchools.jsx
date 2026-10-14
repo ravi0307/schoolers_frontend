@@ -84,28 +84,6 @@ export default function MasterSchools() {
           <button className="btn gold" type="button" onClick={openForm}>+ Add School</button>
         )}
       />
-      {loading && <Spinner />}
-      <ErrorBanner message={error} />
-      {!loading && !error && (
-        <div className="card">
-          {data && data.length ? (
-            pager.pageItems.map((s) => (
-              <div key={s.school_id} className="listitem" onClick={() => navigate(`/master/schools/${s.school_id}`)} style={{ cursor: "pointer" }}>
-                <div className={`avatar ${s.status === "Active" ? "g" : "r"}`}>{s.name[0]}</div>
-                <div className="meta">
-                  <b>{s.name}</b>
-                  <span>{s.city}, {s.state}</span>
-                </div>
-                <Pill tone={s.status === "Active" ? "ok" : "mute"}>{s.status}</Pill>
-              </div>
-            ))
-          ) : (
-            <Empty>No schools yet.</Empty>
-          )}
-          <Pagination {...pager} />
-        </div>
-      )}
-
       {formOpen && (
         <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
           <div className="field"><label>School name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
@@ -166,6 +144,28 @@ export default function MasterSchools() {
           </div>
         </form>
       )}
+      {loading && <Spinner />}
+      <ErrorBanner message={error} />
+      {!loading && !error && (
+        <div className="card">
+          {data && data.length ? (
+            pager.pageItems.map((s) => (
+              <div key={s.school_id} className="listitem" onClick={() => navigate(`/master/schools/${s.school_id}`)} style={{ cursor: "pointer" }}>
+                <div className={`avatar ${s.status === "Active" ? "g" : "r"}`}>{s.name[0]}</div>
+                <div className="meta">
+                  <b>{s.name}</b>
+                  <span>{s.city}, {s.state}</span>
+                </div>
+                <Pill tone={s.status === "Active" ? "ok" : "mute"}>{s.status}</Pill>
+              </div>
+            ))
+          ) : (
+            <Empty>No schools yet.</Empty>
+          )}
+          <Pagination {...pager} />
+        </div>
+      )}
+
     </MasterShell>
   );
 }

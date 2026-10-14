@@ -140,6 +140,38 @@ export default function AdminClasses() {
           <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Class</button>
         )}
       />
+      {formOpen && (
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+          <div className="field">
+            <label>Class name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Grade 5 - A" />
+          </div>
+          <div className="field">
+            <label>Class teacher</label>
+            <Select value={classTeacherId} onChange={(e) => setClassTeacherId(e.target.value)} disabled={teachersLoading} aria-label="Class teacher">
+              <option value="">No class teacher</option>
+              {(teachers || []).map((teacher) => (
+                <option
+                  key={teacher.teacher_id}
+                  value={teacher.teacher_id}
+                  disabled={isTeacherUnavailable(teacher.teacher_id)}
+                  className={teacherAssignments[teacher.teacher_id] ? styles.optionUnavailable : styles.optionAvailable}
+                >
+                  {teacherLabel(teacher)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <ErrorBanner message={teachersError} />
+          <div className="cta-row">
+            <button className="btn primary" type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : "Create Class"}
+            </button>
+            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
@@ -247,37 +279,6 @@ export default function AdminClasses() {
         </div>
       )}
 
-      {formOpen && (
-        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
-          <div className="field">
-            <label>Class name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Grade 5 - A" />
-          </div>
-          <div className="field">
-            <label>Class teacher</label>
-            <Select value={classTeacherId} onChange={(e) => setClassTeacherId(e.target.value)} disabled={teachersLoading} aria-label="Class teacher">
-              <option value="">No class teacher</option>
-              {(teachers || []).map((teacher) => (
-                <option
-                  key={teacher.teacher_id}
-                  value={teacher.teacher_id}
-                  disabled={isTeacherUnavailable(teacher.teacher_id)}
-                  className={teacherAssignments[teacher.teacher_id] ? styles.optionUnavailable : styles.optionAvailable}
-                >
-                  {teacherLabel(teacher)}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <ErrorBanner message={teachersError} />
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Class"}
-            </button>
-            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
-          </div>
-        </form>
-      )}
     </AdminShell>
   );
 }

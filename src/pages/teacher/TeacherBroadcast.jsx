@@ -435,9 +435,6 @@ export default function AdminBroadcast() {
           </button>
         )}
       />
-      {loading && <Spinner />}
-      <ErrorBanner message={error} />
-
       {formOpen && (
         <form className="card white" onSubmit={submit} style={{ marginTop: 14 }}>
           {!editingBroadcastId && (
@@ -477,6 +474,9 @@ export default function AdminBroadcast() {
           </div>
         </form>
       )}
+
+      {loading && <Spinner />}
+      <ErrorBanner message={error} />
 
       {!loading && !error && (
         <>

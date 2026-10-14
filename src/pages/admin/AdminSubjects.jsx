@@ -88,6 +88,21 @@ export default function AdminSubjects() {
           <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Subject</button>
         )}
       />
+      {formOpen && (
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+          <div className="field">
+            <label>Subject name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mathematics" />
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : "Create Subject"}
+            </button>
+            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
@@ -153,20 +168,6 @@ export default function AdminSubjects() {
         </div>
       )}
 
-      {formOpen && (
-        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
-          <div className="field">
-            <label>Subject name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mathematics" />
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Subject"}
-            </button>
-            <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
-          </div>
-        </form>
-      )}
     </AdminShell>
   );
 }
