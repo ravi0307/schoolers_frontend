@@ -5,6 +5,7 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -151,8 +152,65 @@ export default function AdminTeachers() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Teacher's List</div>
-      <div className="scr-sub">{data ? `${data.length} teaching staff` : ""}</div>
+      <PageHeader
+        title="Teacher's List"
+        subtitle={data ? `${data.length} teaching staff` : ""}
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Teacher</button>
+        )}
+      />
+
+      {formOpen && (
+        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
+          <div className="field">
+            <label>Full name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mr. Kapoor" />
+          </div>
+          <div className="field">
+            <label>Role / Title</label>
+            <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Class Teacher · Grade 5-A" />
+          </div>
+          <div className="field">
+            <label>Phone</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+          </div>
+          <div className="field">
+            <label>Email ID</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@example.com" />
+          </div>
+          <div className="field">
+            <label>Present address</label>
+            <textarea value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current address" />
+          </div>
+          <div className="field">
+            <label>Permanent address</label>
+            <textarea value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
+          </div>
+          <div className="field">
+            <label>Date of birth</label>
+            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Emergency contact number</label>
+            <input value={emergencyNumber} onChange={(e) => setEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+          </div>
+          <div className="field">
+            <label>Gender</label>
+            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </Select>
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit" disabled={submitting}>
+              {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Teacher"}
+            </button>
+            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+          </div>
+        </form>
+      )}
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
@@ -251,59 +309,6 @@ export default function AdminTeachers() {
         </>
       )}
 
-      {formOpen ? (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
-          <div className="field">
-            <label>Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mr. Kapoor" />
-          </div>
-          <div className="field">
-            <label>Role / Title</label>
-            <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Class Teacher · Grade 5-A" />
-          </div>
-          <div className="field">
-            <label>Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="field">
-            <label>Email ID</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@example.com" />
-          </div>
-          <div className="field">
-            <label>Present address</label>
-            <textarea value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current address" />
-          </div>
-          <div className="field">
-            <label>Permanent address</label>
-            <textarea value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
-          </div>
-          <div className="field">
-            <label>Date of birth</label>
-            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Emergency contact number</label>
-            <input value={emergencyNumber} onChange={(e) => setEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="field">
-            <label>Gender</label>
-            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </Select>
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Teacher"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
-          </div>
-        </form>
-      ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Teacher</button>
-      )}
     </AdminShell>
   );
 }

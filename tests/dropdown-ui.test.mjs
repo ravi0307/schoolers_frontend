@@ -121,3 +121,16 @@ test("website builder selects and context menu do not override shared styling wi
     assert.doesNotMatch(body, hardCodedColor, `${name} should not hard-code a surface color`);
   }
 });
+
+test("shared Select keeps its hidden native select out of the scroll area", () => {
+  // The accessible native select is visually hidden but stays in the layout
+  // tree, so without pinned offsets its box can land far down a wide
+  // container and stretch document scrollWidth (seen on Broadcast pages).
+  const selectCss = read("src/components/ui/Select.module.css");
+  const body = ruleBody(selectCss, "\\.nativeSelect", "Select nativeSelect");
+  assert.match(body, /position:\s*absolute/, "hidden native select should be absolutely positioned");
+  assert.match(body, /top:\s*0/, "hidden native select should be pinned to the top");
+  assert.match(body, /left:\s*0/, "hidden native select should be pinned to the left");
+  assert.match(body, /width:\s*1px/, "hidden native select should stay 1px wide");
+  assert.match(body, /height:\s*1px/, "hidden native select should stay 1px tall");
+});

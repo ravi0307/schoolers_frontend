@@ -7,6 +7,7 @@ import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import Select from "../../components/ui/Select";
@@ -214,17 +215,15 @@ export default function AdminBroadcast() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Broadcast</div>
-      <div className="scr-sub">Send announcements to the school community</div>
-      {loading && <Spinner />}
-      <ErrorBanner message={error} />
-
-      {!formOpen && (
-        <button className="btn primary" type="button" onClick={() => setFormOpen(true)}>
-          + New Broadcast
-        </button>
-      )}
-
+      <PageHeader
+        title="Broadcast"
+        subtitle="Send announcements to the school community"
+        action={!formOpen && (
+          <button className="btn primary" type="button" onClick={() => setFormOpen(true)}>
+            + New Broadcast
+          </button>
+        )}
+      />
       {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           {!editingBroadcastId && (
@@ -264,6 +263,9 @@ export default function AdminBroadcast() {
           </div>
         </form>
       )}
+
+      {loading && <Spinner />}
+      <ErrorBanner message={error} />
 
       {!loading && !error && (
         <>

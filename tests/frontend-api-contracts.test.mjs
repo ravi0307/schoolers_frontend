@@ -722,8 +722,8 @@ test("admin, teacher, and parent portals each expose the gallery route", () => {
   assertContains("src/components/layout/TeacherShell.jsx", [/to: "\/teacher\/gallery"/]);
   assertContains("src/components/layout/ParentShell.jsx", [/to: "\/parent\/gallery"/]);
   // Teachers upload, admins can also remove, parents only view.
-  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canManage \/>/]);
-  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload canManage \/>/]);
+  assertContains("src/pages/admin/AdminGallery.jsx", [/<GalleryView canUpload canManage formOpen=\{formOpen\} onFormOpenChange=\{setFormOpen\} \/>/]);
+  assertContains("src/pages/teacher/TeacherGallery.jsx", [/<GalleryView canUpload canManage formOpen=\{formOpen\} onFormOpenChange=\{setFormOpen\} \/>/]);
   assertContains("src/pages/parent/ParentGallery.jsx", [/<GalleryView empty=/]);
 });
 

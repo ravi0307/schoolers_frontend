@@ -7,6 +7,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
 import Select from "../../components/ui/Select";
@@ -163,8 +164,93 @@ export default function AdminStudents() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Student List</div>
-      <div className="scr-sub">School-wide roster</div>
+      <PageHeader
+        title="Student List"
+        subtitle="School-wide roster"
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Student</button>
+        )}
+      />
+
+      {formOpen && (
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+          <div className="field">
+            <label>Full name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
+          </div>
+          <div className="field">
+            <label>Class</label>
+            <Select value={classId} onChange={(e) => setClassId(e.target.value)} aria-label="Class">
+              <option value="">Select a class</option>
+              {(classes || []).map((c) => (
+                <option key={c.class_id} value={c.class_id}>{c.name}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="field">
+            <label>Date of birth</label>
+            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Gender</label>
+            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </Select>
+          </div>
+          <ImageUpload
+            label="Image (passport size)"
+            hint="Recent passport-size photo. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
+            value={photoUrl}
+            onChange={setPhotoUrl}
+            onError={toast}
+            schoolId={user?.schoolId}
+          />
+          <div className="field">
+            <label>Aadhaar card number</label>
+            <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} maxLength="20" placeholder="12-digit Aadhaar number" />
+          </div>
+          <div className="field">
+            <label>Birth certificate number</label>
+            <input value={birthCertificateNumber} onChange={(e) => setBirthCertificateNumber(e.target.value)} maxLength="40" placeholder="Birth certificate number" />
+          </div>
+          <DocumentUpload
+            label="Documents"
+            value={documents}
+            onChange={setDocuments}
+            onError={toast}
+            schoolId={user?.schoolId}
+          />
+          <div className="field">
+            <label>Parent name</label>
+            <input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="e.g. Anvi Swaminathan" />
+          </div>
+          <div className="field">
+            <label>Parent phone</label>
+            <input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
+          </div>
+          <div className="field">
+            <label>Parent email</label>
+            <input type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
+          </div>
+          <div className="field">
+            <label>Parent address</label>
+            <textarea rows={3} value={parentAddress} onChange={(e) => setParentAddress(e.target.value)} placeholder="Parent address" />
+          </div>
+          <div className="field">
+            <label>Parent emergency number</label>
+            <input value={parentEmergencyNumber} onChange={(e) => setParentEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" />
+          </div>
+          <div className="cta-row">
+            <button className="btn primary" type="submit" disabled={submitting}>
+              {submitting ? "Adding..." : "Add Student"}
+            </button>
+            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+          </div>
+        </form>
+      )}
 
       <div className="field">
         <input
@@ -389,87 +475,6 @@ export default function AdminStudents() {
         </div>
       )}
 
-      {formOpen ? (
-        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
-          <div className="field">
-            <label>Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
-          </div>
-          <div className="field">
-            <label>Class</label>
-            <Select value={classId} onChange={(e) => setClassId(e.target.value)} aria-label="Class">
-              <option value="">Select a class</option>
-              {(classes || []).map((c) => (
-                <option key={c.class_id} value={c.class_id}>{c.name}</option>
-              ))}
-            </Select>
-          </div>
-          <div className="field">
-            <label>Date of birth</label>
-            <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Gender</label>
-            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </Select>
-          </div>
-          <ImageUpload
-            label="Image (passport size)"
-            hint="Recent passport-size photo. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
-            value={photoUrl}
-            onChange={setPhotoUrl}
-            onError={toast}
-            schoolId={user?.schoolId}
-          />
-          <div className="field">
-            <label>Aadhaar card number</label>
-            <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} maxLength="20" placeholder="12-digit Aadhaar number" />
-          </div>
-          <div className="field">
-            <label>Birth certificate number</label>
-            <input value={birthCertificateNumber} onChange={(e) => setBirthCertificateNumber(e.target.value)} maxLength="40" placeholder="Birth certificate number" />
-          </div>
-          <DocumentUpload
-            label="Documents"
-            value={documents}
-            onChange={setDocuments}
-            onError={toast}
-            schoolId={user?.schoolId}
-          />
-          <div className="field">
-            <label>Parent name</label>
-            <input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="e.g. Anvi Swaminathan" />
-          </div>
-          <div className="field">
-            <label>Parent phone</label>
-            <input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
-          </div>
-          <div className="field">
-            <label>Parent email</label>
-            <input type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
-          </div>
-          <div className="field">
-            <label>Parent address</label>
-            <textarea rows={3} value={parentAddress} onChange={(e) => setParentAddress(e.target.value)} placeholder="Parent address" />
-          </div>
-          <div className="field">
-            <label>Parent emergency number</label>
-            <input value={parentEmergencyNumber} onChange={(e) => setParentEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" />
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? "Adding..." : "Add Student"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
-          </div>
-        </form>
-      ) : (
-        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Student</button>
-      )}
     </AdminShell>
   );
 }

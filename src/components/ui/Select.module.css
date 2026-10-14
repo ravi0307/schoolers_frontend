@@ -67,6 +67,8 @@
   padding: 0;
   pointer-events: none;
   position: absolute;
+  top: 0;
+  left: 0;
   white-space: nowrap;
   width: 1px;
 }

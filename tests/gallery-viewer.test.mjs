@@ -289,8 +289,8 @@ test("parent stays read-only, admin and teacher may manage", () => {
   // Parents browse the gallery and must get no manage flag at all. Teachers do
   // get it, because per-item ownership decides what they actually see.
   assert.doesNotMatch(source("src/pages/parent/ParentGallery.jsx"), /canManage\b/);
-  assert.match(source("src/pages/teacher/TeacherGallery.jsx"), /<GalleryView canUpload canManage \/>/);
-  assert.match(source("src/pages/admin/AdminGallery.jsx"), /<GalleryView canUpload canManage \/>/);
+  assert.match(source("src/pages/teacher/TeacherGallery.jsx"), /<GalleryView canUpload canManage formOpen=\{formOpen\} onFormOpenChange=\{setFormOpen\} \/>/);
+  assert.match(source("src/pages/admin/AdminGallery.jsx"), /<GalleryView canUpload canManage formOpen=\{formOpen\} onFormOpenChange=\{setFormOpen\} \/>/);
 });
 
 test("parents get no manage controls even if a flag were passed", () => {
