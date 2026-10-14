@@ -15,3 +15,21 @@ test("holiday page owns its responsive tokenized styles in a CSS module", () => 
   assert.doesNotMatch(styles, /#[0-9a-fA-F]{3,8}\b|!important|\b\d+px\b/);
   assert.doesNotMatch(globalStyles, /\.holiday-(?:form-row|table|actions-head|days-badge|span-note|editing|edit-input|edit-dates)/);
 });
+
+test("holiday form opens from a header action and closes on cancel or save", () => {
+  assert.match(page, /<PageHeader\b/);
+  assert.match(page, /action=\{!showForm && \(/);
+  assert.match(page, /\+ Add Holiday/);
+  assert.match(page, /setShowForm\(true\)/);
+  assert.match(page, /setShowForm\(false\)/);
+  assert.match(page, />\s*Cancel\s*<\/button>/);
+  // The form sits directly below the header, ahead of the list.
+  assert.match(page, /\/>\s*\{showForm && \(\s*<form/);
+});
+
+test("holiday rows align with centered cells and non-wrapping actions", () => {
+  assert.match(styles, /\.table td\s*\{[^}]*vertical-align:\s*middle/s);
+  assert.match(styles, /\.table :global\(\.table-actions \.btn\)\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(styles, /\.table :global\(\.table-actions \.btn\)\s*\{[^}]*flex:\s*0 0 auto/s);
+  assert.match(styles, /\.table :global\(\.table-actions\)\s*\{[^}]*flex-wrap:\s*nowrap/s);
+});

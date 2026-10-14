@@ -16,6 +16,19 @@
   color: var(--color-text);
 }
 
+.table td {
+  vertical-align: middle;
+}
+
+.table :global(.table-actions) {
+  flex-wrap: nowrap;
+}
+
+.table :global(.table-actions .btn) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .table th:first-child,
 .table td:first-child { min-width: 11.25rem; }
 

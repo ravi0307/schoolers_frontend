@@ -4,6 +4,7 @@ import { useApi } from "../../hooks/useApi";
 import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
+import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import {
   formatHolidayLength,
@@ -47,6 +48,7 @@ export default function AdminHolidays() {
   );
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(null);
   const toast = useToast();
@@ -84,7 +86,23 @@ export default function AdminHolidays() {
       () => academicsApi.createHoliday(payload),
       `${payload.occasion} added`
     );
-    if (ok) setDraft(EMPTY_DRAFT);
+    if (ok) {
+      setDraft(EMPTY_DRAFT);
+      setShowForm(false);
+    }
+  }
+
+  function openForm() {
+    // The draft is shared with the in-place row editor, so opening the add
+    // form always starts blank rather than inheriting a half-typed edit.
+    setEditingId(null);
+    setDraft(EMPTY_DRAFT);
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setDraft(EMPTY_DRAFT);
+    setShowForm(false);
   }
 
   async function saveEdit(event) {
@@ -156,20 +174,17 @@ export default function AdminHolidays() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Holidays</div>
-      <div className="scr-sub">
-        List the occasions your school is closed. A holiday covers one date or a
-        span of consecutive dates, and every day it covers appears in red on the
-        timetable.
-      </div>
+      <PageHeader
+        title="Holidays"
+        subtitle="List the occasions your school is closed. A holiday covers one date or a span of consecutive dates, and every day it covers appears in red on the timetable."
+        action={!showForm && (
+          <button className="btn gold" type="button" onClick={openForm}>+ Add Holiday</button>
+        )}
+      />
 
-      {loading && <Spinner />}
-      <ErrorBanner message={error} />
-
-      {!loading && !error && (
-        <>
-          <form className="card white" onSubmit={addHoliday}>
-            <div className="section-label">Add a holiday</div>
+      {showForm && (
+        <form className="card white" onSubmit={addHoliday}>
+          <div className="section-label">Add a holiday</div>
             <div className={styles.formRow}>
               <div className="field">
                 <label htmlFor="holiday-occasion">Occasion</label>
@@ -207,6 +222,14 @@ export default function AdminHolidays() {
               >
                 {busy ? "Saving..." : "Add holiday"}
               </button>
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={closeForm}
+                disabled={busy}
+              >
+                Cancel
+              </button>
             </div>
             {/* Tells the admin the span is wider than the two fields suggest,
                 which matters most for a term break picked by accident. */}
@@ -216,7 +239,13 @@ export default function AdminHolidays() {
               </div>
             )}
           </form>
+          )}
 
+      {loading && <Spinner />}
+      <ErrorBanner message={error} />
+
+      {!loading && !error && (
+        <>
           <div className="card table-card">
             {rows.length ? (
               <div className="table-scroll">
