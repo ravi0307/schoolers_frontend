@@ -40,3 +40,12 @@ test("holiday rows align with centered cells and non-wrapping actions", () => {
   assert.match(styles, /\.table :global\(\.table-actions \.btn\)\s*\{[^}]*flex:\s*0 0 auto/s);
   assert.match(styles, /\.table :global\(\.table-actions\)\s*\{[^}]*flex-wrap:\s*nowrap/s);
 });
+
+test("holiday list columns are labelled and consistently sized", () => {
+  assert.match(page, /<th>Occasion<\/th>/);
+  assert.match(page, /<th>Date<\/th>/);
+  assert.match(page, /<th className=\{styles\.actionsHead\}>Actions<\/th>/);
+  assert.match(styles, /\.actionsHead\s*\{[^}]*width:\s*1%/);
+  assert.match(styles, /\.actionsHead\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(styles, /\.table th:first-child,\s*\.table td:first-child\s*\{[^}]*min-width:\s*11\.25rem/s);
+});
