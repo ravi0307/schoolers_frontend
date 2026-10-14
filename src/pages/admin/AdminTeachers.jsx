@@ -5,6 +5,7 @@ import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -151,8 +152,13 @@ export default function AdminTeachers() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Teacher's List</div>
-      <div className="scr-sub">{data ? `${data.length} teaching staff` : ""}</div>
+      <PageHeader
+        title="Teacher's List"
+        subtitle={data ? `${data.length} teaching staff` : ""}
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Teacher</button>
+        )}
+      />
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
@@ -251,7 +257,7 @@ export default function AdminTeachers() {
         </>
       )}
 
-      {formOpen ? (
+      {formOpen && (
         <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
           <div className="field">
             <label>Full name</label>
@@ -301,8 +307,6 @@ export default function AdminTeachers() {
             <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
           </div>
         </form>
-      ) : (
-        <button className="btn gold" style={{ marginTop: 10 }} onClick={() => setFormOpen(true)}>+ Add Teacher</button>
       )}
     </AdminShell>
   );

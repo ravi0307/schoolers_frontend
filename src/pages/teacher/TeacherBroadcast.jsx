@@ -8,6 +8,7 @@ import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import Select from "../../components/ui/Select";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
@@ -425,16 +426,17 @@ export default function AdminBroadcast() {
 
   return (
     <TeacherShell>
-      <div className="scr-title">Broadcast</div>
-      <div className="scr-sub">Send announcements to the school community</div>
+      <PageHeader
+        title="Broadcast"
+        subtitle="Send announcements to the school community"
+        action={!formOpen && (
+          <button className="btn primary" type="button" onClick={() => setFormOpen(true)}>
+            + New Broadcast
+          </button>
+        )}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
-
-      {!formOpen && (
-        <button className="btn primary" type="button" onClick={() => setFormOpen(true)}>
-          + New Broadcast
-        </button>
-      )}
 
       {formOpen && (
         <form className="card white" onSubmit={submit} style={{ marginTop: 14 }}>

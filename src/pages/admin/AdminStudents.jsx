@@ -7,6 +7,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner, ErrorBanner, Empty, Pill, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
 import Select from "../../components/ui/Select";
@@ -163,8 +164,13 @@ export default function AdminStudents() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Student List</div>
-      <div className="scr-sub">School-wide roster</div>
+      <PageHeader
+        title="Student List"
+        subtitle="School-wide roster"
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Student</button>
+        )}
+      />
 
       <div className="field">
         <input
@@ -389,7 +395,7 @@ export default function AdminStudents() {
         </div>
       )}
 
-      {formOpen ? (
+      {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Full name</label>
@@ -467,8 +473,6 @@ export default function AdminStudents() {
             <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
           </div>
         </form>
-      ) : (
-        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Student</button>
       )}
     </AdminShell>
   );

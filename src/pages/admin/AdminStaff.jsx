@@ -6,6 +6,7 @@ import * as attendanceApi from "../../api/attendance";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
@@ -285,11 +286,13 @@ export default function AdminStaff() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Staff Directory</div>
-      <div className="scr-sub">
-        {data ? `${data.length} staff members` : ""}
-        {data && data.length > 0 ? ` · ${today}` : ""}
-      </div>
+      <PageHeader
+        title="Staff Directory"
+        subtitle={data ? `${data.length} staff members${data.length > 0 ? ` · ${today}` : ""}` : ""}
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Staff</button>
+        )}
+      />
 
       {loading && <Spinner />}
       <ErrorBanner message={error} />
@@ -441,7 +444,7 @@ export default function AdminStaff() {
         </>
       )}
 
-      {formOpen ? (
+      {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Full name <span className="required-mark">*</span></label>
@@ -534,10 +537,6 @@ export default function AdminStaff() {
             <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
           </div>
         </form>
-      ) : (
-        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>
-          + Add Staff
-        </button>
       )}
     </AdminShell>
   );

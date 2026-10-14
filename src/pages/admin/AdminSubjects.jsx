@@ -5,6 +5,7 @@ import * as academicsApi from "../../api/academics";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
+import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import styles from "./AdminSubjects.module.css";
 
@@ -80,10 +81,13 @@ export default function AdminSubjects() {
 
   return (
     <AdminShell>
-      <div className="scr-title">Subjects</div>
-      <div className="scr-sub">
-        {data ? `${active.length} active · ${inactive.length} inactive` : ""}
-      </div>
+      <PageHeader
+        title="Subjects"
+        subtitle={data ? `${active.length} active · ${inactive.length} inactive` : ""}
+        action={!formOpen && (
+          <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>+ Add Subject</button>
+        )}
+      />
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && !error && (
@@ -149,7 +153,7 @@ export default function AdminSubjects() {
         </div>
       )}
 
-      {formOpen ? (
+      {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
           <div className="field">
             <label>Subject name</label>
@@ -162,8 +166,6 @@ export default function AdminSubjects() {
             <button className="btn ghost" type="button" onClick={() => setFormOpen(false)}>Cancel</button>
           </div>
         </form>
-      ) : (
-        <button className={`btn gold ${styles.formCard}`} onClick={() => setFormOpen(true)}>+ Add Subject</button>
       )}
     </AdminShell>
   );

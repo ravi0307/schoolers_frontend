@@ -20,11 +20,20 @@ function formatDateTime(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
 }
 
-export default function GalleryView({ canUpload = false, canManage = false, empty = "No gallery media yet." }) {
+export default function GalleryView({ canUpload = false, canManage = false, empty = "No gallery media yet.", formOpen: formOpenProp, onFormOpenChange }) {
   const toast = useToast();
   const { user } = useAuth();
   const { data, loading, error, refetch } = useApi(() => galleryApi.listGallery(), []);
-  const [formOpen, setFormOpen] = useState(false);
+  const [internalFormOpen, setInternalFormOpen] = useState(false);
+  // Controlled mode lets a page render the Add toggle inside its own page
+  // header (aligned with the title) instead of inside the content flow.
+  // Uncontrolled pages keep the previous in-content toggle button.
+  const formOpen = formOpenProp ?? internalFormOpen;
+  const setFormOpen = (update) => {
+    const next = typeof update === "function" ? update(formOpen) : update;
+    if (formOpenProp === undefined) setInternalFormOpen(next);
+    onFormOpenChange?.(next);
+  };
   const [title, setTitle] = useState("");
   const [files, setFiles] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -259,7 +268,7 @@ export default function GalleryView({ canUpload = false, canManage = false, empt
 
   return (
     <>
-      {canUpload && (
+      {canUpload && formOpenProp === undefined && (
         <button className="btn gold gallery-add-button" onClick={() => setFormOpen((open) => !open)}>
           {formOpen ? "✕ Cancel" : "➕ Add to Gallery"}
         </button>
