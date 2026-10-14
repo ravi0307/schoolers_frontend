@@ -132,3 +132,39 @@ test("every date input has an accessible label", () => {
     );
   }
 });
+
+test("the shared calendar uses theme tokens for surfaces, states, and positioning", () => {
+  assert.match(datePickerCss, /position:\s*fixed/);
+  assert.match(datePickerCss, /background:\s*var\(--color-surface-raised\)/);
+  assert.match(datePickerCss, /border:\s*var\(--border-width-thin\) solid var\(--color-border\)/);
+  assert.match(datePickerCss, /border-radius:\s*var\(--radius-lg\)/);
+  assert.match(datePickerCss, /box-shadow:\s*var\(--shadow-md\)/);
+  assert.match(datePickerCss, /data-selected/);
+  assert.match(datePickerCss, /background:\s*var\(--color-primary\)/);
+  assert.match(datePickerCss, /data-today/);
+  assert.match(datePickerCss, /data-outside-month/);
+  assert.match(datePickerCss, /:disabled/);
+});
+
+const callsites = [
+  "src/components/ui/WeekNavigator.jsx",
+  "src/components/profile/StaffSelfSummary.jsx",
+  "src/pages/admin/AdminStudents.jsx",
+  "src/pages/admin/AdminTeachers.jsx",
+  "src/pages/admin/AdminHolidays.jsx",
+  "src/pages/admin/AdminStaff.jsx",
+  "src/pages/admin/AdminTripHistory.jsx",
+  "src/pages/parent/ParentLeave.jsx",
+  "src/pages/pilot/PilotLeave.jsx",
+];
+
+test("all application date and month callsites use the shared DatePicker", () => {
+  let count = 0;
+  for (const file of callsites) {
+    const src = read(file);
+    assert.match(src, /import DatePicker from /, `${file} should import DatePicker`);
+    assert.doesNotMatch(src, /<input\b[^>]*type="(?:date|month)"/, `${file} still renders a native date/month input`);
+    count += (src.match(/<DatePicker\b/g) || []).length;
+  }
+  assert.equal(count, 16, "the audited application callsite count changed unexpectedly");
+});
