@@ -104,8 +104,8 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h2 style={{ margin: "0 0 4px" }}>Schoolers Sign In</h2>
-        <p style={{ color: "var(--ink-soft)", fontSize: 12.5, margin: "0 0 20px" }}>
+        <h2 className="login-title">Schoolers Sign In</h2>
+        <p className="login-subtitle">
           Parent · Teacher · School Admin · Staff · Pilot · Master Admin
         </p>
         {error && <div className="error-banner">{error}</div>}
@@ -145,7 +145,7 @@ export default function Login() {
                 <button className="btn primary block" type="submit" disabled={resetSubmitting}>
                   {resetSubmitting ? "Sending OTP..." : "Continue"}
                 </button>
-                <p style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 10 }}>
+                <p className="login-hint">
                   We'll email a 6-digit OTP to the address on file for this account.
                 </p>
               </form>
