@@ -15,6 +15,34 @@
   margin-inline-start: auto;
 }
 
+.routeList {
+  overflow: hidden;
+  padding: 0;
+}
+
+.routeListHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
+}
+
+.listHeader,
+.sectionHeading {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.routeListBody {
+  padding: 0 var(--space-6);
+}
+
 .vehicleSection {
   margin-top: var(--space-2);
 }
