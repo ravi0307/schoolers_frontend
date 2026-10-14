@@ -51,6 +51,11 @@
   font-weight: var(--font-weight-regular);
 }
 
+.filtersBar :global([data-date-picker-root]) {
+  width: 100%;
+  min-width: 0;
+}
+
 .filterSelect:focus-visible,
 .filterInput:focus-visible {
   border-color: var(--color-focus);

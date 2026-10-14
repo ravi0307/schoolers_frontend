@@ -64,6 +64,13 @@
   cursor: not-allowed;
 }
 
+.dateTrigger :global([data-date-picker-root]) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 @media (max-width: 40rem) {
   .navigator {
     width: 100%;

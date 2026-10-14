@@ -5,6 +5,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import Modal from "../../components/ui/Modal";
 import Select from "../../components/ui/Select";
+import DatePicker from "../../components/ui/DatePicker";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
@@ -395,11 +396,11 @@ export default function AdminTripHistory() {
         </label>
         <label>
           From
-          <input className={styles.filterInput} type="date" value={filterFrom} onChange={(event) => setFilterFrom(event.target.value)} />
+          <DatePicker className={styles.filterInput} type="date" value={filterFrom} onChange={(event) => setFilterFrom(event.target.value)} aria-label="From" />
         </label>
         <label>
           To
-          <input className={styles.filterInput} type="date" value={filterTo} onChange={(event) => setFilterTo(event.target.value)} />
+          <DatePicker className={styles.filterInput} type="date" value={filterTo} onChange={(event) => setFilterTo(event.target.value)} aria-label="To" />
         </label>
       </section>
 

@@ -247,7 +247,7 @@ test("the holidays form offers an optional last date alongside the first", () =>
   assertContains("src/pages/admin/AdminHolidays.jsx", [
     /First date/,
     /Last date \(optional\)/,
-    /type="date"/,
+    /<DatePicker[\s\S]*type="date"/,
     /end_date/,
   ]);
   // The end field must not allow a day before the start, and the draft must
@@ -315,7 +315,7 @@ test("week selector offers previous, next, and back-to-this-week", () => {
     /goToToday/,
     /startOfWeekIso\(\)/,
     /formatWeekRange\(weekStart\)/,
-    /type="date"/,
+    /<DatePicker[\s\S]*type="date"/,
     /new Intl\.DateTimeFormat\("en-GB"/,
     /setPickerValue\(weekStart\)/,
   ]);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Spinner, ErrorBanner } from "../ui/Primitives";
+import DatePicker from "../ui/DatePicker";
 import * as reportsApi from "../../api/reports";
 import {
   attendanceLabel,
@@ -58,7 +59,7 @@ function AttendanceSummary({ attendance, month, onMonth }) {
 
       <div className="profile-filter">
         <label htmlFor="profile-attendance-month">Month</label>
-        <input
+        <DatePicker
           id="profile-attendance-month"
           type="month"
           value={month}

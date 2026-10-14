@@ -1,0 +1,301 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  padding-right: 2.75rem;
+  color-scheme: light;
+}
+
+.input::-webkit-calendar-picker-indicator {
+  display: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.trigger {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.trigger:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+  color: var(--color-primary);
+}
+
+.trigger:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.calendar {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: var(--z-modal);
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - 1rem);
+  overflow: auto;
+  padding: var(--space-3);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  visibility: hidden;
+}
+
+.calendar[data-placement="above"] {
+  transform-origin: bottom center;
+}
+
+.calendar[data-placement="below"] {
+  transform-origin: top center;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.headerTitle {
+  min-width: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.navigationButton,
+.footerButton,
+.yearInput {
+  min-height: 2rem;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.navigationButton {
+  display: inline-grid;
+  width: 2rem;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.navigationButton:hover:not(:disabled),
+.navigationButton:focus-visible,
+.footerButton:hover:not(:disabled),
+.footerButton:focus-visible {
+  border-color: var(--color-border);
+  background: var(--color-neutral-100);
+}
+
+.navigationButton:disabled,
+.footerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.headerControls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.monthSelect {
+  min-width: 7.25rem;
+}
+
+.yearInput {
+  width: 4.5rem;
+  padding: var(--space-1) var(--space-2);
+  border-color: var(--color-border);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.yearInput:focus-visible {
+  border-color: var(--color-focus);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.weekdayRow,
+.dayGrid,
+.monthGrid {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.weekdayRow,
+.dayGrid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekday {
+  padding: var(--space-1) 0;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.dayCell,
+.monthCell {
+  min-width: 0;
+  min-height: 2rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.dayCell {
+  padding: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.dayCell:hover:not(:disabled),
+.dayCell:focus-visible,
+.monthCell:hover:not(:disabled),
+.monthCell:focus-visible {
+  background: var(--color-neutral-100);
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.dayCell[data-selected="true"],
+.monthCell[data-selected="true"] {
+  background: var(--color-primary);
+  color: var(--color-neutral-0);
+  font-weight: var(--font-weight-bold);
+}
+
+.dayCell[data-selected="true"]:hover:not(:disabled),
+.dayCell[data-selected="true"]:focus-visible,
+.monthCell[data-selected="true"]:hover:not(:disabled),
+.monthCell[data-selected="true"]:focus-visible {
+  background: var(--color-secondary);
+  outline-color: var(--color-primary);
+}
+
+.dayCell[data-today="true"]:not([data-selected="true"]) {
+  box-shadow: inset 0 0 0 1px var(--color-focus);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.dayCell[data-outside-month="true"] {
+  color: var(--color-text-muted);
+  opacity: 0.58;
+}
+
+.dayCell:disabled,
+.monthCell:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+  text-decoration: line-through;
+}
+
+.monthGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.monthCell {
+  padding: var(--space-2) var(--space-1);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.monthCell[data-today="true"]:not([data-selected="true"]) {
+  box-shadow: inset 0 0 0 1px var(--color-focus);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--border-width-thin) solid var(--color-border);
+}
+
+.footerButton {
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.footerButton:focus-visible,
+.navigationButton:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 30rem) {
+  .calendar {
+    padding: var(--space-2);
+  }
+
+  .header {
+    gap: var(--space-1);
+  }
+
+  .dayCell,
+  .monthCell {
+    min-height: 2.125rem;
+  }
+}

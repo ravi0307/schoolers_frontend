@@ -8,6 +8,7 @@ import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primi
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
+import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
 import styles from "./AdminStaff.module.css";
@@ -343,7 +344,7 @@ export default function AdminStaff() {
           </div>
           <div className="field">
             <label>Date of birth <span className="required-mark">*</span></label>
-            <input required type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+            <DatePicker required type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
           </div>
           <div className="field">
             <label>Marital status <span className="required-mark">*</span></label>

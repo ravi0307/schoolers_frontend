@@ -177,7 +177,7 @@ test("the summary page filters by month and pages the salary window", () => {
   const component = source("src/components/profile/StaffSelfSummary.jsx");
   assert.match(component, /reportsApi\.myStaffSummary\(\{ attendanceMonth, salaryEnd \}\)/);
   assert.match(component, /\[attendanceMonth, salaryEnd\]/);
-  assert.match(component, /type="month"/);
+  assert.match(component, /<DatePicker[\s\S]*type="month"/);
   assert.match(component, /onMonth\(""\)/);
   assert.match(component, /salaryPageAnchor\(data\?\.salary, direction\)/);
   // A month picker must not offer a future month of attendance.
