@@ -27,6 +27,19 @@ test("approve and reject open a remark dialog with confirm and cancel", () => {
   assert.match(page, /leaveApi\.rejectLeave\(decision\.request\.leave_id, body\)/);
 });
 
+test("decision submit trims the remark and guards double submits", () => {
+  assert.match(page, /remark\.trim\(\) \? \{ remark: remark\.trim\(\) \} : undefined/);
+  assert.match(page, /if \(!decision \|\| savingDecision\) return/);
+  assert.match(page, /disabled=\{savingDecision\}/);
+  assert.match(page, /savingDecision \? "Saving…" : decision\.action/);
+});
+
+test("pending buttons open the dialog instead of deciding directly", () => {
+  assert.doesNotMatch(page, /approveLeave\(id\)/);
+  assert.doesNotMatch(page, /rejectLeave\(id\)/);
+  assert.match(page, /setDecision\(\{ request, action \}\)/);
+});
+
 test("leave history is a structured table showing decision remarks", () => {
   assert.match(page, /className="card table-card"/);
   assert.match(page, /className="table-scroll"/);
