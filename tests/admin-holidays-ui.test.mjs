@@ -27,6 +27,13 @@ test("holiday form opens from a header action and closes on cancel or save", () 
   assert.match(page, /\/>\s*\{showForm && \(\s*<form/);
 });
 
+test("opening the add form starts blank instead of inheriting a row edit", () => {
+  // The draft doubles as the in-place row-edit draft, so opening or
+  // closing the add form must reset it.
+  assert.match(page, /function openForm\(\) \{[\s\S]*?setEditingId\(null\)[\s\S]*?setDraft\(EMPTY_DRAFT\)[\s\S]*?setShowForm\(true\)/);
+  assert.match(page, /function closeForm\(\) \{[\s\S]*?setDraft\(EMPTY_DRAFT\)[\s\S]*?setShowForm\(false\)/);
+});
+
 test("holiday rows align with centered cells and non-wrapping actions", () => {
   assert.match(styles, /\.table td\s*\{[^}]*vertical-align:\s*middle/s);
   assert.match(styles, /\.table :global\(\.table-actions \.btn\)\s*\{[^}]*white-space:\s*nowrap/s);
