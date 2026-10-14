@@ -128,3 +128,31 @@ test("gallery upload form renders before the media cards", () => {
     "gallery upload form should sit above the media cards, just below the header action"
   );
 });
+
+test("gallery form state stays in sync in both controlled and uncontrolled modes", () => {
+  const view = read("src/components/gallery/GalleryView.jsx");
+  // Controlled pages own the state; the view mirrors the prop otherwise.
+  assert.match(view, /formOpenProp \?\? internalFormOpen/);
+  // State updates always notify the parent when one is attached.
+  assert.match(view, /onFormOpenChange\?\.\(next\)/);
+  // Internal state only advances when no parent controls the form.
+  assert.match(view, /if \(formOpenProp === undefined\) setInternalFormOpen\(next\)/);
+  // The in-content toggle exists solely for uncontrolled callers.
+  assert.match(view, /canUpload && formOpenProp === undefined &&/);
+});
+
+test("header actions hide while their own form is open", () => {
+  // Avoids showing the Add button twice (header plus an open form below it).
+  for (const file of [
+    "src/pages/admin/AdminBroadcast.jsx",
+    "src/pages/teacher/TeacherBroadcast.jsx",
+    "src/pages/admin/AdminStudents.jsx",
+    "src/pages/admin/AdminTeachers.jsx",
+    "src/pages/admin/AdminClasses.jsx",
+    "src/pages/admin/AdminSubjects.jsx",
+    "src/pages/admin/AdminStaff.jsx",
+    "src/pages/master/MasterSchools.jsx",
+  ]) {
+    assert.match(read(file), /action=\{!formOpen && \(/, `${file} should hide its header action while the form is open`);
+  }
+});
