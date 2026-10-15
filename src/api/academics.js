@@ -40,3 +40,27 @@ export const createAcademicEvent = (data) =>
 export const updateAcademicEvent = (id, data) =>
   client.patch(`/academic-events/${id}`, data).then((r) => r.data);
 export const deleteAcademicEvent = (id) => client.delete(`/academic-events/${id}`);
+
+// Examination setup (Phase 2, marks_feature): school-scoped types and
+// versioned grade scales. Types/scales deactivate instead of deleting;
+// grade scale edits use copy-on-write new versions (see newGradeScaleVersion).
+export const listExaminationTypes = () => client.get("/examination-types").then((r) => r.data);
+export const createExaminationType = (data) =>
+  client.post("/examination-types", data).then((r) => r.data);
+export const updateExaminationType = (id, data) =>
+  client.patch(`/examination-types/${id}`, data).then((r) => r.data);
+
+export const listGradeScales = () => client.get("/grade-scales").then((r) => r.data);
+export const createGradeScale = (data) => client.post("/grade-scales", data).then((r) => r.data);
+export const updateGradeScale = (id, data) =>
+  client.patch(`/grade-scales/${id}`, data).then((r) => r.data);
+export const newGradeScaleVersion = (id) =>
+  client.post(`/grade-scales/${id}/new-version`).then((r) => r.data);
+
+export const listGradeLevels = (scaleId) =>
+  client.get(`/grade-scales/${scaleId}/levels`).then((r) => r.data);
+export const createGradeLevel = (scaleId, data) =>
+  client.post(`/grade-scales/${scaleId}/levels`, data).then((r) => r.data);
+export const updateGradeLevel = (id, data) =>
+  client.patch(`/grade-levels/${id}`, data).then((r) => r.data);
+export const deleteGradeLevel = (id) => client.delete(`/grade-levels/${id}`);

@@ -8,3 +8,11 @@ export const deleteSchool = (id) => client.delete(`/schools/${id}`);
 export const updateFeatures = (id, data) => client.patch(`/schools/${id}/features`, data).then((r) => r.data);
 export const updateStatus = (id, status) => client.patch(`/schools/${id}/status`, { status }).then((r) => r.data);
 export const getStats = (id) => client.get(`/schools/${id}/stats`).then((r) => r.data);
+
+// Marking system (Phase 2, marks_feature): per-school marks/grades setting.
+// Switching with existing marks requires confirm=true (409 carries counts);
+// published history always keeps its captured format.
+export const updateMarkingSystem = (id, markingSystem, confirm = false) =>
+  client
+    .patch(`/schools/${id}/marking-system`, { marking_system: markingSystem, confirm })
+    .then((r) => r.data);
