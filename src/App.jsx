@@ -53,6 +53,12 @@ import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminTripHistory from "./pages/admin/AdminTripHistory";
+import AdminAcademicCalendar from "./pages/admin/AdminAcademicCalendar";
+import AdminExamSettings from "./pages/admin/AdminExamSettings";
+import AdminExaminations from "./pages/admin/AdminExaminations";
+import AdminMarksEntry from "./pages/admin/AdminMarksEntry";
+import AdminPromotion from "./pages/admin/AdminPromotion";
+import AdminExamResults from "./pages/admin/AdminExamResults";
 
 import PilotPickDrop from "./pages/pilot/PilotPickDrop";
 import PilotBroadcast from "./pages/pilot/PilotBroadcast";
@@ -185,6 +191,12 @@ export default function App() {
               <Route path="accounts" element={<AdminAccounts />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="support" element={<AdminSupport />} />
+              <Route path="academic-calendar" element={<AdminAcademicCalendar />} />
+              <Route path="exam-settings" element={<AdminExamSettings />} />
+              <Route path="examinations" element={<AdminExaminations />} />
+              <Route path="marks-entry" element={<AdminMarksEntry />} />
+              <Route path="promotion" element={<AdminPromotion />} />
+              <Route path="exam-results" element={<AdminExamResults />} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Route>
