@@ -1,3 +1,10 @@
+-- NON-AUTHORITATIVE SNAPSHOT (marks_feature, Phase 7): this schema copy
+-- is stale where it differs from the live backend models in
+-- `schoolers 3/common/models.py` (e.g. school-scoped subjects,
+-- staff-linked marks authorship, dated holiday ranges). The live
+-- models plus db-migration-*.sql govern; do not use this file to
+-- reason about current constraints.
+
 -- DROP SCHEMA schoolers;
 
 CREATE SCHEMA schoolers AUTHORIZATION ravi;
