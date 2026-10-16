@@ -43,6 +43,6 @@ export const exportSessionMarks = (sessionId) =>
 // rows grouped by examination, plus legacy terms and a year aggregate.
 // Grade-wise scopes carry distributions, never invented numbers.
 export const studentResults = (studentId, params) =>
-  client.get(`/results/student/${studentId}`, { params }).then((r) => r.data);
+  client.get(`/marks/results/student/${studentId}`, { params }).then((r) => r.data);
 export const examinationResults = (examId) =>
-  client.get(`/results/examination/${examId}`).then((r) => r.data);
+  client.get(`/marks/results/examination/${examId}`).then((r) => r.data);
