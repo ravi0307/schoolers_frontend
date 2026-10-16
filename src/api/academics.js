@@ -94,3 +94,17 @@ export const listSessionVersions = (id) =>
   client.get(`/sessions/${id}/versions`).then((r) => r.data);
 export const examinationTimetable = (params) =>
   client.get("/examinations/timetable", { params }).then((r) => r.data);
+
+// Subject offerings and enrollment (Phase 5, marks_feature): offerings say
+// what a class teaches; enrollment says who takes what. Both are opt-in:
+// classes/students without rows keep exact legacy behavior, and entry grids
+// refuse non-enrolled students instead of recording zeros.
+export const listClassOfferings = (classId) =>
+  client.get(`/classes/${classId}/subjects`).then((r) => r.data);
+export const setClassOffering = (classId, data) =>
+  client.post(`/classes/${classId}/subjects`, data).then((r) => r.data);
+export const deleteClassOffering = (classId, subjectId) =>
+  client.delete(`/classes/${classId}/subjects/${subjectId}`);
+
+export const listStudentSubjects = (studentId, yearId) =>
+  client.get(`/students/${studentId}/subjects`, { params: { year_id: yearId } }).then((r) => r.data);
