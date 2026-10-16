@@ -38,3 +38,11 @@ export const commitImport = (batchId, applyPartial = false) =>
   client.post(`/marks/import/${batchId}/commit`, null, { params: { apply_partial: applyPartial } }).then((r) => r.data);
 export const exportSessionMarks = (sessionId) =>
   client.get("/marks/export", { params: { session_id: sessionId } }).then((r) => r.data);
+
+// Results aggregation (Phase 6, marks_feature): published, non-withheld
+// rows grouped by examination, plus legacy terms and a year aggregate.
+// Grade-wise scopes carry distributions, never invented numbers.
+export const studentResults = (studentId, params) =>
+  client.get(`/results/student/${studentId}`, { params }).then((r) => r.data);
+export const examinationResults = (examId) =>
+  client.get(`/results/examination/${examId}`).then((r) => r.data);
