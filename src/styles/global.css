@@ -222,6 +222,18 @@
   border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); font-family: inherit;
 }
 
+/* Compact numeric/grade cell used in marks entry grids. */
+input.score-input {
+  width: 5.5rem;
+  border: 1.5px solid var(--line);
+  background-color: var(--paper-light);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  color: var(--ink);
+  font-family: inherit;
+}
+
 /*
  * Native date/month inputs are the only calendar popups in the app (month and
  * year jumps deliberately use the shared Select instead). The popup itself is

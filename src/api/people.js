@@ -20,3 +20,17 @@ export const listStudents = (params) => client.get("/students", { params }).then
 export const createStudent = (data) => client.post("/students", data).then((r) => r.data);
 export const updateStudent = (id, data) => client.patch(`/students/${id}`, data).then((r) => r.data);
 export const deleteStudent = (id) => client.delete(`/students/${id}`);
+
+// Promotion and carry-forward (Phase 5, marks_feature): preview proposes
+// moves plus exceptions without writing; commit applies enrollment rows
+// plus the class-cache update atomically under an idempotency key.
+export const previewPromotion = (data) => client.post("/promotions/preview", data).then((r) => r.data);
+export const commitPromotion = (data) => client.post("/promotions/commit", data).then((r) => r.data);
+export const listPromotionBatches = () => client.get("/promotions/batches").then((r) => r.data);
+export const getPromotionBatch = (id) => client.get(`/promotions/batches/${id}`).then((r) => r.data);
+
+// Per-student subject enrollment (writes are admin-only server-side).
+export const enrollStudentSubject = (studentId, data) =>
+  client.post(`/students/${studentId}/subjects`, data).then((r) => r.data);
+export const updateStudentSubject = (studentId, subjectId, data) =>
+  client.patch(`/students/${studentId}/subjects/${subjectId}`, data).then((r) => r.data);

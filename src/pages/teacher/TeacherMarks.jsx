@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import TeacherShell from "../../components/layout/TeacherShell";
 import ClassPicker from "../../components/ui/ClassPicker";
+import Select from "../../components/ui/Select";
 import { useTeacherContext } from "../../context/TeacherContext";
 import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
@@ -11,6 +12,8 @@ import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { apiErrorMessage } from "../../api/client";
 
+const SESSION_STATUSES = ["present", "absent", "missing", "exempt"];
+
 export default function TeacherMarks() {
   const { classIds, selectedClassId, setSelectedClassId, subjectsForSelectedClass, loading: loadLoading } =
     useTeacherContext();
@@ -18,6 +21,12 @@ export default function TeacherMarks() {
   const [editing, setEditing] = useState(null); // {studentId, subjectId}
   const [scoreInput, setScoreInput] = useState("");
   const [extraScores, setExtraScores] = useState({});
+  // Session mode (Phase 6): examination-based entry alongside the legacy
+  // term grid below. The legacy path is untouched.
+  const [mode, setMode] = useState("term");
+  const [examId, setExamId] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [sessionDrafts, setSessionDrafts] = useState({});
 
   const { data: students, loading, error } = useApi(
     () => (selectedClassId ? peopleApi.listStudents({ class_id: selectedClassId }) : Promise.resolve([])),
@@ -70,6 +79,100 @@ export default function TeacherMarks() {
 
   const pager = usePagination(students);
 
+  const exams = useApi(
+    () => (mode === "session" ? academicsApi.listExaminations() : Promise.resolve([])),
+    [mode]
+  );
+  const examSessions = useApi(
+    () => (mode === "session" && examId
+      ? academicsApi.listExaminationSessions(examId)
+      : Promise.resolve([])),
+    [mode, examId]
+  );
+  const mySessions = useMemo(
+    () => (examSessions.data || []).filter((s) => classIds.includes(s.class_id)),
+    [examSessions.data, classIds]
+  );
+  const activeSession = mySessions.find((s) => s.session_id === Number(sessionId));
+  const activeExam = (exams.data || []).find((e) => e.exam_id === Number(examId));
+  const sessionResults = useApi(
+    () => (mode === "session" && examId ? marksApi.examinationResults(examId) : Promise.resolve(null)),
+    [mode, examId, sessionId]
+  );
+  const sessionMarksByStudent = useMemo(() => {
+    const map = {};
+    for (const r of sessionResults.data?.results || []) {
+      for (const s of r.subjects || []) {
+        if (s.examination_session_id === Number(sessionId)) map[r.student_id] = s;
+      }
+    }
+    return map;
+  }, [sessionResults.data, sessionId]);
+  const sessionStudents = useApi(
+    () => (mode === "session" && activeSession
+      ? peopleApi.listStudents({ class_id: activeSession.class_id })
+      : Promise.resolve([])),
+    [activeSession?.session_id]
+  );
+
+  async function saveSessionCell(studentId) {
+    const raw = sessionDrafts[studentId];
+    if (raw === undefined || raw === "") return;
+    const existing = sessionMarksByStudent[studentId];
+    const payload = { assessment_status: "present" };
+    if (activeExam?.result_format_expectation === "grade") payload.grade_label = String(raw).trim();
+    else payload.score = Number(raw);
+    try {
+      if (existing && existing.workflow_status === "draft") {
+        await marksApi.updateSessionMark(existing.mark_id, payload);
+        toast("Draft updated");
+      } else if (!existing) {
+        await marksApi.createSessionMark({
+          session_id: Number(sessionId),
+          student_id: studentId,
+          subject_id: activeSession.subject_id,
+          ...payload,
+        });
+        toast("Draft saved");
+      } else {
+        toast("Only drafts can change here");
+        return;
+      }
+      setSessionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
+      sessionResults.refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
+  async function saveSessionStatus(studentId, status) {
+    const existing = sessionMarksByStudent[studentId];
+    try {
+      if (existing && existing.workflow_status === "draft") {
+        await marksApi.updateSessionMark(existing.mark_id, { assessment_status: status });
+        toast(`Marked ${status}`);
+      } else if (!existing) {
+        await marksApi.createSessionMark({
+          session_id: Number(sessionId),
+          student_id: studentId,
+          subject_id: activeSession.subject_id,
+          assessment_status: status,
+        });
+        toast(`Marked ${status}`);
+      } else {
+        toast("Only drafts can change here");
+        return;
+      }
+      sessionResults.refetch();
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    }
+  }
+
   return (
     <TeacherShell>
       <div className="scr-title">Marks</div>
@@ -81,9 +184,97 @@ export default function TeacherMarks() {
 
       {!loadLoading && <ClassPicker classIds={classIds} selectedClassId={selectedClassId} onSelect={changeClass} />}
 
-      {loading && <Spinner />}
-      <ErrorBanner message={error || marksError} />
-      {!loading && !error && !marksError && (
+      <div className="meta" style={{ margin: "8px 0" }}>
+        <button className={mode === "term" ? "btn primary sm" : "btn sm"} onClick={() => setMode("term")}>
+          Term marks
+        </button>
+        <button className={mode === "session" ? "btn primary sm" : "btn sm"} onClick={() => setMode("session")}>
+          Examination sessions
+        </button>
+      </div>
+
+      {mode === "session" && (
+        <div className="card">
+          <div className="grid2">
+            <div className="field">
+              <label>Examination</label>
+              <Select value={examId} onChange={(e) => { setExamId(e.target.value); setSessionId(""); }} aria-label="Examination">
+                <option value="">Select examination</option>
+                {(exams.data || []).map((e) => (
+                  <option key={e.exam_id} value={e.exam_id}>{e.name} · {e.status}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="field">
+              <label>Session (your classes only)</label>
+              <Select value={sessionId} onChange={(e) => setSessionId(e.target.value)} aria-label="Session" disabled={!examId}>
+                <option value="">Select session</option>
+                {mySessions.map((s) => (
+                  <option key={s.session_id} value={s.session_id}>
+                    {s.date} · max {s.max_marks} · {s.status}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          {activeSession && (
+            <>
+              <div className="meta">
+                <span>{activeExam?.result_format_expectation === "grade" ? "Grade entry" : `Scores out of ${activeSession.max_marks}`}</span>
+                <button
+                  className="btn primary sm"
+                  onClick={async () => {
+                    try {
+                      const out = await marksApi.submitSessionMarks(activeSession.session_id);
+                      toast(`Submitted${out.missing_student_ids?.length ? ` · missing: ${out.missing_student_ids.join(", ")}` : ""}`);
+                      sessionResults.refetch();
+                    } catch (err) {
+                      toast(apiErrorMessage(err));
+                    }
+                  }}
+                >
+                  Submit session
+                </button>
+              </div>
+              {(sessionStudents.data || []).map((s) => {
+                const m = sessionMarksByStudent[s.student_id];
+                const val = sessionDrafts[s.student_id] ?? (m?.assessment_status === "present" ? (m.score ?? "") : "");
+                return (
+                  <div key={s.student_id} className="listitem">
+                    <div className="meta">
+                      <b>{s.name}</b>
+                      <span>{m ? `${m.assessment_status} · ${m.workflow_status}` : "no entry yet"}</span>
+                    </div>
+                    {(!m || m.workflow_status === "draft") && (
+                      <>
+                        <input
+                          value={val}
+                          onChange={(e) => setSessionDrafts({ ...sessionDrafts, [s.student_id]: e.target.value })}
+                          onBlur={() => saveSessionCell(s.student_id)}
+                          placeholder={activeExam?.result_format_expectation === "grade" ? "Grade" : "Score"}
+                          className="score-input"
+                          aria-label={`Mark for ${s.name}`}
+                        />
+                        <Select
+                          value={m?.assessment_status || "present"}
+                          onChange={(e) => saveSessionStatus(s.student_id, e.target.value)}
+                          aria-label={`Status for ${s.name}`}
+                        >
+                          {SESSION_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
+                        </Select>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+
+      {mode === "term" && loading && <Spinner />}
+      {mode === "term" && <ErrorBanner message={error || marksError} />}
+      {mode === "term" && !loading && !error && !marksError && (
         <div className="card white table-scroll">
           <table className="data-table">
             <thead>

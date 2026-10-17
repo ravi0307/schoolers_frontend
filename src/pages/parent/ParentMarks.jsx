@@ -21,8 +21,16 @@ export default function ParentMarks() {
     () => (selectedChild ? marksApi.studentMarks(selectedChild.student_id) : Promise.resolve([])),
     [selectedChild?.student_id]
   );
+  // Phase 6 aggregate summary: per-examination totals with incomplete
+  // badges. The subject-wise list below is unchanged.
+  const summary = useApi(
+    () => (selectedChild ? marksApi.studentResults(selectedChild.student_id) : Promise.resolve(null)),
+    [selectedChild?.student_id]
+  );
 
   const pager = usePagination(data);
+  const aggregate = summary.data?.aggregate;
+  const examinations = summary.data?.examinations || [];
 
   return (
     <>
@@ -31,7 +39,26 @@ export default function ParentMarks() {
         subtitle={selectedChild ? `${selectedChild.name} · subject-wise marks` : ""}
       />
       {loading && <Spinner />}
-      <ErrorBanner message={error} />
+      <ErrorBanner message={error || summary.error} />
+      {!loading && !error && aggregate && aggregate.scope !== "grade-only" && aggregate.possible > 0 && (
+        <Card className="card">
+          <div className="section-label">Overall</div>
+          <div className="meta">
+            <b>{aggregate.obtained}/{aggregate.possible} · {aggregate.percentage}%</b>
+            {aggregate.incomplete && <span> · Incomplete</span>}
+          </div>
+          {examinations.map((exam) => (
+            <div key={exam.exam_id} className="meta">
+              <span>{exam.name}</span>
+              {exam.possible > 0 && (
+                <span> · {exam.obtained}/{exam.possible} ({exam.percentage}%)</span>
+              )}
+              {exam.grade && <span> · Grade {exam.grade.label}</span>}
+              {exam.incomplete && <span> · Incomplete</span>}
+            </div>
+          ))}
+        </Card>
+      )}
       {!loading && !error && (
         <Card className="card">
           {data && data.length ? (
