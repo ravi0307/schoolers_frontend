@@ -129,7 +129,11 @@ export default function ParentReport() {
                   <tr key={row.mark_id || `${row.subject_id}-${row.term}`}>
                     <td>{row.subject_name || `Subject #${row.subject_id}`}</td>
                     <td>{row.term || "—"}</td>
-                    <td>{row.score}/100</td>
+                    <td>
+                      {row.score != null
+                        ? `${row.score}/${row.max_marks ?? 100}`
+                        : (row.assessment_status || "—")}
+                    </td>
                   </tr>
                 ))}
               </ReportTable>
