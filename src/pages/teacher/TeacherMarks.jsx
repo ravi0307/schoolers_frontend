@@ -10,7 +10,7 @@ import * as marksApi from "../../api/marks";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
-import { apiErrorMessage } from "../../api/client";
+import { apiErrorMessage, friendlyApiMessage } from "../../api/client";
 
 const SESSION_STATUSES = ["present", "absent", "missing", "exempt"];
 
@@ -96,7 +96,12 @@ export default function TeacherMarks() {
   const activeSession = mySessions.find((s) => s.session_id === Number(sessionId));
   const activeExam = (exams.data || []).find((e) => e.exam_id === Number(examId));
   const sessionResults = useApi(
-    () => (mode === "session" && examId ? marksApi.examinationResults(examId) : Promise.resolve(null)),
+    // view=entry: the teacher must see their own drafts (and submitted
+    // rows) — a published-only view hides work in progress and makes
+    // re-editing look like "no entry yet".
+    () => (mode === "session" && examId
+      ? marksApi.examinationResults(examId, "entry")
+      : Promise.resolve(null)),
     [mode, examId, sessionId]
   );
   const sessionMarksByStudent = useMemo(() => {
@@ -113,6 +118,9 @@ export default function TeacherMarks() {
       ? peopleApi.listStudents({ class_id: activeSession.class_id })
       : Promise.resolve([])),
     [activeSession?.session_id]
+  );
+  const sessionError = friendlyApiMessage(
+    exams.error || examSessions.error || sessionResults.error || sessionStudents.error
   );
 
   async function saveSessionCell(studentId) {
@@ -195,6 +203,10 @@ export default function TeacherMarks() {
 
       {mode === "session" && (
         <div className="card">
+          <ErrorBanner message={sessionError} />
+          {!exams.loading && !exams.error && !(exams.data || []).length && (
+            <Empty>No examinations scheduled yet.</Empty>
+          )}
           <div className="grid2">
             <div className="field">
               <label>Examination</label>
@@ -217,6 +229,9 @@ export default function TeacherMarks() {
               </Select>
             </div>
           </div>
+          {examId && !examSessions.loading && !examSessions.error && !mySessions.length && (
+            <Empty>No sessions for your classes in this examination.</Empty>
+          )}
           {activeSession && (
             <>
               <div className="meta">
@@ -236,6 +251,17 @@ export default function TeacherMarks() {
                   Submit session
                 </button>
               </div>
+              <div className="meta">
+                <span>
+                  Drafts stay editable here. Once submitted, marks are read-only for teachers —
+                  publishing, corrections, and withholding are handled by admin.
+                </span>
+              </div>
+              {sessionResults.loading && <Spinner />}
+              {activeSession && !sessionResults.loading && !sessionStudents.loading
+                && !sessionError && !(sessionStudents.data || []).length && (
+                <Empty>No students in this class.</Empty>
+              )}
               {(sessionStudents.data || []).map((s) => {
                 const m = sessionMarksByStudent[s.student_id];
                 const val = sessionDrafts[s.student_id] ?? (m?.assessment_status === "present" ? (m.score ?? "") : "");
@@ -273,7 +299,7 @@ export default function TeacherMarks() {
       )}
 
       {mode === "term" && loading && <Spinner />}
-      {mode === "term" && <ErrorBanner message={error || marksError} />}
+      {mode === "term" && <ErrorBanner message={friendlyApiMessage(error) || friendlyApiMessage(marksError)} />}
       {mode === "term" && !loading && !error && !marksError && (
         <div className="card white table-scroll">
           <table className="data-table">

@@ -22,6 +22,10 @@ export const unwithholdMarks = (markIds) =>
   client.post("/marks/unwithhold", { mark_ids: markIds }).then((r) => r.data);
 export const correctMark = (markId, data) =>
   client.post(`/marks/${markId}/correct`, data).then((r) => r.data);
+// Read-only correction audit trail: old/new values, reason, actor names,
+// and both timestamps (admin-only, school-scoped server-side).
+export const listCorrections = (markId) =>
+  client.get(`/marks/${markId}/corrections`).then((r) => r.data);
 
 // Bulk CSV import/export (Phase 4): template download, preview-then-commit
 // uploads, and formula-guarded exports. Commits are atomic unless an admin
@@ -44,5 +48,10 @@ export const exportSessionMarks = (sessionId) =>
 // Grade-wise scopes carry distributions, never invented numbers.
 export const studentResults = (studentId, params) =>
   client.get(`/marks/results/student/${studentId}`, { params }).then((r) => r.data);
-export const examinationResults = (examId) =>
-  client.get(`/marks/results/examination/${examId}`).then((r) => r.data);
+// view=published (default): parent/result consumers. view=entry: staff
+// entry grids — includes drafts, submitted rows, and withheld flags so
+// work in progress is visible instead of silently "missing".
+export const examinationResults = (examId, view) =>
+  client
+    .get(`/marks/results/examination/${examId}`, { params: view ? { view } : undefined })
+    .then((r) => r.data);

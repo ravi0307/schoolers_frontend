@@ -8,7 +8,8 @@ const api = fs.readFileSync("src/api/marks.js", "utf8");
 test("marks API exposes published-only aggregated reads", () => {
   assert.match(api, /studentResults\s*=\s*\(studentId/);
   assert.match(api, /\/marks\/results\/student\/\$\{studentId\}/);
-  assert.match(api, /examinationResults\s*=\s*\(examId\)/);
+  // Optional second `view` param (published default; entry for staff grids).
+  assert.match(api, /examinationResults\s*=\s*\(examId/);
   assert.match(api, /\/marks\/results\/examination\/\$\{examId\}/);
   // Legacy term-scoped calls are preserved byte-for-byte.
   assert.match(api, /\/marks\/student/);

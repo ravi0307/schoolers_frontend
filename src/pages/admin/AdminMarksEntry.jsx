@@ -5,25 +5,37 @@ import * as academicsApi from "../../api/academics";
 import * as marksApi from "../../api/marks";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
-import { apiErrorMessage } from "../../api/client";
+import Modal from "../../components/ui/Modal";
+import { apiErrorMessage, friendlyApiMessage } from "../../api/client";
 
 /**
  * Marks entry: pick an examination and session, enter scores or grades per
  * student, submit for review, then publish. Published marks change only
  * through corrections with a reason; withholding hides without deleting.
+ * The grid uses the entry view so drafts and submitted rows are visible
+ * with their workflow state, and every correction is auditable via History.
  */
 
 const STATUSES = ["present", "absent", "missing", "exempt"];
+
+function fmtTime(iso) {
+  if (!iso) return "";
+  return String(iso).replace("T", " ").slice(0, 16);
+}
 
 export default function AdminMarksEntry() {
   const exams = useApi(() => academicsApi.listExaminations(), []);
   const [examId, setExamId] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState(null);
+  const [correcting, setCorrecting] = useState(null); // { mark, student }
+  const [correctValue, setCorrectValue] = useState("");
+  const [correctReason, setCorrectReason] = useState("");
+  const [correctError, setCorrectError] = useState(null);
+  const [history, setHistory] = useState(null); // { mark, student }
   const [importPreview, setImportPreview] = useState(null);
   const [applyPartial, setApplyPartial] = useState(false);
   const fileRef = useRef(null);
@@ -40,9 +52,20 @@ export default function AdminMarksEntry() {
     [session?.session_id]
   );
   const results = useApi(
-    () => (examId ? marksApi.examinationResults(examId) : Promise.resolve(null)),
+    // view=entry: drafts/submitted/withheld rows must show with their
+    // workflow state — a published-only grid hides work in progress.
+    () => (examId ? marksApi.examinationResults(examId, "entry") : Promise.resolve(null)),
     [examId, sessionId]
   );
+  const gradeLevels = useApi(
+    () => (exam?.result_format_expectation === "grade" && exam.grade_scale_id
+      ? academicsApi.listGradeLevels(exam.grade_scale_id)
+      : Promise.resolve([])),
+    [exam?.grade_scale_id, exam?.result_format_expectation]
+  );
+  const gradeLabel = (levelId) =>
+    (gradeLevels.data || []).find((l) => l.level_id === levelId)?.label
+    || (levelId ? `#${levelId}` : "—");
   const [drafts, setDrafts] = useState({});
 
   const marksByStudent = useMemo(() => {
@@ -68,6 +91,54 @@ export default function AdminMarksEntry() {
     } catch (err) {
       toast(apiErrorMessage(err));
       return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openCorrect(mark, student) {
+    setCorrecting({ mark, student });
+    setCorrectValue("");
+    setCorrectReason("");
+    setCorrectError(null);
+  }
+
+  async function submitCorrection() {
+    const c = correcting;
+    if (!c) return;
+    const value = correctValue.trim();
+    const reason = correctReason.trim();
+    if (!value) {
+      setCorrectError("Enter the corrected value.");
+      return;
+    }
+    if (!reason) {
+      setCorrectError("A reason is required — it is stored in the audit history.");
+      return;
+    }
+    const payload = { assessment_status: "present", reason };
+    if (exam?.result_format_expectation === "grade") {
+      payload.grade_label = value;
+    } else {
+      const n = Number(value);
+      if (Number.isNaN(n) || n < 0) {
+        setCorrectError("Enter a valid score.");
+        return;
+      }
+      if (session?.max_marks != null && n > session.max_marks) {
+        setCorrectError(`Score must be between 0 and ${session.max_marks}.`);
+        return;
+      }
+      payload.score = Math.round(n);
+    }
+    setBusy(true);
+    try {
+      await marksApi.correctMark(c.mark.mark_id, payload);
+      setCorrecting(null);
+      toast("Correction recorded — open History for the audit trail");
+      results.refetch();
+    } catch (err) {
+      setCorrectError(friendlyApiMessage(apiErrorMessage(err)));
     } finally {
       setBusy(false);
     }
@@ -160,7 +231,7 @@ export default function AdminMarksEntry() {
     <AdminShell>
       <PageHeader title="Marks Entry" subtitle="Draft, submit, publish, correct" />
       {exams.loading && <Spinner />}
-      <ErrorBanner message={exams.error} />
+      <ErrorBanner message={friendlyApiMessage(exams.error)} />
       {!exams.loading && !exams.error && (
         <>
           <div className="card">
@@ -243,7 +314,7 @@ export default function AdminMarksEntry() {
                 Students · {exam?.result_format_expectation === "grade" ? "grade entry" : `scores out of ${session.max_marks}`}
               </div>
               {students.loading && <Spinner />}
-              <ErrorBanner message={students.error || results.error} />
+              <ErrorBanner message={friendlyApiMessage(students.error) || friendlyApiMessage(results.error)} />
               {!students.loading && !studentList.length && <Empty>No students in this class.</Empty>}
               {studentList.map((s) => {
                 const m = marksByStudent[s.student_id];
@@ -290,7 +361,7 @@ export default function AdminMarksEntry() {
                         <button
                           className="btn sm"
                           disabled={busy}
-                          onClick={() => setConfirming({ kind: "correct", mark: m, student: s })}
+                          onClick={() => openCorrect(m, s)}
                         >
                           Correct
                         </button>
@@ -305,6 +376,14 @@ export default function AdminMarksEntry() {
                         Unwithhold
                       </button>
                     )}
+                    {m && (
+                      <button
+                        className="btn sm"
+                        onClick={() => setHistory({ mark: m, student: s })}
+                      >
+                        History
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -312,30 +391,108 @@ export default function AdminMarksEntry() {
           )}
         </>
       )}
-      <ConfirmDialog
-        open={!!confirming}
-        title="Correct published mark"
-        message={confirming ? `Enter the corrected value for ${confirming.student.name}. The original stays auditable.` : ""}
-        confirmLabel="Correct"
-        destructive={false}
-        onCancel={() => setConfirming(null)}
-        onConfirm={() => {
-          const c = confirming;
-          setConfirming(null);
-          if (!c) return;
-          const raw = window.prompt(`Corrected value (${exam?.result_format_expectation === "grade" ? "grade" : `0–${session.max_marks}`}):`, "");
-          if (raw === null || raw === "") return;
-          const reason = window.prompt("Reason (recorded in history):", "");
-          if (reason === null || !reason.trim()) {
-            toast("A reason is required");
-            return;
-          }
-          const payload = { assessment_status: "present", reason: reason.trim() };
-          if (exam?.result_format_expectation === "grade") payload.grade_label = raw.trim();
-          else payload.score = Number(raw);
-          run(() => marksApi.correctMark(c.mark.mark_id, payload), "Correction recorded");
-        }}
-      />
+      {correcting && (
+        <Modal onClose={() => setCorrecting(null)} titleId="correct-mark-title">
+          <div className="confirm-title" id="correct-mark-title">Correct published mark</div>
+          <div className="confirm-message">
+            <b>{correcting.student.name}</b>
+            {" · current: "}
+            {exam?.result_format_expectation === "grade"
+              ? `grade ${gradeLabel(correcting.mark.grade_level_id)}`
+              : correcting.mark.score != null
+                ? `${correcting.mark.score}/${correcting.mark.max_marks ?? session?.max_marks ?? 100}`
+                : correcting.mark.assessment_status}
+            {" → new value below. The original stays in history."}
+          </div>
+          <div className="field">
+            <label>
+              Corrected value (
+              {exam?.result_format_expectation === "grade"
+                ? "grade label"
+                : `0–${session?.max_marks ?? 100}`}
+              )
+            </label>
+            <input
+              value={correctValue}
+              onChange={(e) => setCorrectValue(e.target.value)}
+              aria-label="Corrected value"
+              autoFocus
+            />
+          </div>
+          <div className="field">
+            <label>Reason (required — kept in the audit history)</label>
+            <textarea
+              value={correctReason}
+              onChange={(e) => setCorrectReason(e.target.value)}
+              rows={2}
+              aria-label="Correction reason"
+            />
+          </div>
+          <div className="confirm-message">
+            Self-approval: as an admin you approve your own correction —
+            no second approver exists under the current policy. Both the
+            correction and approval timestamps are recorded.
+          </div>
+          <ErrorBanner message={correctError} />
+          <div className="confirm-actions">
+            <button className="btn ghost" type="button" onClick={() => setCorrecting(null)}>Cancel</button>
+            <button className="btn primary" type="button" disabled={busy} onClick={submitCorrection}>
+              Record correction
+            </button>
+          </div>
+        </Modal>
+      )}
+      {history && (
+        <CorrectionHistoryModal
+          mark={history.mark}
+          student={history.student}
+          exam={exam}
+          onClose={() => setHistory(null)}
+        />
+      )}
     </AdminShell>
+  );
+}
+
+function CorrectionHistoryModal({ mark, student, exam, onClose }) {
+  const trail = useApi(() => marksApi.listCorrections(mark.mark_id), [mark.mark_id]);
+  const gradeFmt = exam?.result_format_expectation === "grade";
+  return (
+    <Modal onClose={onClose} titleId="correction-history-title">
+      <div className="confirm-title" id="correction-history-title">
+        Correction history · {student.name}
+      </div>
+      {trail.loading && <Spinner />}
+      <ErrorBanner message={friendlyApiMessage(trail.error)} />
+      {!trail.loading && !trail.error && !(trail.data || []).length && (
+        <div className="confirm-message">
+          No corrections yet — this mark has never been changed after publication.
+        </div>
+      )}
+      {!trail.loading && !trail.error && (trail.data || []).map((c) => (
+        <div key={c.correction_id} className="confirm-message">
+          <div className="meta">
+            <b>
+              {gradeFmt
+                ? `${c.old_grade ?? "—"} → ${c.new_grade ?? "—"}`
+                : `${c.old_score ?? "—"} → ${c.new_score ?? "—"}`}
+            </b>
+            <span>{c.reason}</span>
+          </div>
+          <div className="meta">
+            <span>
+              Corrected by {c.corrected_by_name || `#${c.corrected_by}`} at {fmtTime(c.corrected_at)}
+              {" · approved "}
+              {c.approved_at
+                ? `by ${c.approved_by_name || `#${c.approved_by}`} at ${fmtTime(c.approved_at)}`
+                : "— (recorded before the audit fix; approval time unavailable)"}
+            </span>
+          </div>
+        </div>
+      ))}
+      <div className="confirm-actions">
+        <button className="btn ghost" type="button" onClick={onClose}>Close</button>
+      </div>
+    </Modal>
   );
 }
