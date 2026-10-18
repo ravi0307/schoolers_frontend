@@ -47,6 +47,29 @@ test("examinations page covers draft, publish, cancel, and version history", () 
   assert.match(src, /examinationTimetable/);
 });
 
+test("sessions can be edited and published adds carry a recorded reason", () => {
+  const src = read("src/pages/admin/AdminExaminations.jsx");
+  // Inline session editor wired to the PATCH endpoint with diff-only payloads.
+  assert.match(src, /updateExaminationSession\(editing, payload\)/);
+  assert.match(src, /changedSessionFields\(original, editDraft\)/);
+  assert.match(src, /setEditError/);
+  // The previously dead "reason" input now reaches the create payload …
+  assert.match(src, /reason: sessionReason\.trim\(\)/);
+  // … and edits on a published schedule refuse to save without one.
+  assert.match(src, /payload\.reason = reason/);
+  assert.match(src, /A reason is required to amend a published schedule/);
+  // History distinguishes adds (old_row NULL) from edits.
+  const api = read("src/api/academics.js");
+  assert.match(api, /updateExaminationSession\s*=\s*\(id, data\)/);
+  assert.match(api, /client\.patch\(`\/sessions\/\$\{id\}`/);
+  // Exam configuration ties the examination to a term (payload already
+  // carried period_id; the form now offers the select) and resets it on
+  // year change so a term from another year is never submitted.
+  assert.match(src, /listAcademicPeriods/);
+  assert.match(src, /aria-label="Academic term"/);
+  assert.match(src, /period_id: ""/);
+});
+
 test("marks entry covers drafts, submit, publish, withhold, correct, and CSV", () => {
   const src = read("src/pages/admin/AdminMarksEntry.jsx");
   for (const call of ["createSessionMark", "submitSessionMarks", "publishSessionMarks",
