@@ -63,4 +63,17 @@ export function apiErrorMessage(err) {
   return err?.response?.data?.detail || err?.message || "Something went wrong";
 }
 
+/**
+ * Friendly copy for end-user error banners. The raw backend detail for a
+ * disabled feature flag reads like a server message; parents and teachers
+ * get plain language instead, everyone else keeps the original text.
+ */
+export function friendlyApiMessage(message) {
+  if (!message) return null;
+  if (message === "Examinations are not enabled for this school") {
+    return "Marks and exams aren't available yet — results will appear here once examinations are enabled for this school.";
+  }
+  return message;
+}
+
 export default client;

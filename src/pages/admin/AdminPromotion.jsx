@@ -7,13 +7,14 @@ import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
-import { apiErrorMessage } from "../../api/client";
+import { apiErrorMessage, friendlyApiMessage } from "../../api/client";
 
 /**
  * Promotion and carry-forward: founding-year reconciliation, bulk moves
  * with preview and transactional commit, subject offerings per class, and
  * per-student subject enrollment. History is never rewritten: promotion
  * writes enrollment rows and updates the class cache in one transaction.
+ * Eligibility is administrative — no pass/fail rule runs on marks.
  */
 
 export default function AdminPromotion() {
@@ -53,7 +54,7 @@ export default function AdminPromotion() {
       studentSubjects.refetch();
       return out;
     } catch (err) {
-      toast(apiErrorMessage(err));
+      toast(friendlyApiMessage(apiErrorMessage(err)));
       return null;
     } finally {
       setBusy(false);
@@ -73,6 +74,11 @@ export default function AdminPromotion() {
       const map = Object.entries(classMap)
         .filter(([, to]) => to)
         .map(([from_class_id, to_class_id]) => ({ from_class_id: Number(from_class_id), to_class_id: Number(to_class_id) }));
+      if (!map.length && sourceYear) {
+        toast("Map at least one class (from → to) before previewing");
+        setBusy(false);
+        return;
+      }
       const out = await peopleApi.previewPromotion({
         source_year_id: sourceYear ? Number(sourceYear) : null,
         target_year_id: Number(targetYear),
@@ -82,13 +88,17 @@ export default function AdminPromotion() {
       const suffix = out.exceptions?.length ? ` · ${out.exceptions.length} need attention` : "";
       toast(`Preview ready: ${out.proposed?.length || 0} proposed${suffix}`);
     } catch (err) {
-      toast(apiErrorMessage(err));
+      toast(friendlyApiMessage(apiErrorMessage(err)));
     } finally {
       setBusy(false);
     }
   }
 
   async function doCommit() {
+    if (!targetYear) {
+      toast("Choose the target year first");
+      return;
+    }
     if (!preview?.proposed?.length) {
       toast("Preview first — nothing to commit");
       return;
@@ -119,12 +129,19 @@ export default function AdminPromotion() {
     <AdminShell>
       <PageHeader title="Promotion" subtitle="Preview, commit, reconcile, enroll" />
       {years.loading && <Spinner />}
-      <ErrorBanner message={years.error || classes.error} />
+      <ErrorBanner message={friendlyApiMessage(years.error || classes.error || batches.error)} />
       {!years.loading && !years.error && (
         <>
           <div className="card">
             <div className="section-label">Promotion preview</div>
-            <div className="meta"><span>Leave the source year empty for founding-year reconciliation: every active student is proposed into their current class.</span></div>
+            <div className="meta">
+              <span>
+                <b>Eligibility is not calculated.</b> No pass/fail rule runs on marks or
+                attendance — every move here is an explicit administrative decision you
+                review and confirm. Leave the source year empty for founding-year
+                reconciliation: every active student is proposed into their current class.
+              </span>
+            </div>
             <div className="grid2">
               <div className="field">
                 <label>Source year (optional)</label>
@@ -156,8 +173,25 @@ export default function AdminPromotion() {
               </div>
             ))}
             <div className="meta">
+              {preview && (
+                <span>
+                  Committing to <b>{(years.data || []).find((y) => y.year_id === Number(targetYear))?.name || `year #${targetYear}`}</b>
+                  {" · "}
+                  {Object.values(classMap).filter(Boolean).length} class mapping(s)
+                  {" · "}
+                  {preview.proposed?.length || 0} student(s) — review the proposal below first.
+                </span>
+              )}
+            </div>
+            <div className="meta">
               <button className="btn primary sm" disabled={busy} onClick={doPreview}>Preview</button>
-              <button className="btn primary sm" disabled={busy || !preview} onClick={doCommit}>Commit promotion</button>
+              <button
+                className="btn primary sm"
+                disabled={busy || !preview || !targetYear}
+                onClick={doCommit}
+              >
+                Commit promotion
+              </button>
             </div>
           </div>
 
@@ -165,6 +199,14 @@ export default function AdminPromotion() {
             <div className="card">
               <div className="section-label">
                 Proposed ({preview.proposed?.length || 0}) · Exceptions ({preview.exceptions?.length || 0}) · Already done ({preview.already_done?.length || 0})
+              </div>
+              <div className="meta">
+                <span>
+                  Statuses: <b>promoted</b> → moves to the mapped class ·{" "}
+                  <b>retained</b> → stays in the same class ·{" "}
+                  <b>enrolled</b> → founding-year reconciliation (same class).
+                  No student is passed or failed automatically.
+                </span>
               </div>
               {(preview.proposed || []).slice(0, 50).map((r) => (
                 <div key={r.student_id} className="meta">
@@ -184,19 +226,24 @@ export default function AdminPromotion() {
 
           <div className="card">
             <div className="section-label">Batches</div>
-            {!(batches.data || []).length && <Empty>No promotions yet.</Empty>}
+            {!batches.error && !(batches.data || []).length && <Empty>No promotions yet.</Empty>}
             {(batches.data || []).map((b) => (
               <div key={b.batch_id} className="listitem">
                 <div className="meta">
                   <b>Batch #{b.batch_id}</b>
-                  <span>applied {b.applied} · {b.status}</span>
+                  <span>
+                    applied {b.applied} · {b.status}
+                    {" · "}target {(years.data || []).find((y) => y.year_id === b.target_year_id)?.name || `year #${b.target_year_id}`}
+                  </span>
                 </div>
                 <button className="btn sm" onClick={() => setBatchDetail(batchDetail === b.batch_id ? null : b.batch_id)}>
                   {batchDetail === b.batch_id ? "Close" : "Receipt"}
                 </button>
               </div>
             ))}
-            {batchDetail && <BatchReceipt batchId={batchDetail} />}
+            {batchDetail && (
+              <BatchReceipt batchId={batchDetail} batches={batches.data || []} years={years.data || []} />
+            )}
           </div>
 
           <div className="card">
@@ -297,13 +344,27 @@ export default function AdminPromotion() {
   );
 }
 
-function BatchReceipt({ batchId }) {
+function BatchReceipt({ batchId, batches, years }) {
   const detail = useApi(() => peopleApi.getPromotionBatch(batchId), [batchId]);
+  const meta = (batches || []).find((b) => b.batch_id === batchId);
+  const yearName = (id) => (years || []).find((y) => y.year_id === id)?.name || `year #${id}`;
   if (detail.loading) return <Spinner />;
-  if (detail.error) return <ErrorBanner message={detail.error} />;
+  if (detail.error) return <ErrorBanner message={friendlyApiMessage(detail.error)} />;
+  const rows = detail.data?.rows || [];
+  const counts = {};
+  for (const r of rows) counts[r.status] = (counts[r.status] || 0) + 1;
+  const breakdown = Object.entries(counts).map(([k, n]) => `${n} ${k}`).join(" · ");
   return (
     <div className="meta">
-      <span>Batch #{detail.data?.batch_id}: {detail.data?.applied} applied{detail.data?.duplicate_receipt ? " (duplicate request, no new writes)" : ""}</span>
+      <span>
+        Batch #{detail.data?.batch_id}
+        {meta ? ` → ${yearName(meta.target_year_id)}` : ""}: {detail.data?.applied} applied
+        {breakdown ? ` (${breakdown})` : ""}
+        {detail.data?.duplicate_receipt ? " · duplicate request, no new writes" : ""}
+      </span>
+      <span>
+        Rows are transactional: every listed student moved in one commit; prior-class history and marks are untouched.
+      </span>
     </div>
   );
 }
