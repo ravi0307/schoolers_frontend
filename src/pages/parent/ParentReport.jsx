@@ -132,7 +132,11 @@ export default function ParentReport() {
                     <td>
                       {row.score != null
                         ? `${row.score}/${row.max_marks ?? 100}`
-                        : (row.assessment_status || "—")}
+                        : row.grade?.label
+                          ? `Grade ${row.grade.label}`
+                          : row.assessment_status && row.assessment_status !== "present"
+                            ? row.assessment_status[0].toUpperCase() + row.assessment_status.slice(1)
+                            : "—"}
                     </td>
                   </tr>
                 ))}

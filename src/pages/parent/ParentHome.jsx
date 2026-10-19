@@ -175,8 +175,11 @@ export default function ParentHome() {
     if (!rows.length) return "No marks yet";
     const terms = [...new Set(rows.map((m) => m.term))].sort();
     const latestRows = rows.filter((m) => m.term === terms[terms.length - 1]);
-    const avg = Math.round(latestRows.reduce((sum, m) => sum + m.score, 0) / latestRows.length);
-    return `Latest ${avg}/100 avg · ${latestRows.length} subjects`;
+    // null scores (grade rows, absent/missing) must not count as zero
+    const scored = latestRows.filter((m) => typeof m.score === "number");
+    if (!scored.length) return `${latestRows.length} subjects · no numeric scores`;
+    const avg = Math.round(scored.reduce((sum, m) => sum + m.score, 0) / scored.length);
+    return `Latest ${avg}/100 avg · ${scored.length} subjects`;
   }, [marks]);
 
   const childLeaves = useMemo(
@@ -220,8 +223,14 @@ export default function ParentHome() {
     .slice(0, 100)
     .map((m) => ({
       label: subjectNames.get(String(m.subject_id)) || `Subject #${m.subject_id}`,
-      value: `${m.score}/100`,
-      tone: m.score >= 75 ? "ok" : m.score >= 50 ? "mute" : "warn",
+      value: m.score != null
+        ? `${m.score}/100`
+        : (m.grade?.label
+          ? `Grade ${m.grade.label}`
+          : (m.assessment_status && m.assessment_status !== "present"
+            ? m.assessment_status[0].toUpperCase() + m.assessment_status.slice(1)
+            : "—")),
+      tone: m.score == null ? "mute" : m.score >= 75 ? "ok" : m.score >= 50 ? "mute" : "warn",
     }));
 
   const leaveHistory = childLeaves.slice(0, 100).map((l) => ({

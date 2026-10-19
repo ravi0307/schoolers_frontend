@@ -46,12 +46,19 @@ export default function ParentMarks() {
       : Promise.resolve(null)),
     [selectedChild?.student_id, yearFilter, periodFilter]
   );
+  const timetable = useApi(
+    () => (selectedChild?.class_id
+      ? academicsApi.examinationTimetable({ class_id: Number(selectedChild.class_id) })
+      : Promise.resolve([])),
+    [selectedChild?.class_id]
+  );
 
   const pager = usePagination(data);
   const aggregate = summary.data?.aggregate;
   const examinations = summary.data?.examinations || [];
   const banner = friendlyApiMessage(error)
     || friendlyApiMessage(years.error)
+    || friendlyApiMessage(periods.error)
     || friendlyApiMessage(summary.error);
 
   return (
@@ -62,7 +69,7 @@ export default function ParentMarks() {
       />
       {loading && <Spinner />}
       <ErrorBanner message={banner} />
-      {!loading && !banner && aggregate && (
+      {!loading && !banner && summary.data && (
         <Card className="card">
           {(years.data || []).length > 0 && (
             <div className="grid2">
@@ -98,7 +105,15 @@ export default function ParentMarks() {
             </div>
           )}
           <div className="section-label">Overall</div>
-          {aggregate.scope === "grade-only" ? (
+          {!aggregate ? (
+            <div className="meta">
+              <span>
+                {(yearFilter || periodFilter)
+                  ? "No examinations match this selection."
+                  : "No examination results yet."}
+              </span>
+            </div>
+          ) : aggregate.scope === "grade-only" ? (
             <div className="meta">
               <span>{aggregate.note || "Grade-based assessment — no numeric totals"}</span>
             </div>
@@ -116,6 +131,13 @@ export default function ParentMarks() {
           {(yearFilter || periodFilter) && (
             <div className="meta">
               <span>Filtered {summary.loading ? "…" : ""}— the subject-wise list below always shows every published row.</span>
+              <button
+                type="button"
+                className="btn sm"
+                onClick={() => { setYearFilter(""); setPeriodFilter(""); }}
+              >
+                Clear filters
+              </button>
             </div>
           )}
           {examinations.map((exam) => (
@@ -166,6 +188,40 @@ export default function ParentMarks() {
           <Pagination {...pager} />
         </Card>
       )}
+
+      <Card className="card">
+        <div className="section-label">Examination schedule</div>
+        {timetable.loading && <Spinner />}
+        {timetable.error && <ErrorBanner message={friendlyApiMessage(timetable.error)} />}
+        {!timetable.loading && !timetable.error && (
+          (timetable.data || []).filter((s) => s.status !== "cancelled").length ? (
+            (timetable.data || [])
+              .filter((s) => s.status !== "cancelled")
+              .slice()
+              .sort((a, b) => `${a.date} ${a.start_time ?? ""}`.localeCompare(`${b.date} ${b.start_time ?? ""}`))
+              .map((s) => (
+                <div key={s.session_id} className="listitem">
+                  <div className="avatar">
+                    {s.subject_name ? s.subject_name.slice(0, 2).toUpperCase() : "—"}
+                  </div>
+                  <div className="meta">
+                    <b>{s.exam_name} · {s.subject_name || `Subject #${s.subject_id}`}</b>
+                    <span>
+                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                      {s.start_time && s.end_time
+                        ? ` · ${String(s.start_time).slice(0, 5)}–${String(s.end_time).slice(0, 5)}`
+                        : ""}
+                      {s.venue ? ` · ${s.venue}` : ""}
+                      {s.max_marks != null ? ` · max ${s.max_marks}` : ""}
+                    </span>
+                  </div>
+                </div>
+              ))
+          ) : (
+            <EmptyState>No examination sessions scheduled yet.</EmptyState>
+          )
+        )}
+      </Card>
     </>
   );
 }

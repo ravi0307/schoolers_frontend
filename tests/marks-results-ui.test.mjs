@@ -51,5 +51,9 @@ test("parent report uses real subjects and each mark's own maximum", () => {
   assert.match(report, /row\.subject_name/);
   assert.match(report, /row\.max_marks \?\? 100/);
   assert.doesNotMatch(report, /row\.score\}\/100/);
-  assert.match(report, /row\.assessment_status \|\| "—"/);
+  // Non-score rows fall back to grade label, then a humanized assessment
+  // status ("Absent"), never a raw "present" string or an empty cell.
+  assert.match(report, /row\.grade\?\.label/);
+  assert.match(report, /row\.assessment_status && row\.assessment_status !== "present"/);
+  assert.match(report, /row\.assessment_status\[0\]\.toUpperCase\(\)/);
 });

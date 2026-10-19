@@ -90,7 +90,7 @@ export default function AdminExamSettings() {
 
           <div className="card">
             <div className="section-label">Examination types</div>
-            {!(types.data || []).length && <Empty>No examination types yet. Add Unit Test, Half-Yearly, Annual, and the rest.</Empty>}
+            {!(types.data || []).length && !types.error && <Empty>No examination types yet. Add Unit Test, Half-Yearly, Annual, and the rest.</Empty>}
             {(types.data || []).map((t) => (
               <div key={t.type_id} className="listitem">
                 <div className="meta">
@@ -145,7 +145,7 @@ export default function AdminExamSettings() {
 
           <div className="card">
             <div className="section-label">Grade scales</div>
-            {!(scales.data || []).length && <Empty>No grade scales yet. Create one before switching to grades.</Empty>}
+            {!(scales.data || []).length && !scales.error && <Empty>No grade scales yet. Create one before switching to grades.</Empty>}
             {(scales.data || []).map((s) => (
               <div key={s.scale_id} className="listitem">
                 <div className="meta">
