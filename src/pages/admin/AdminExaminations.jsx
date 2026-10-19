@@ -18,6 +18,20 @@ import { apiErrorMessage } from "../../api/client";
 const EMPTY_EXAM = { type_id: "", year_id: "", period_id: "", name: "", description: "" };
 const EMPTY_SESSION = { class_id: "", subject_id: "", date: "", start_time: "", end_time: "", venue: "", max_marks: 100 };
 
+const hhmm = (t) => (t || "").slice(0, 5);
+
+function changedSessionFields(original, draft) {
+  const changed = {};
+  if (Number(draft.class_id) !== original.class_id) changed.class_id = Number(draft.class_id);
+  if (Number(draft.subject_id) !== original.subject_id) changed.subject_id = Number(draft.subject_id);
+  if (draft.date !== original.date) changed.date = draft.date;
+  if (hhmm(draft.start_time) !== hhmm(original.start_time)) changed.start_time = hhmm(draft.start_time);
+  if (hhmm(draft.end_time) !== hhmm(original.end_time)) changed.end_time = hhmm(draft.end_time);
+  if (draft.venue.trim() !== (original.venue || "")) changed.venue = draft.venue.trim();
+  if (Number(draft.max_marks) !== original.max_marks) changed.max_marks = Number(draft.max_marks);
+  return changed;
+}
+
 export default function AdminExaminations() {
   const years = useApi(() => academicsApi.listAcademicYears(), []);
   const types = useApi(() => academicsApi.listExaminationTypes(), []);
@@ -32,6 +46,10 @@ export default function AdminExaminations() {
   const [openExam, setOpenExam] = useState(null);
   const [sessionDraft, setSessionDraft] = useState(EMPTY_SESSION);
   const [sessionReason, setSessionReason] = useState("");
+  const [editing, setEditing] = useState(null);
+  const [editDraft, setEditDraft] = useState(EMPTY_SESSION);
+  const [editReason, setEditReason] = useState("");
+  const [editError, setEditError] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(null);
   const [showVersions, setShowVersions] = useState(null);
@@ -48,6 +66,12 @@ export default function AdminExaminations() {
   const versions = useApi(
     () => (showVersions ? academicsApi.listSessionVersions(showVersions) : Promise.resolve([])),
     [showVersions]
+  );
+  const periods = useApi(
+    () => (examDraft.year_id
+      ? academicsApi.listAcademicPeriods(Number(examDraft.year_id))
+      : Promise.resolve([])),
+    [examDraft.year_id]
   );
 
   async function run(action, message) {
@@ -74,11 +98,83 @@ export default function AdminExaminations() {
   const className = (id) => (classes.data || []).find((c) => c.class_id === Number(id))?.name || `Class #${id}`;
   const subjectName = (id) => (subjects.data || []).find((s) => s.subject_id === Number(id))?.name || `Subject #${id}`;
 
+  function closeEdit() {
+    setEditing(null);
+    setEditReason("");
+    setEditError("");
+  }
+
+  function openEdit(s) {
+    if (editing === s.session_id) {
+      closeEdit();
+      return;
+    }
+    setEditing(s.session_id);
+    setEditDraft({
+      class_id: String(s.class_id),
+      subject_id: String(s.subject_id),
+      date: s.date,
+      start_time: hhmm(s.start_time),
+      end_time: hhmm(s.end_time),
+      venue: s.venue || "",
+      max_marks: s.max_marks,
+    });
+    setEditReason("");
+    setEditError("");
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    const original = (sessions.data || []).find((s) => s.session_id === editing);
+    if (!original) return;
+    setEditError("");
+    if (!editDraft.class_id || !editDraft.subject_id || !editDraft.date || !editDraft.start_time || !editDraft.end_time) {
+      toast("Choose a class, subject, date, and times");
+      return;
+    }
+    if (editDraft.end_time <= editDraft.start_time) {
+      toast("End time must be after start time");
+      return;
+    }
+    if (!(Number(editDraft.max_marks) > 0)) {
+      toast("Max marks must be a positive number");
+      return;
+    }
+    const payload = changedSessionFields(original, editDraft);
+    if (!Object.keys(payload).length) {
+      toast("Nothing to save — no changes made");
+      return;
+    }
+    if (openExamRow.status !== "draft") {
+      const reason = editReason.trim();
+      if (!reason) {
+        setEditError("A reason is required to amend a published schedule");
+        return;
+      }
+      payload.reason = reason;
+    }
+    setBusy(true);
+    try {
+      const res = await academicsApi.updateExaminationSession(editing, payload);
+      toast("Session updated");
+      (res.warnings || []).forEach((w) => toast(w));
+      closeEdit();
+      sessions.refetch();
+      timetable.refetch();
+      versions.refetch();
+      exams.refetch();
+    } catch (err) {
+      setEditError(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <AdminShell>
       <PageHeader title="Examinations" subtitle="Draft, schedule, publish, and amend" />
       {exams.loading && <Spinner />}
-      <ErrorBanner message={exams.error || years.error || types.error} />
+      <ErrorBanner message={exams.error || years.error || types.error || periods.error} />
       {!exams.loading && !exams.error && (
         <>
           <div className="card">
@@ -118,10 +214,23 @@ export default function AdminExaminations() {
               </div>
               <div className="field">
                 <label>Academic year</label>
-                <Select value={examDraft.year_id} onChange={(e) => setExamDraft({ ...examDraft, year_id: e.target.value })} aria-label="Academic year">
+                <Select
+                  value={examDraft.year_id}
+                  onChange={(e) => setExamDraft({ ...examDraft, year_id: e.target.value, period_id: "" })}
+                  aria-label="Academic year"
+                >
                   <option value="">Select year</option>
                   {(years.data || []).filter((y) => y.is_active).map((y) => (
                     <option key={y.year_id} value={y.year_id}>{y.name}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="field">
+                <label>Term (optional — bounds session dates to the term)</label>
+                <Select value={examDraft.period_id} onChange={(e) => setExamDraft({ ...examDraft, period_id: e.target.value })} aria-label="Academic term">
+                  <option value="">No term</option>
+                  {(periods.data || []).filter((p) => p.is_active !== false).map((p) => (
+                    <option key={p.period_id} value={p.period_id}>{p.name}</option>
                   ))}
                 </Select>
               </div>
@@ -188,47 +297,110 @@ export default function AdminExaminations() {
                 <div key={s.session_id} className="listitem">
                   <div className="meta">
                     <b>{className(s.class_id)} · {subjectName(s.subject_id)}</b>
-                    <span>{s.date} {s.start_time}–{s.end_time} · {s.venue || "no venue"} · max {s.max_marks} · <Pill tone={s.status === "cancelled" ? "bad" : "mute"}>{s.status}</Pill></span>
+                    <span>{s.date} {hhmm(s.start_time)}–{hhmm(s.end_time)} · {s.venue || "no venue"} · max {s.max_marks} · <Pill tone={s.status === "cancelled" ? "bad" : "mute"}>{s.status}</Pill></span>
                   </div>
+                  {s.status !== "cancelled" && (
+                    <button className="btn sm" onClick={() => openEdit(s)}>Edit</button>
+                  )}
                   <button className="btn sm" onClick={() => setShowVersions(showVersions === s.session_id ? null : s.session_id)}>History</button>
+                  {editing === s.session_id && editError && <ErrorBanner message={editError} />}
+                  {editing === s.session_id && (
+                    <form className="grid2" onSubmit={submitEdit}>
+                      <div className="field">
+                        <label>Class</label>
+                        <Select value={editDraft.class_id} onChange={(e) => setEditDraft({ ...editDraft, class_id: e.target.value })} aria-label="Edit class">
+                          <option value="">Select class</option>
+                          {(classes.data || []).map((c) => <option key={c.class_id} value={c.class_id}>{c.name}</option>)}
+                        </Select>
+                      </div>
+                      <div className="field">
+                        <label>Subject</label>
+                        <Select value={editDraft.subject_id} onChange={(e) => setEditDraft({ ...editDraft, subject_id: e.target.value })} aria-label="Edit subject">
+                          <option value="">Select subject</option>
+                          {(subjects.data || []).map((sub) => <option key={sub.subject_id} value={sub.subject_id}>{sub.name}</option>)}
+                        </Select>
+                      </div>
+                      <div className="field">
+                        <label>Date</label>
+                        <DatePicker type="date" value={editDraft.date} onChange={(e) => setEditDraft({ ...editDraft, date: e.target.value })} aria-label="Edit session date" />
+                      </div>
+                      <div className="field">
+                        <label>Start time</label>
+                        <input type="time" value={editDraft.start_time} onChange={(e) => setEditDraft({ ...editDraft, start_time: e.target.value })} />
+                      </div>
+                      <div className="field">
+                        <label>End time</label>
+                        <input type="time" value={editDraft.end_time} onChange={(e) => setEditDraft({ ...editDraft, end_time: e.target.value })} />
+                      </div>
+                      <div className="field">
+                        <label>Venue (optional)</label>
+                        <input value={editDraft.venue} onChange={(e) => setEditDraft({ ...editDraft, venue: e.target.value })} />
+                      </div>
+                      <div className="field">
+                        <label>Max marks</label>
+                        <input type="number" min="1" value={editDraft.max_marks} onChange={(e) => setEditDraft({ ...editDraft, max_marks: e.target.value })} />
+                      </div>
+                      {openExamRow.status !== "draft" && (
+                        <div className="field">
+                          <label>Reason (required, schedule is published)</label>
+                          <input value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Why is this change?" />
+                        </div>
+                      )}
+                      <div className="field">
+                        <label>&nbsp;</label>
+                        <div>
+                          <button className="btn primary sm" disabled={busy}>Save changes</button>{" "}
+                          <button type="button" className="btn sm" disabled={busy} onClick={closeEdit}>Cancel</button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
                 </div>
               ))}
               {showVersions && (
                 <div className="card">
                   <div className="section-label">Amendment history</div>
                   {versions.loading && <Spinner />}
-                  {!(versions.data || []).length && !versions.loading && <Empty>No amendments recorded.</Empty>}
+                  {versions.error && <ErrorBanner message={apiErrorMessage(versions.error)} />}
+                  {!versions.error && !(versions.data || []).length && !versions.loading && <Empty>No amendments recorded.</Empty>}
                   {(versions.data || []).map((v) => (
                     <div key={v.version_id} className="meta">
-                      <span>{v.changed_at || ""} · {v.reason || "no reason recorded"}</span>
+                      <span>{v.changed_at || ""} · {v.old_row ? "edited" : "added"} · {v.reason || "no reason recorded"}</span>
                     </div>
                   ))}
                 </div>
               )}
               <form
                 className="grid2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!sessionDraft.class_id || !sessionDraft.subject_id || !sessionDraft.date || !sessionDraft.start_time || !sessionDraft.end_time) {
-                    toast("Choose a class, subject, date, and times");
-                    return;
-                  }
-                  run(
-                    () => academicsApi.createExaminationSession(openExam, {
-                      class_id: Number(sessionDraft.class_id),
-                      subject_id: Number(sessionDraft.subject_id),
-                      date: sessionDraft.date,
-                      start_time: sessionDraft.start_time,
-                      end_time: sessionDraft.end_time,
-                      venue: sessionDraft.venue.trim() || undefined,
-                      max_marks: Number(sessionDraft.max_marks) || 100,
-                    }).then((res) => {
-                      setSessionDraft(EMPTY_SESSION);
-                      (res.warnings || []).forEach((w) => toast(w));
-                    }),
-                    "Session scheduled (conflicts with published sessions are refused)"
-                  );
-                }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!sessionDraft.class_id || !sessionDraft.subject_id || !sessionDraft.date || !sessionDraft.start_time || !sessionDraft.end_time) {
+                  toast("Choose a class, subject, date, and times");
+                  return;
+                }
+                const published = openExamRow.status !== "draft";
+                if (published && !sessionReason.trim()) {
+                  toast("A reason is required to add a session to a published schedule");
+                  return;
+                }
+                run(
+                  () => academicsApi.createExaminationSession(openExam, {
+                    class_id: Number(sessionDraft.class_id),
+                    subject_id: Number(sessionDraft.subject_id),
+                    date: sessionDraft.date,
+                    start_time: sessionDraft.start_time,
+                    end_time: sessionDraft.end_time,
+                    venue: sessionDraft.venue.trim() || undefined,
+                    max_marks: Number(sessionDraft.max_marks) || 100,
+                    ...(published ? { reason: sessionReason.trim() } : {}),
+                  }).then((res) => {
+                    setSessionDraft(EMPTY_SESSION);
+                    setSessionReason("");
+                    (res.warnings || []).forEach((w) => toast(w));
+                  }),
+                  "Session scheduled (conflicts with published sessions are refused)"
+                );
+              }}
               >
                 <div className="field">
                   <label>Class</label>
@@ -272,7 +444,7 @@ export default function AdminExaminations() {
                 )}
                 <div className="field"><label>&nbsp;</label><button className="btn primary" disabled={busy}>Add session</button></div>
               </form>
-              <div className="meta"><span>Rescheduling a published session needs a reason and is versioned. Session edits happen from the timetable below in a later iteration; use cancel + re-add for now.</span></div>
+              <div className="meta"><span>Adding or amending a session on a published schedule needs a reason; every change lands in History. Editing keeps the same session, so entered marks stay attached.</span></div>
             </div>
           )}
 

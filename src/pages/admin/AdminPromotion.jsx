@@ -3,6 +3,7 @@ import AdminShell from "../../components/layout/AdminShell";
 import { useApi } from "../../hooks/useApi";
 import * as academicsApi from "../../api/academics";
 import * as peopleApi from "../../api/people";
+import * as marksApi from "../../api/marks";
 import { useToast } from "../../context/ToastContext";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import PageHeader from "../../components/ui/PageHeader";
@@ -31,6 +32,10 @@ export default function AdminPromotion() {
   const [enrollStudent, setEnrollStudent] = useState("");
   const [enrollYear, setEnrollYear] = useState("");
   const [batchDetail, setBatchDetail] = useState(null);
+  const [soloClass, setSoloClass] = useState("");
+  const [soloStudent, setSoloStudent] = useState("");
+  const [soloOutcome, setSoloOutcome] = useState("promoted");
+  const [soloDest, setSoloDest] = useState("");
   const toast = useToast();
 
   const offerings = useApi(
@@ -42,6 +47,16 @@ export default function AdminPromotion() {
       ? academicsApi.listStudentSubjects(enrollStudent, enrollYear)
       : Promise.resolve([])),
     [enrollStudent, enrollYear]
+  );
+  const soloStudents = useApi(
+    () => (soloClass ? peopleApi.listStudents({ class_id: Number(soloClass) }) : Promise.resolve([])),
+    [soloClass]
+  );
+  const soloRecord = useApi(
+    () => (soloStudent
+      ? marksApi.studentResults(Number(soloStudent), {})
+      : Promise.resolve(null)),
+    [soloStudent]
   );
 
   async function run(action, message) {
@@ -125,6 +140,36 @@ export default function AdminPromotion() {
     }
   }
 
+  async function doSoloPromote() {
+    if (!targetYear) {
+      toast("Choose the target year first");
+      return;
+    }
+    if (!soloStudent) {
+      toast("Choose a class and a student to promote");
+      return;
+    }
+    const needsClass = soloOutcome === "promoted" || soloOutcome === "retained" || soloOutcome === "new" || soloOutcome === "enrolled";
+    if (needsClass && !soloDest) {
+      toast("Choose the destination class for this outcome");
+      return;
+    }
+    const out = await run(
+      () => peopleApi.commitPromotion({
+        source_year_id: null,
+        target_year_id: Number(targetYear),
+        assignments: [{
+          student_id: Number(soloStudent),
+          to_class_id: needsClass ? Number(soloDest) : null,
+          status: soloOutcome,
+        }],
+        idempotency_key: `solo-${soloStudent}-${targetYear}-${soloOutcome}-${needsClass ? soloDest : "none"}`,
+      }),
+      "Promotion saved — see batch history below"
+    );
+    if (out) setBatchDetail(out.batch_id);
+  }
+
   return (
     <AdminShell>
       <PageHeader title="Promotion" subtitle="Preview, commit, reconcile, enroll" />
@@ -191,6 +236,80 @@ export default function AdminPromotion() {
                 onClick={doCommit}
               >
                 Commit promotion
+              </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="section-label">Promote one student</div>
+            <div className="meta">
+              <span>
+                Individual decision: pick the student, review their current class and
+                published results, choose the outcome, and confirm. Same validation and
+                audit trail as a batch — one enrollment row, one receipt.
+              </span>
+            </div>
+            <div className="grid2">
+              <div className="field">
+                <label>Target year</label>
+                <Select value={targetYear} onChange={(e) => setTargetYear(e.target.value)} aria-label="Target year for single promotion">
+                  <option value="">Select target year</option>
+                  {(years.data || []).map((y) => <option key={y.year_id} value={y.year_id}>{y.name}</option>)}
+                </Select>
+              </div>
+              <div className="field">
+                <label>Current class</label>
+                <Select value={soloClass} onChange={(e) => { setSoloClass(e.target.value); setSoloStudent(""); setSoloDest(""); }} aria-label="Student's current class">
+                  <option value="">Select class</option>
+                  {(classes.data || []).map((c) => <option key={c.class_id} value={c.class_id}>{c.name}</option>)}
+                </Select>
+              </div>
+              <div className="field">
+                <label>Student</label>
+                <Select value={soloStudent} onChange={(e) => setSoloStudent(e.target.value)} aria-label="Student to promote" disabled={!soloClass || (soloStudents.data || []).length === 0}>
+                  <option value="">Select student</option>
+                  {(soloStudents.data || []).map((s) => <option key={s.student_id} value={s.student_id}>{s.name} ({s.admission_no})</option>)}
+                </Select>
+              </div>
+              <div className="field">
+                <label>Outcome</label>
+                <Select value={soloOutcome} onChange={(e) => { setSoloOutcome(e.target.value); setSoloDest(""); }} aria-label="Promotion outcome">
+                  <option value="promoted">Promoted → next class</option>
+                  <option value="retained">Retained → same class</option>
+                  <option value="transferred">Transferred out</option>
+                  <option value="withdrawn">Withdrawn</option>
+                </Select>
+              </div>
+              {(soloOutcome === "promoted" || soloOutcome === "retained") && (
+                <div className="field">
+                  <label>Destination class</label>
+                  <Select value={soloDest} onChange={(e) => setSoloDest(e.target.value)} aria-label="Destination class" disabled={!soloClass}>
+                    <option value="">Select destination class</option>
+                    {(classes.data || [])
+                      .filter((c) => soloOutcome === "retained" || String(c.class_id) !== String(soloClass))
+                      .map((c) => <option key={c.class_id} value={c.class_id}>{c.name}</option>)}
+                  </Select>
+                </div>
+              )}
+            </div>
+            {soloStudent && (
+              <div className="meta">
+                <span>
+                  Current class: <b>{className((soloStudents.data || []).find((s) => String(s.student_id) === String(soloStudent))?.class_id)}</b>
+                  {" · "}
+                  {(() => {
+                    const agg = soloRecord.data?.aggregate;
+                    if (!agg || soloRecord.loading) return "published results: …";
+                    if (agg.scope === "grade-only") return "grade-based results — no numeric totals";
+                    if (!agg.possible) return "no published results yet";
+                    return `published results: ${agg.obtained}/${agg.possible} · ${agg.percentage}%${agg.incomplete ? " (incomplete)" : ""}`;
+                  })()}
+                </span>
+              </div>
+            )}
+            <div className="meta">
+              <button className="btn primary sm" disabled={busy || !soloStudent} onClick={doSoloPromote}>
+                Save promotion
               </button>
             </div>
           </div>

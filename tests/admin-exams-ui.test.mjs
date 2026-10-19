@@ -47,13 +47,50 @@ test("examinations page covers draft, publish, cancel, and version history", () 
   assert.match(src, /examinationTimetable/);
 });
 
+test("sessions can be edited and published adds carry a recorded reason", () => {
+  const src = read("src/pages/admin/AdminExaminations.jsx");
+  // Inline session editor wired to the PATCH endpoint with diff-only payloads.
+  assert.match(src, /updateExaminationSession\(editing, payload\)/);
+  assert.match(src, /changedSessionFields\(original, editDraft\)/);
+  assert.match(src, /setEditError/);
+  // The previously dead "reason" input now reaches the create payload …
+  assert.match(src, /reason: sessionReason\.trim\(\)/);
+  // … and edits on a published schedule refuse to save without one.
+  assert.match(src, /payload\.reason = reason/);
+  assert.match(src, /A reason is required to amend a published schedule/);
+  // History distinguishes adds (old_row NULL) from edits.
+  const api = read("src/api/academics.js");
+  assert.match(api, /updateExaminationSession\s*=\s*\(id, data\)/);
+  assert.match(api, /client\.patch\(`\/sessions\/\$\{id\}`/);
+  // Exam configuration ties the examination to a term (payload already
+  // carried period_id; the form now offers the select) and resets it on
+  // year change so a term from another year is never submitted.
+  assert.match(src, /listAcademicPeriods/);
+  assert.match(src, /aria-label="Academic term"/);
+  assert.match(src, /period_id: ""/);
+});
+
 test("marks entry covers drafts, submit, publish, withhold, correct, and CSV", () => {
   const src = read("src/pages/admin/AdminMarksEntry.jsx");
   for (const call of ["createSessionMark", "submitSessionMarks", "publishSessionMarks",
-      "withholdMarks", "correctMark", "previewImport", "commitImport", "exportSessionMarks"]) {
+      "withholdMarks", "correctMark", "importTemplate", "previewImport", "commitImport",
+      "exportSessionMarks"]) {
     assert.match(src, new RegExp(call));
   }
   assert.match(src, /Incomplete|withheld/i);
+  // Import workflow surfaces the API truth: commit receipt (including the
+  // duplicate case), explicit partial choice, and submit's missing list.
+  assert.match(src, /updated_drafts/);
+  assert.match(src, /duplicate_receipt/);
+  assert.match(src, /missing_student_ids/);
+  assert.match(src, /setCommitConfirm\(true\)/);
+  assert.match(src, /setImportNotice\(/);
+  assert.match(src, /Apply valid rows only/);
+  // Template download and the explicit confirmation dialog render.
+  assert.match(src, /downloadTemplate/);
+  assert.match(src, /importTemplate\(sessionId\)/);
+  assert.match(src, /marks-session-\$\{sessionId\}-template\.csv/);
+  assert.match(src, /<ConfirmDialog/);
 });
 
 test("promotion page covers preview, commit, batches, offerings, enrollment", () => {

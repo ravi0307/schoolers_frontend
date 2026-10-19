@@ -5,7 +5,7 @@ import * as academicsApi from "../../api/academics";
 import * as marksApi from "../../api/marks";
 import * as peopleApi from "../../api/people";
 import { useToast } from "../../context/ToastContext";
-import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
+import { Spinner, ErrorBanner, Empty, ConfirmDialog } from "../../components/ui/Primitives";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
 import Modal from "../../components/ui/Modal";
@@ -38,8 +38,21 @@ export default function AdminMarksEntry() {
   const [history, setHistory] = useState(null); // { mark, student }
   const [importPreview, setImportPreview] = useState(null);
   const [applyPartial, setApplyPartial] = useState(false);
+  const [importNotice, setImportNotice] = useState(null);
+  const [importResult, setImportResult] = useState(null); // commit receipt
+  const [commitConfirm, setCommitConfirm] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null); // {submitted, missing_student_ids}
   const fileRef = useRef(null);
   const toast = useToast();
+
+  function clearImportState() {
+    setImportPreview(null);
+    setImportNotice(null);
+    setImportResult(null);
+    setSubmitResult(null);
+    setApplyPartial(false);
+    setCommitConfirm(false);
+  }
 
   const sessions = useApi(
     () => (examId ? academicsApi.listExaminationSessions(examId) : Promise.resolve([])),
@@ -195,7 +208,28 @@ export default function AdminMarksEntry() {
     }
   }
 
+  async function downloadTemplate() {
+    if (!sessionId || busy) return;
+    setBusy(true);
+    try {
+      const text = await marksApi.importTemplate(sessionId);
+      const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `marks-session-${sessionId}-template.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Template downloaded — one row per active student");
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function downloadExport() {
+    if (busy) return;
+    setBusy(true);
     try {
       const text = await marksApi.exportSessionMarks(sessionId);
       const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
@@ -206,22 +240,83 @@ export default function AdminMarksEntry() {
       URL.revokeObjectURL(url);
     } catch (err) {
       toast(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
   }
 
   async function uploadFile(file) {
-    if (!file) return;
+    if (!file || busy) return;
     setBusy(true);
+    setImportNotice(null);
+    setImportResult(null);
+    setApplyPartial(false);
     try {
       const preview = await marksApi.previewImport(sessionId, file);
       setImportPreview(preview);
-      const bad = (preview.rows || []).filter((r) => r.verdict === "invalid").length;
-      toast(bad ? `${bad} invalid rows — fix the file or commit partial as admin` : "All rows valid — ready to commit");
+      const bad = preview.summary?.invalid || 0;
+      const warn = preview.summary?.warning || 0;
+      if (preview.status && preview.status !== "preview") {
+        setImportNotice(
+          `Batch ${preview.batch_id} was already processed (${preview.status}) — this exact file hashes to it, so a commit here only reports a duplicate receipt and writes nothing.`
+        );
+      } else if (bad) {
+        setImportNotice(
+          `${bad} invalid row(s)${warn ? ` and ${warn} warning(s)` : ""} — nothing is written yet. Fix the file and re-upload, or choose partial application below (admin only; invalid rows are skipped and reported, never written).`
+        );
+      } else {
+        toast(warn ? `All rows valid, ${warn} warning(s) — review and commit` : "All rows valid — ready to commit");
+      }
     } catch (err) {
       toast(apiErrorMessage(err));
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function doCommit() {
+    setCommitConfirm(false);
+    if (!importPreview || busy) return;
+    setBusy(true);
+    setImportNotice(null);
+    try {
+      const receipt = await marksApi.commitImport(importPreview.batch_id, applyPartial);
+      setImportResult(receipt);
+      setImportPreview(null);
+      setApplyPartial(false);
+      if (receipt.duplicate_receipt) {
+        toast("Already committed — duplicate receipt, no new writes");
+      } else {
+        toast(`Import applied: ${receipt.applied} row(s)`);
+      }
+      sessions.refetch();
+      students.refetch();
+      results.refetch();
+      setDrafts({});
+    } catch (err) {
+      // Keep the preview on failure so the partial tick can be adjusted
+      // and the commit retried without re-uploading the file.
+      setImportNotice(friendlyApiMessage(apiErrorMessage(err)));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitSession() {
+    if (!session || busy) return;
+    setBusy(true);
+    try {
+      const res = await marksApi.submitSessionMarks(session.session_id);
+      setSubmitResult(res);
+      toast(`Submitted ${res.submitted} draft(s) for review`);
+      sessions.refetch();
+      results.refetch();
+      setDrafts({});
+    } catch (err) {
+      toast(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -238,7 +333,7 @@ export default function AdminMarksEntry() {
             <div className="grid2">
               <div className="field">
                 <label>Examination</label>
-                <Select value={examId} onChange={(e) => { setExamId(e.target.value); setSessionId(""); setImportPreview(null); }} aria-label="Examination">
+                <Select value={examId} onChange={(e) => { setExamId(e.target.value); setSessionId(""); clearImportState(); }} aria-label="Examination">
                   <option value="">Select examination</option>
                   {(exams.data || []).map((e) => (
                     <option key={e.exam_id} value={e.exam_id}>{e.name} · {e.status}</option>
@@ -247,7 +342,7 @@ export default function AdminMarksEntry() {
               </div>
               <div className="field">
                 <label>Session</label>
-                <Select value={sessionId} onChange={(e) => { setSessionId(e.target.value); setImportPreview(null); }} aria-label="Session" disabled={!examId}>
+                <Select value={sessionId} onChange={(e) => { setSessionId(e.target.value); clearImportState(); }} aria-label="Session" disabled={!examId}>
                   <option value="">Select session</option>
                   {(sessions.data || []).map((s) => (
                     <option key={s.session_id} value={s.session_id}>
@@ -259,9 +354,7 @@ export default function AdminMarksEntry() {
             </div>
             {session && (
               <div className="meta">
-                <button className="btn sm primary" disabled={busy} onClick={() => run(
-                  () => marksApi.submitSessionMarks(session.session_id), "Submitted for review (missing students listed in response)"
-                )}>
+                <button className="btn sm primary" disabled={busy} onClick={submitSession}>
                   Submit session
                 </button>
                 <button className="btn sm primary" disabled={busy} onClick={() => run(
@@ -269,6 +362,7 @@ export default function AdminMarksEntry() {
                 )}>
                   Publish
                 </button>
+                <button className="btn sm" disabled={busy} onClick={downloadTemplate}>Template CSV</button>
                 <button className="btn sm" disabled={busy} onClick={downloadExport}>Export CSV</button>
                 <label className="btn sm">
                   Import CSV
@@ -276,35 +370,85 @@ export default function AdminMarksEntry() {
                 </label>
               </div>
             )}
+            {submitResult && (
+              <div className="meta">
+                <span>
+                  Submitted {submitResult.submitted} mark(s)
+                  {submitResult.missing_student_ids?.length
+                    ? ` · no entry for ${submitResult.missing_student_ids.length} student(s): ${
+                        submitResult.missing_student_ids
+                          .map((id) => studentList.find((s) => s.student_id === id)?.name || `#${id}`)
+                          .join(", ")
+                      }`
+                    : " · every student has an entry"}
+                </span>
+                <button className="btn sm" onClick={() => setSubmitResult(null)}>Dismiss</button>
+              </div>
+            )}
           </div>
 
           {importPreview && (
             <div className="card">
               <div className="section-label">
-                Import preview: {(importPreview.summary?.valid || 0)} valid, {(importPreview.summary?.invalid || 0)} invalid
+                Import preview · batch #{importPreview.batch_id}: {importPreview.summary?.valid || 0} valid, {importPreview.summary?.invalid || 0} invalid, {importPreview.summary?.warning || 0} warning
+                {importPreview.status && importPreview.status !== "preview" ? ` · ${importPreview.status}` : ""}
               </div>
+              <ErrorBanner message={importNotice} />
               {(importPreview.rows || []).filter((r) => r.verdict !== "valid").map((r) => (
                 <div key={r.row_no} className="meta">
-                  <span>Row {r.row_no}: {(r.errors || []).join("; ")}</span>
+                  <span>Row {r.row_no} [{r.verdict}]: {(r.errors || []).join("; ")}</span>
                 </div>
               ))}
               <div className="meta">
+                <span>
+                  Nothing is written until Commit. All-or-nothing refuses while any row
+                  is invalid; partial application (admin) applies valid rows and skips
+                  invalid ones — skipped rows appear in the receipt and never write.
+                </span>
+              </div>
+              <div className="meta">
                 <label>
-                  <input type="checkbox" checked={applyPartial} onChange={(e) => setApplyPartial(e.target.checked)} />
-                  {" "}Apply valid rows only (admin partial commit)
+                  <input
+                    type="checkbox"
+                    checked={applyPartial}
+                    disabled={(importPreview.summary?.invalid || 0) === 0}
+                    onChange={(e) => setApplyPartial(e.target.checked)}
+                  />
+                  {" "}Apply valid rows only, skip invalid (admin)
                 </label>
                 <button
                   className="btn primary sm"
-                  disabled={busy}
-                  onClick={() => run(
-                    () => marksApi.commitImport(importPreview.batch_id, applyPartial)
-                      .then(() => setImportPreview(null)),
-                    "Import committed"
-                  )}
+                  disabled={busy || ((importPreview.summary?.invalid || 0) > 0 && !applyPartial)}
+                  onClick={() => setCommitConfirm(true)}
                 >
                   Commit
                 </button>
+                <button
+                  className="btn sm"
+                  disabled={busy}
+                  onClick={() => { setImportPreview(null); setImportNotice(null); setApplyPartial(false); }}
+                >
+                  Discard preview
+                </button>
               </div>
+            </div>
+          )}
+
+          {importResult && (
+            <div className="card">
+              <div className="section-label">Import result</div>
+              <div className="meta">
+                <span>
+                  Applied {importResult.applied} · updated drafts {importResult.updated_drafts} · skipped {importResult.skipped}
+                  {importResult.duplicate_receipt ? " · duplicate receipt — already committed, no new writes" : ""}
+                </span>
+                <button className="btn sm" onClick={() => setImportResult(null)}>Dismiss</button>
+              </div>
+              {importResult.skipped > 0 && (
+                <div className="meta">
+                  <span>{importResult.skipped} row(s) were invalid or stale and were not written — re-upload a fixed file for them.</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -450,6 +594,21 @@ export default function AdminMarksEntry() {
           onClose={() => setHistory(null)}
         />
       )}
+      <ConfirmDialog
+        open={commitConfirm}
+        title="Commit import"
+        destructive={false}
+        confirmLabel="Commit"
+        message={
+          !importPreview
+            ? ""
+            : applyPartial
+              ? `Partial commit: apply ${importPreview.summary?.valid || 0} valid row(s) to session ${sessionId} and skip ${importPreview.summary?.invalid || 0} invalid row(s)? Skipped rows stay in the receipt and are never written.`
+              : `Commit ${importPreview.summary?.valid || 0} valid row(s) to session ${sessionId}? Nothing is written yet — drafts update, published rows are left alone.`
+        }
+        onCancel={() => setCommitConfirm(false)}
+        onConfirm={doCommit}
+      />
     </AdminShell>
   );
 }
