@@ -54,7 +54,7 @@ test("admin and parent trip history sidebar entries open registered pages", () =
 
   assert.match(admin, /to: "\/admin\/trips", icon: History, label: "Trip History"/);
   assert.match(parent, /to: "\/parent\/trips", icon: History, label: "Trip History"/);
-  assert.match(app, /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(app, /path="trips" element=\{\s*<FeatureRoute feature="route_enabled">\s*<AdminTripHistory \/>\s*<\/FeatureRoute>\s*\}/);
   assert.match(app, /path="trips" element=\{<ParentTripHistory \/>\}/);
 });
 

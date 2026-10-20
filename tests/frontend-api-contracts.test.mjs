@@ -128,7 +128,7 @@ test("trip history API paths are relative to the versioned API base URL", () => 
 test("admin and parent trip history are registered in portal navigation and routes", () => {
   assert.match(source("src/components/layout/AdminShell.jsx"), /to: "\/admin\/trips", icon: History, label: "Trip History"/);
   assert.match(source("src/components/layout/ParentShell.jsx"), /to: "\/parent\/trips", icon: History, label: "Trip History"/);
-  assert.match(source("src/App.jsx"), /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(source("src/App.jsx"), /path="trips" element=\{\s*<FeatureRoute feature="route_enabled">\s*<AdminTripHistory \/>\s*<\/FeatureRoute>\s*\}/);
   assert.match(source("src/App.jsx"), /path="trips" element=\{<ParentTripHistory \/>\}/);
   assert.match(source("src/api/trips.js"), /getChildTripHistory = \(studentId, params\)/);
 });
@@ -1045,7 +1045,11 @@ test("admin sidebar keeps its dependency order without non-clickable group headi
   const layout = source("src/components/layout/WebLayout.jsx");
   assert.deepEqual(navOrder(ADMIN_SHELL), ADMIN_NAV);
   assert.doesNotMatch(shell, /group:\s*"/);
-  assert.match(layout, /navItems\.filter\(\(item\) => item\.to\)\.map/);
+  // Nav entries render through the shared shell; groups are collapsible
+  // <button> toggles (never plain non-clickable headings).
+  assert.match(layout, /navItems\.map\(\(item\) =>/);
+  assert.match(layout, /item\.items/);
+  assert.match(layout, /aria-expanded=\{expanded\}/);
   assert.doesNotMatch(layout, /sidebar-group|item\.group/);
   assert.doesNotMatch(source("src/styles/layout.css"), /sidebar-group/);
 });
@@ -1262,7 +1266,7 @@ test("both new admin pages are routed and reachable", () => {
   assertContains("src/App.jsx", [
     /import AdminAccounts from "\.\/pages\/admin\/AdminAccounts"/,
     /import AdminReports from "\.\/pages\/admin\/AdminReports"/,
-    /<Route path="accounts" element=\{<AdminAccounts \/>\}/,
+    /<Route path="accounts" element=\{\s*<FeatureRoute feature=\{\["fees_enabled", "salary_enabled"\]\}>\s*<AdminAccounts \/>\s*<\/FeatureRoute>\s*\}/,
     /<Route path="reports" element=\{<AdminReports \/>\}/,
   ]);
   // Both are admin-only pages; they must render through AdminShell so they
