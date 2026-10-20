@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminShell from "../../components/layout/AdminShell";
 import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
@@ -102,6 +102,7 @@ function QuickCard({ icon, title, summary, rows, onNavigate }) {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const { data: overview, loading, error } = useApi(() => reportsApi.schoolOverview(user.schoolId), [user.schoolId]);
@@ -213,6 +214,9 @@ export default function AdminDashboard() {
     <AdminShell>
       <div className="scr-title">School Dashboard</div>
       <div className="scr-sub">Overview</div>
+      {location.state?.accessDeniedFeature && (
+        <ErrorBanner message="That feature is not enabled for this school. Ask your Master Admin to enable it from Feature Access." />
+      )}
       {loading && <Spinner />}
       <ErrorBanner message={error} />
       {!loading && (

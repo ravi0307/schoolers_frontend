@@ -1,4 +1,6 @@
 import WebLayout from "../layout/WebLayout";
+import { useFeatures } from "../../context/FeatureContext";
+import { filterNavByFeatures } from "../../features/registry";
 import {
   BarChart3,
   Bell,
@@ -53,8 +55,12 @@ const NAV = [
 ];
 
 export default function AdminShell({ children }) {
+  const { features } = useFeatures();
+  // Only the features enabled for this admin's school appear in the nav;
+  // groups that end up empty are dropped entirely.
+  const navItems = filterNavByFeatures(NAV, features);
   return (
-    <WebLayout navItems={NAV} portalLabel="ADMIN PORTAL">
+    <WebLayout navItems={navItems} portalLabel="ADMIN PORTAL">
       {children}
     </WebLayout>
   );
