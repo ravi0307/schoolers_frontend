@@ -915,14 +915,14 @@ test("route driver select is fed by the pilot endpoint and keyed on pilot_id", (
     /id: pilot\.pilot_id/,
     /pilot\.is_active !== false/,
     /pilot\.full_name \|\| pilot\.username/,
-    /<select value=\{driver\} onChange=\{\(e\) => setDriver\(e\.target\.value\)\} disabled=\{!pilots\}/,
+    /<Select value=\{driver\} onChange=\{\(e\) => setDriver\(e\.target\.value\)\} disabled=\{!pilots\}/,
   ]);
 });
 
 test("admin route display uses the server-derived driver_name", () => {
   assertContains("src/pages/admin/AdminRoutes.jsx", [
     /Driver: \{routeSummary\.driver_name \|\| "Not assigned"\}/,
-    /\{r\.driver_name\}/,
+    /\{r\.driver_name \|\| "Not assigned"\}/,
   ]);
   // The edit form reverse-maps the derived name back to an id; that fallback
   // must stay in place or opening the editor would silently drop the driver.

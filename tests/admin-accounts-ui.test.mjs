@@ -105,6 +105,6 @@ test("staff/student counts stay in the left summary and are not duplicated in th
   assert.match(component, /<span className=\{styles\.count\}>/);
   assert.match(styles, /\.headerControls\s*\{[\s\S]*display:\s*grid/);
   assert.match(styles, /grid-template-columns:[\s\S]*minmax\(9rem, 11rem\)[\s\S]*minmax\(7rem, auto\)[\s\S]*minmax\(5rem, auto\)/);
-  assert.match(styles, /\.headerControls > :global\(div\) select\s*\{[\s\S]*width:\s*100%/);
+  assert.match(styles, /\.headerControls > :global\(div\) :global\(\[data-select-trigger\]\)\s*\{[\s\S]*width:\s*100%/);
   assert.match(styles, /@media \(max-width:\s*40rem\)\s*\{[\s\S]*\.headerControls\s*\{[\s\S]*display:\s*flex/);
 });
