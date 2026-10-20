@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Menu, UserRound, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { resolveMediaUrl } from "../../api/client";
 import styles from "./WebLayout.module.css";
@@ -25,6 +25,10 @@ export default function WebLayout({ navItems, portalLabel, children }) {
   const profilePath = PROFILE_PATH[user?.role] || "/";
   const parentShellMounted = useContext(PortalShellContext);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Nav groups (e.g. Academics) start collapsed and open only on an
+  // explicit toggle; children are siblings of the toggle button so a child
+  // click can never toggle the parent.
+  const [openGroups, setOpenGroups] = useState({});
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches
   );
@@ -186,17 +190,70 @@ export default function WebLayout({ navItems, portalLabel, children }) {
             <div className="portal-label">{portalLabel}</div>
           </div>
           <nav aria-label="Portal">
-            {navItems.filter((item) => item.to).map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setDrawerOpen(false)}
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <item.icon className={styles.navIcon} aria-hidden="true" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              if (!item.items?.length) {
+                if (!item.to) return null;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setDrawerOpen(false)}
+                    className={({ isActive }) => (isActive ? "active" : "")}
+                  >
+                    <item.icon className={styles.navIcon} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              }
+              // Collapsed by default; expands only when the header is
+              // clicked. The active child keeps its highlight whenever the
+              // group is open (fresh state also means a refresh starts
+              // collapsed, per the default-collapsed design).
+              const expanded = !!openGroups[item.label];
+              const groupId = `nav-group-${item.label
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")}`;
+              return (
+                <div key={item.label} className={styles.navGroup}>
+                  <button
+                    type="button"
+                    className={styles.navGroupToggle}
+                    aria-expanded={expanded}
+                    aria-controls={groupId}
+                    onClick={() =>
+                      setOpenGroups((prev) => ({
+                        ...prev,
+                        [item.label]: !expanded,
+                      }))
+                    }
+                  >
+                    <item.icon className={styles.navIcon} aria-hidden="true" />
+                    <span>{item.label}</span>
+                    <ChevronDown
+                      className={`${styles.navChevron}${
+                        expanded ? ` ${styles.navChevronOpen}` : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {expanded && (
+                    <div id={groupId} className={styles.navGroupItems}>
+                      {item.items.map((child) => (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          onClick={() => setDrawerOpen(false)}
+                          className={({ isActive }) => (isActive ? "active" : "")}
+                        >
+                          <child.icon className={styles.navIcon} aria-hidden="true" />
+                          <span>{child.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
           <footer className={styles.footer}>
             <NavLink
