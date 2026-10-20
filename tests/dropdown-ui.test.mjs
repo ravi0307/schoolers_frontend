@@ -79,9 +79,11 @@ test("dropdown surface tokens define the light background, text, border, and foc
 
 test("page-specific dropdown overrides keep light tokenized surfaces", () => {
   const broadcastCss = read("src/pages/admin/AdminBroadcast.module.css");
+  // Page rules target the shared Select trigger (native select is hidden
+  // inside the component); the token guarantees are unchanged.
   const broadcastSelect = ruleBody(
     broadcastCss,
-    "\\.filterCard\\s+\\.field\\s+select",
+    "\\.filterCard\\s+\\.field\\s+:global\\(\\[data-select-trigger\\]\\)",
     "AdminBroadcast filter select"
   );
   assert.match(broadcastSelect, lightSurface);
@@ -105,7 +107,7 @@ test("website builder selects and context menu do not override shared styling wi
   const builderCss = read("src/pages/admin/AdminWebsiteBuilder.module.css");
   const builderSelect = ruleBody(
     builderCss,
-    "\\.variantControl\\s+select,\\s*\\.toolbar\\s+select",
+    "\\.variantControl\\s+:global\\(\\[data-select-trigger\\]\\),\\s*\\.toolbar\\s+:global\\(\\[data-select-trigger\\]\\)",
     "AdminWebsiteBuilder select"
   );
   assert.match(builderSelect, lightSurface, "website builder selects should use a light token");
