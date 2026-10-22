@@ -18,9 +18,9 @@ teaching load) all tested end-to-end.
 
 ## What's implemented
 
-All 5 roles have a working shell (routing, auth, sidebar/tab-bar nav) and a
-solid, representative set of screens per role, each doing **real API calls**
-— no mock data:
+All 5 roles have a working shell (routing, auth, sidebar/tab-bar nav) — plus a
+Sub-Master that shares the Master portal — and a solid, representative set of
+screens per role, each doing **real API calls** — no mock data:
 
 | Role | Screens |
 |---|---|
@@ -28,7 +28,8 @@ solid, representative set of screens per role, each doing **real API calls**
 | **Teacher** | Student List, Mark Attendance, Marks entry (scoped to subjects they actually teach — mirrors the backend's permission check), Timetable — all with a class picker |
 | **School Admin** | Dashboard (report overview), Classes, Students (search + add), Teachers (add/remove), Routes (stops + students), Leave approval, School Website builder, Notifications |
 | **Pilot** | Pick & Drop (live status cycling, tied to their route's real stops/students), Leave Request |
-| **Master Admin** | Schools list + Add School (full contact form), School Detail (feature toggles, stats report, send notification, delete), **System Health** (live up/down status of every microservice, via the gateway's `/health/services`) |
+| **Master Admin** | Schools list + Add School (full contact form), School Detail (feature toggles, stats report, send notification, delete), **System Health** (live up/down status of every microservice, via the gateway's `/health/services`), **Accounts** (Master-only Sub-Master lifecycle: create with one-time password, edit email/password, deactivate/activate) |
+| **Sub-Master** | Everything in the Master portal except Accounts — same schools, support inbox, system health, and profile screens, enforced server-side by the role hierarchy |
 
 This covers every backend module's core flow. Extending to the remaining
 screens from the original HTML prototype (e.g. Insta Class media, Activities,

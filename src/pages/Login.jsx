@@ -11,6 +11,7 @@ const ROLE_HOME = {
   admin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",
+  submaster: "/master/schools",
   staff: "/staff/broadcast",
 };
 

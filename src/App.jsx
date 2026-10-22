@@ -72,6 +72,7 @@ import MasterSchools from "./pages/master/MasterSchools";
 import MasterSchoolDetail from "./pages/master/MasterSchoolDetail";
 import MasterSystemHealth from "./pages/master/MasterSystemHealth";
 import MasterSupport from "./pages/master/MasterSupport";
+import MasterAccounts from "./pages/master/MasterAccounts";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -82,6 +83,7 @@ function RootRedirect() {
     admin: "/admin/dashboard",
     pilot: "/pilot/pickdrop",
     master: "/master/schools",
+    submaster: "/master/schools",
     staff: "/staff/broadcast",
   }[user.role];
   return <Navigate to={home || "/login"} replace />;
@@ -222,16 +224,19 @@ export default function App() {
               }
             />
 
-            {/* Master Admin */}
+            {/* Master Admin & Sub-Master: one shared portal — a Sub-Master
+                holds Master's whole operational surface, minus the
+                Master-only Accounts screen (guarded inside the page). */}
             <Route
               path="/master/*"
               element={
-                <ProtectedRoute roles={["master"]}>
+                <ProtectedRoute roles={["master", "submaster"]}>
                   <Routes>
                     <Route path="schools" element={<MasterSchools />} />
                     <Route path="schools/:schoolId" element={<MasterSchoolDetail />} />
                     <Route path="system-health" element={<MasterSystemHealth />} />
                     <Route path="support" element={<MasterSupport />} />
+                    <Route path="accounts" element={<MasterAccounts />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/master/schools" replace />} />
                   </Routes>

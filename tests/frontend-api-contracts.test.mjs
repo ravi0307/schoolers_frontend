@@ -180,7 +180,7 @@ test("key frontend workflows remain represented by application routes", () => {
     staff: ["broadcast", "gallery", "report"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "build-your-site", "my_website2", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave", "report"],
-    master: ["schools", "schools/:schoolId", "system-health", "support"],
+    master: ["schools", "schools/:schoolId", "system-health", "support", "accounts"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
     const portalRoute = ["teacher", "admin", "staff", "parent"].includes(role)
@@ -2011,6 +2011,7 @@ test("every role has a profile route under its own portal", () => {
     ["admin", "admin"],
     ["pilot", "pilot"],
     ["master", "master"],
+    ["submaster", "master"],
   ]) {
     assert.match(app, new RegExp(`path="profile" element=\\{<UserProfile />\\}`), `${role} is missing a profile route`);
     const portalRoute = ["teacher", "admin", "parent"].includes(role)
@@ -2060,6 +2061,7 @@ test("the profile link is derived from the session role, not hardcoded", () => {
       /admin: "\/admin\/profile"/,
       /pilot: "\/pilot\/profile"/,
       /master: "\/master\/profile"/,
+      /submaster: "\/master\/profile"/,
     ]);
   }
 });
@@ -2074,6 +2076,7 @@ test("the profile page renders inside the signed-in role's own shell", () => {
     /admin: AdminShell/,
     /pilot: PilotShell/,
     /master: MasterShell/,
+    /submaster: MasterShell/,
     /<Shell>/,
   ]);
 });
