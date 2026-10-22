@@ -43,6 +43,7 @@ const ROLE_LABEL = {
   admin: "School Admin",
   pilot: "Pilot",
   master: "Master Admin",
+  submaster: "Sub-Master",
   staff: "Staff",
 };
 
@@ -54,6 +55,7 @@ const SHELLS = {
   admin: AdminShell,
   pilot: PilotShell,
   master: MasterShell,
+  submaster: MasterShell,
 };
 
 const HOME_BY_ROLE = {
@@ -63,6 +65,7 @@ const HOME_BY_ROLE = {
   admin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",
+  submaster: "/master/schools",
 };
 
 /** A role with no registered shell still renders its details, just without nav. */

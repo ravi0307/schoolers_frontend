@@ -11,6 +11,7 @@ const PROFILE_PATH = {
   admin: "/admin/profile",
   pilot: "/pilot/profile",
   master: "/master/profile",
+  submaster: "/master/profile",
 };
 
 export default function MobileLayout({ tabs, children }) {

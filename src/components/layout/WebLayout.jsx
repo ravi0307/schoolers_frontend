@@ -15,6 +15,7 @@ const PROFILE_PATH = {
   admin: "/admin/profile",
   pilot: "/pilot/profile",
   master: "/master/profile",
+  submaster: "/master/profile",
   staff: "/staff/profile",
 };
 
