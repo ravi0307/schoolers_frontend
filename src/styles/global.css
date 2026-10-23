@@ -371,6 +371,13 @@ select option:disabled,
 .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .grid2 > *, .grid3 > *, .grid4 > * { min-width: 0; }
+/* Two-column form bodies (Add Staff / Add Student): short controls pair up,
+   conditional and wide controls span with .span-2. Inherits grid2's stacking
+   at narrow widths; zeroing .field's flow margin keeps the grid gap as the
+   only source of vertical rhythm. */
+.form-grid { gap: 12px 16px; }
+.form-grid .field { margin-bottom: 0; }
+.form-grid > .span-2, .form-grid > .cta-row { grid-column: 1 / -1; }
 /* Shared filter / control strips used by Trip History and similar admin pages. */
 .filters-bar {
   display: grid;
