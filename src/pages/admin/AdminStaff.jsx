@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import AdminShell from "../../components/layout/AdminShell";
+import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
 import * as attendanceApi from "../../api/attendance";
@@ -25,11 +26,17 @@ function getStaffValue(person, keys) {
 
 function normalizeStaffPerson(person) {
   const storedRole = getStaffValue(person, ["role_title", "role"]);
-  const roleCategory = storedRole === "Teacher" || storedRole.toLowerCase().includes("teacher")
-    ? "Teacher"
-    : storedRole === "Pilot" || storedRole.toLowerCase().includes("pilot")
-      ? "Pilot"
-      : "Other staff";
+  // "Sub-Admin" is a role assignment, not a free-text title: recognize it as
+  // its own category so the edit form can round-trip it and row actions can
+  // be gated for non-Admin sessions.
+  const roleCategory =
+    storedRole.replace(/[^a-z]/gi, "").toLowerCase() === "subadmin"
+      ? "Sub-Admin"
+      : storedRole === "Teacher" || storedRole.toLowerCase().includes("teacher")
+        ? "Teacher"
+        : storedRole === "Pilot" || storedRole.toLowerCase().includes("pilot")
+          ? "Pilot"
+          : "Other staff";
 
   return {
     ...person,
@@ -49,6 +56,11 @@ function normalizeStaffPerson(person) {
 export default function AdminStaff() {
   const { data, loading, error, refetch } = useApi(() => peopleApi.listStaff(), []);
   const toast = useToast();
+  const { user } = useAuth();
+  // Only a school Admin may assign the Sub-Admin role through this form; a
+  // Sub-Admin session never sees the option (and the backend refuses the
+  // label regardless of what the client sends).
+  const canAssignSubAdmin = user?.role === "admin";
 
   // Staff attendance for today. Two separate maps on purpose:
   //   statuses = what the toggle shows (defaults to Present, unsaved)
@@ -311,6 +323,9 @@ export default function AdminStaff() {
               <option value="Teacher">Teacher</option>
               <option value="Pilot">Pilot</option>
               <option value="Other staff">Other staff</option>
+              {canAssignSubAdmin || roleCategory === "Sub-Admin" ? (
+                <option value="Sub-Admin">Sub-Admin</option>
+              ) : null}
             </Select>
           </div>
           {roleCategory === "Other staff" ? (
@@ -436,6 +451,12 @@ export default function AdminStaff() {
               pager.pageItems.map((person) => {
                 const staffId = person.staff_id || person.id;
                 const isExpanded = expandedId === staffId;
+                // Sub-Admin rows are privileged: only a school Admin session
+                // gets edit/remove (the backend refuses Sub-Admin actors on
+                // any privileged target anyway, including admin-linked rows
+                // this list cannot identify — that 403 surfaces as a toast).
+                const canManageRow =
+                  canAssignSubAdmin || person.role_category !== "Sub-Admin";
                 const emailValue = person.email || "";
                 const emergencyValue = person.emergency_contact || "";
                 const presentAddressValue = getStaffValue(person, ["present_address", "current_address"]) || "";
@@ -478,8 +499,12 @@ export default function AdminStaff() {
                               ? `● Present`
                               : `○ Absent`}
                         </button>
-                        <button className="btn ghost sm" onClick={() => startEdit(person)}>Edit</button>
-                        <button className="btn ghost sm" onClick={() => remove(staffId)}>Remove</button>
+                        {canManageRow ? (
+                          <>
+                            <button className="btn ghost sm" onClick={() => startEdit(person)}>Edit</button>
+                            <button className="btn ghost sm" onClick={() => remove(staffId)}>Remove</button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 

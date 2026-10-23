@@ -11,7 +11,7 @@ const FeatureContext = createContext(null);
 // (their access is role-checked and enforced by the backend per request).
 export function FeatureProvider({ children }) {
   const { user } = useAuth();
-  const schoolId = user?.role === "admin" ? user.schoolId : null;
+  const schoolId = ["admin", "subadmin"].includes(user?.role) ? user.schoolId : null;
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(!!schoolId);
   const [error, setError] = useState(null);

@@ -41,6 +41,7 @@ const ROLE_LABEL = {
   parent: "Parent",
   teacher: "Teacher",
   admin: "School Admin",
+  subadmin: "Sub-Admin",
   pilot: "Pilot",
   master: "Master Admin",
   submaster: "Sub-Master",
@@ -53,6 +54,7 @@ const SHELLS = {
   teacher: TeacherShell,
   staff: StaffShell,
   admin: AdminShell,
+  subadmin: AdminShell,
   pilot: PilotShell,
   master: MasterShell,
   submaster: MasterShell,
@@ -63,6 +65,7 @@ const HOME_BY_ROLE = {
   teacher: "/teacher/dashboard",
   staff: "/staff/broadcast",
   admin: "/admin/dashboard",
+  subadmin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",
   submaster: "/master/schools",
@@ -84,7 +87,7 @@ function ParentContent({ children }) {
  * would be a child's, and the master is above every school rather than in one.
  * They are excluded here so the summary never mounts for them.
  */
-const STAFF_LINKED_ROLES = new Set(["admin", "teacher", "staff", "pilot"]);
+const STAFF_LINKED_ROLES = new Set(["admin", "subadmin", "teacher", "staff", "pilot"]);
 
 function validate({ currentPassword, newPassword, confirmPassword }) {
   if (!currentPassword) return "Enter your current password";

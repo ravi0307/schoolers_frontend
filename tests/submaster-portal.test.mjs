@@ -78,8 +78,13 @@ test("sub-master keeps master's session semantics, not a school admin's", () => 
   const staffLinked = /const STAFF_LINKED_ROLES = new Set\(\[([^\]]*)\]\)/.exec(profile);
   assert.ok(staffLinked, "staff-linked role set is missing");
   assert.ok(!staffLinked[1].includes("submaster"), "submaster must not be treated as staff-linked");
-  // No school of its own: feature flags stay a school-admin concern.
-  assert.match(featureContext, /user\?\.role === "admin" \? user\.schoolId : null/);
+  // No school of its own: feature flags stay a school-admin-tier concern and
+  // the submaster is deliberately absent from that tier's role set.
+  assert.match(
+    featureContext,
+    /\["admin", "subadmin"\]\.includes\(user\?\.role\) \? user\.schoolId : null/
+  );
+  assert.ok(!/"submaster"/.test(featureContext), "submaster never resolves a schoolId");
 });
 
 test("the accounts form validates before it sends anything", () => {

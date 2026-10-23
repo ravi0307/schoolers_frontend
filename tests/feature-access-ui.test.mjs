@@ -136,7 +136,11 @@ test("school admin config fetch exists and reads the dedicated endpoint", () => 
   assert.match(api, /export const getFeatures = \(id\) => client\.get\(`\/schools\/\$\{id\}\/features`\)/);
   const ctx = read("src/context/FeatureContext.jsx");
   assert.match(ctx, /getFeatures\(schoolId\)/);
-  assert.match(ctx, /role === "admin"/, "only school admins fetch feature config");
+  assert.match(
+    ctx,
+    /\["admin", "subadmin"\]\.includes\(user\?\.role\) \? user\.schoolId : null/,
+    "only the school-admin tier fetches feature config"
+  );
   // Fail closed on error: never surface gated features from an unknown config.
   assert.match(ctx, /setFeatures\(null\)/);
 });
@@ -159,7 +163,11 @@ test("sidebar and routes are feature-driven for school admins", () => {
   assert.match(shell, /useFeatures\(\)/);
 
   const guard = read("src/components/layout/FeatureRoute.jsx");
-  assert.match(guard, /user\?\.role !== "admin"/, "non-admin roles pass through (backend enforces)");
+  assert.match(
+    guard,
+    /!\["admin", "subadmin"\]\.includes\(user\?\.role\)/,
+    "roles outside the school-admin tier pass through (backend enforces)"
+  );
   assert.match(guard, /to="\/admin\/dashboard"/);
   assert.match(guard, /accessDeniedFeature: true/);
 
