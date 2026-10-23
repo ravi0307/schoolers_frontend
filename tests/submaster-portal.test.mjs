@@ -124,12 +124,12 @@ test("an empty roster renders an empty state, not a blank card", () => {
   assert.match(accountsPage, /<ErrorBanner message=\{error\} \/>/);
 });
 
-test("the accounts nav entry sits between Schools and System Health", () => {
+test("the Master Users nav entry sits between Schools and System Health", () => {
   // Structure pin: master-only insert after BASE_NAV[0], before the rest —
   // so the roster link cannot drift to the end of the sidebar unnoticed.
   assert.match(masterShell, /BASE_NAV\[0\],/);
   assert.match(masterShell, /\.\.\.BASE_NAV\.slice\(1\)/);
-  assert.match(masterShell, /icon: Users, label: "Accounts"/);
+  assert.match(masterShell, /icon: Users, label: "Master Users"/);
 });
 
 test("the support inbox keeps status management for the whole master portal", () => {

@@ -202,10 +202,10 @@ export default function TeacherMarks() {
       {!loadLoading && <ClassPicker classIds={classIds} selectedClassId={selectedClassId} onSelect={changeClass} />}
 
       <div className="meta" style={{ margin: "8px 0" }}>
-        <button className={mode === "term" ? "btn primary sm" : "btn sm"} onClick={() => setMode("term")}>
+        <button type="button" className={mode === "term" ? "btn primary sm" : "btn ghost sm"} onClick={() => setMode("term")}>
           Term marks
         </button>
-        <button className={mode === "session" ? "btn primary sm" : "btn sm"} onClick={() => setMode("session")}>
+        <button type="button" className={mode === "session" ? "btn primary sm" : "btn ghost sm"} onClick={() => setMode("session")}>
           Examination sessions
         </button>
       </div>

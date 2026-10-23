@@ -5,12 +5,13 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-button);
   font-weight: var(--font-weight-semibold);
   gap: var(--space-2);
   justify-content: center;
   min-height: 2.75rem;
   padding: var(--space-2) var(--space-4);
+  line-height: var(--line-height-control);
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
 }

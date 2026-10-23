@@ -115,13 +115,13 @@ export default function MasterAccounts() {
   return (
     <MasterShell>
       <PageHeader
-        title="Accounts"
+        title="Master Users"
         subtitle={
           accounts.length
             ? `${accounts.filter((a) => a.role === "submaster").length} Sub-Master, ${
                 accounts.filter((a) => a.role === "master").length
               } Master`
-            : "Master and Sub-Master accounts"
+            : "Master and Sub-Master users"
         }
         action={!formOpen && !editing && (
           <button className="btn gold" type="button" onClick={() => setFormOpen(true)}>
@@ -227,7 +227,7 @@ export default function MasterAccounts() {
       <ErrorBanner message={error} />
       {loading && <Spinner />}
       {!loading && !error && accounts.length === 0 && (
-        <Empty>No privileged accounts yet.</Empty>
+        <Empty>No master users yet.</Empty>
       )}
       {!loading && accounts.length > 0 && (
         <div className="card">

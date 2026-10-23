@@ -404,8 +404,9 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
     /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
     /@media \(max-width: 48rem\)/,
   ]);
-  assertContains("src/pages/teacher/TeacherBroadcast.jsx", [
-    /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+  assertContains("src/pages/teacher/TeacherBroadcast.module.css", [
+    /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+    /@media \(max-width: 48rem\)/,
   ]);
 });
 
