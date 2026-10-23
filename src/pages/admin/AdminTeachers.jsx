@@ -10,6 +10,7 @@ import Select from "../../components/ui/Select";
 import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
+import styles from "./AdminTeachers.module.css";
 
 function getValue(obj, keys) {
   for (const key of keys) {
@@ -162,53 +163,55 @@ export default function AdminTeachers() {
       />
 
       {formOpen && (
-        <form className="card white" onSubmit={submit} style={{ marginTop: 10 }}>
-          <div className="field">
-            <label>Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mr. Kapoor" />
-          </div>
-          <div className="field">
-            <label>Role / Title</label>
-            <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Class Teacher · Grade 5-A" />
-          </div>
-          <div className="field">
-            <label>Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="field">
-            <label>Email ID</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@example.com" />
-          </div>
-          <div className="field">
-            <label>Present address</label>
-            <textarea value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current address" />
-          </div>
-          <div className="field">
-            <label>Permanent address</label>
-            <textarea value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
-          </div>
-          <div className="field">
-            <label>Date of birth</label>
-            <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
-          </div>
-          <div className="field">
-            <label>Emergency contact number</label>
-            <input value={emergencyNumber} onChange={(e) => setEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="field">
-            <label>Gender</label>
-            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </Select>
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Teacher"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+        <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+          <div className={styles.teacherForm}>
+            <div className="field">
+              <label>Full name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mr. Kapoor" />
+            </div>
+            <div className="field">
+              <label>Role / Title</label>
+              <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Class Teacher · Grade 5-A" />
+            </div>
+            <div className="field">
+              <label>Phone</label>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            </div>
+            <div className="field">
+              <label>Email ID</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@example.com" />
+            </div>
+            <div className={`${styles.spanTwo} field`}>
+              <label>Present address</label>
+              <textarea value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current address" />
+            </div>
+            <div className={`${styles.spanTwo} field`}>
+              <label>Permanent address</label>
+              <textarea value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
+            </div>
+            <div className="field">
+              <label>Date of birth</label>
+              <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
+            </div>
+            <div className="field">
+              <label>Emergency contact number</label>
+              <input value={emergencyNumber} onChange={(e) => setEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            </div>
+            <div className="field">
+              <label>Gender</label>
+              <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </Select>
+            </div>
+            <div className={`cta-row ${styles.ctaRow}`}>
+              <button className="btn primary" type="submit" disabled={submitting}>
+                {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Teacher"}
+              </button>
+              <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+            </div>
           </div>
         </form>
       )}
@@ -218,8 +221,8 @@ export default function AdminTeachers() {
 
       {!loading && !error && (
         <>
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
+          <div className={`card ${styles.searchCard}`}>
+            <div className={`field ${styles.searchField}`}>
               <label>Search teacher</label>
               <input
                 value={search}
@@ -243,58 +246,49 @@ export default function AdminTeachers() {
                 const genderValue = teacher.gender || "Not provided";
 
                 return (
-                  <div key={teacherId} className="listitem" style={{ display: "block", cursor: "pointer" }} onClick={() => toggleExpanded(teacherId)}>
-                    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 12 }}>
+                  <div key={teacherId} className={`listitem ${styles.teacherRow}`} onClick={() => toggleExpanded(teacherId)}>
+                    <div className={styles.teacherRowHeader}>
                       <div className="avatar y">{initials(teacher.name)}</div>
 
-                      <div style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
-                        <div style={{ minWidth: 0, fontWeight: 700 }}>{teacher.name}</div>
-                        <div style={{ flex: 1, textAlign: "center", color: "#374151" }}>{teacher.role_title || "Subject Teacher"}</div>
+                      <div className={styles.teacherSummary}>
+                        <div className={styles.teacherName}>{teacher.name}</div>
+                        <div className={styles.teacherRole}>{teacher.role_title || "Subject Teacher"}</div>
                       </div>
 
-                      <div className="cta-row" style={{ gap: 8, marginLeft: "auto" }} onClick={(e) => e.stopPropagation()}>
+                      <div className={`cta-row ${styles.teacherActions}`} onClick={(e) => e.stopPropagation()}>
                         <button className="btn ghost sm" onClick={() => startEdit(teacher)}>Edit</button>
                         <button className="btn ghost sm" onClick={() => remove(teacherId)}>Remove</button>
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          paddingTop: 12,
-                          borderTop: "1px solid #e5e7eb",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Phone</strong>
+                      <div className={styles.teacherDetails}>
+                        <div className={styles.detailItem}>
+                          <strong>Phone</strong>
                           <span>{phoneValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Email ID</strong>
+                        <div className={styles.detailItem}>
+                          <strong>Email ID</strong>
                           <span>{emailValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Present Address</strong>
+                        <div className={`${styles.detailItem} ${styles.detailItemWide}`}>
+                          <strong>Present Address</strong>
                           <span>{presentAddressValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Permanent Address</strong>
+                        <div className={`${styles.detailItem} ${styles.detailItemWide}`}>
+                          <strong>Permanent Address</strong>
                           <span>{permanentAddressValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Date of Birth</strong>
+                        <div className={styles.detailItem}>
+                          <strong>Date of Birth</strong>
                           <span>{dobValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Number</strong>
+                        <div className={styles.detailItem}>
+                          <strong>Emergency Number</strong>
                           <span>{emergencyValue}</span>
                         </div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          <strong style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>Gender</strong>
+                        <div className={styles.detailItem}>
+                          <strong>Gender</strong>
                           <span>{genderValue}</span>
                         </div>
                       </div>

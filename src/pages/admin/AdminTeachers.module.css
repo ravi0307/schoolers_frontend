@@ -1,0 +1,109 @@
+.formCard {
+  margin-top: var(--space-2);
+}
+
+.teacherForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+}
+
+.teacherForm > .field,
+.teacherForm > .ctaRow {
+  margin-bottom: 0;
+}
+
+.spanTwo,
+.ctaRow {
+  grid-column: 1 / -1;
+}
+
+.searchCard {
+  margin-bottom: var(--space-3);
+}
+
+.searchField { margin-bottom: 0; }
+
+.teacherRow {
+  display: block;
+  cursor: pointer;
+}
+
+.teacherRowHeader {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.teacherSummary {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.teacherName {
+  min-width: 0;
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.teacherRole {
+  min-width: 0;
+  flex: 1;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  overflow-wrap: anywhere;
+}
+
+.teacherActions {
+  flex: 0 0 auto;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.teacherDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.detailItem {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.detailItemWide { grid-column: 1 / -1; }
+
+.detailItem strong {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.detailItem span {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 42rem) {
+  .teacherForm,
+  .teacherDetails { grid-template-columns: minmax(0, 1fr); }
+  .spanTwo,
+  .ctaRow,
+  .detailItemWide { grid-column: auto; }
+  .teacherRowHeader { align-items: flex-start; }
+  .teacherSummary { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+  .teacherRole { flex: none; }
+  .teacherActions { align-self: flex-start; }
+}
