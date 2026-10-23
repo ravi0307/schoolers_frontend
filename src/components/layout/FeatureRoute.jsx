@@ -13,7 +13,7 @@ export default function FeatureRoute({ feature, children }) {
   const { features, loading } = useFeatures();
   const location = useLocation();
 
-  if (!feature || user?.role !== "admin") return children;
+  if (!feature || !["admin", "subadmin"].includes(user?.role)) return children;
   // Unknown config while loading: wait (nothing renders until known).
   if (loading) return null;
   if (!isFeatureEnabled(features, feature)) {

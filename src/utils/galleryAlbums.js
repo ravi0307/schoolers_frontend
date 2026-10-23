@@ -61,8 +61,8 @@ export function mediaIdsOf(card) {
  */
 export function canManageMedia(item, user) {
   if (!item || !user) return false;
-  if (user.role === "admin") return true;
-  if (user.role !== "teacher" && user.role !== "admin") return false;
+  if (user.role === "admin" || user.role === "subadmin") return true;
+  if (user.role !== "teacher" && user.role !== "admin" && user.role !== "subadmin") return false;
   if (item.uploader_user_id == null) return false;
   return item.uploader_user_id === user.userId;
 }

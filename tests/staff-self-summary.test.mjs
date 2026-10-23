@@ -146,7 +146,7 @@ test("the reports client reads the self endpoint with no id in it", () => {
 
 test("the summary is its own component so only staff-linked roles fetch it", () => {
   const page = source("src/pages/UserProfile.jsx");
-  assert.match(page, /const STAFF_LINKED_ROLES = new Set\(\["admin", "teacher", "staff", "pilot"\]\)/);
+  assert.match(page, /const STAFF_LINKED_ROLES = new Set\(\["admin", "subadmin", "teacher", "staff", "pilot"\]\)/);
   // parent and master have no staff row, so the fetch must never run for them.
   assert.doesNotMatch(page, /new Set\(\[[^\]]*"parent"/);
   assert.doesNotMatch(page, /new Set\(\[[^\]]*"master"/);

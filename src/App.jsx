@@ -81,6 +81,7 @@ function RootRedirect() {
     parent: "/parent/home",
     teacher: "/teacher/dashboard",
     admin: "/admin/dashboard",
+    subadmin: "/admin/dashboard",
     pilot: "/pilot/pickdrop",
     master: "/master/schools",
     submaster: "/master/schools",
@@ -171,7 +172,7 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute roles={["admin"]}>
+                <ProtectedRoute roles={["admin", "subadmin"]}>
                   <AdminShell />
                 </ProtectedRoute>
               }
