@@ -10,13 +10,13 @@ const BASE_NAV = [
 
 export default function MasterShell({ children }) {
   const { user } = useAuth();
-  // Accounts is Master-only: a Sub-Master is never even offered the
+  // Master Users is Master-only: a Sub-Master is never even offered the
   // privileged-account roster (the API refuses it regardless of the link).
   const navItems =
     user?.role === "master"
       ? [
           BASE_NAV[0],
-          { to: "/master/accounts", icon: Users, label: "Accounts" },
+          { to: "/master/accounts", icon: Users, label: "Master Users" },
           ...BASE_NAV.slice(1),
         ]
       : BASE_NAV;
