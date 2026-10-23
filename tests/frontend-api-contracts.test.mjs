@@ -2096,8 +2096,73 @@ test("shared form grids and table scroll hosts shrink safely on narrow viewports
   assert.match(css, /\.table-scroll \{[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.data-table \{[^}]*min-width:\s*var\(--table-min-width\)/s);
   assert.match(css, /\.cta-row \{[^}]*flex-wrap:\s*wrap/s);
+  // Two-column create forms (Add Staff / Add Student) ride the same grid2
+  // stack: short controls pair up, wide/conditional controls span, and the
+  // flow margin is dropped so the grid gap alone spaces the rows.
+  assert.match(css, /\.form-grid \{ gap: 12px 16px; \}/);
+  assert.match(css, /\.form-grid \.field \{ margin-bottom: 0; \}/);
+  assert.match(css, /\.form-grid > \.span-2, \.form-grid > \.cta-row \{ grid-column: 1 \/ -1; \}/);
+  for (const file of [
+    "src/pages/admin/AdminStaff.jsx",
+    "src/pages/admin/AdminStudents.jsx",
+  ]) {
+    assert.match(
+      source(file),
+      /className="grid2 form-grid"/,
+      `${file} should lay its create form out in two columns`
+    );
+  }
   const layout = source("src/components/layout/WebLayout.module.css");
   assert.match(layout, /@media \(max-width: 1023px\)[\s\S]*?\.content\s*\{[^}]*overflow-x:\s*clip/s);
+});
+
+test("Add Staff and Add Student pair fields into two-column rows without holes", () => {
+  // A lone control in the left cell leaves a visual hole beside it, so the
+  // short controls must pair like with like and only genuinely wide controls
+  // (conditional fields, uploads, textareas) may span both columns.
+  const formBody = (file) => {
+    const match = source(file).match(/<div className="grid2 form-grid">([\s\S]*?)<\/div>\s*<\/form>/);
+    assert.ok(match, `${file} should wrap its create form in the two-column grid`);
+    return { body: match[1], file };
+  };
+
+  const { body: staff, file: staffFile } = formBody("src/pages/admin/AdminStaff.jsx");
+  for (const conditional of ["Other staff", "Pilot"]) {
+    assert.match(
+      staff,
+      new RegExp(`${conditional}" \\? \\(\\s*<div className="field span-2">`),
+      `${staffFile}: the ${conditional} field should span both columns when shown`
+    );
+  }
+  assert.ok(
+    staff.indexOf("Aadhaar card number") < staff.indexOf("Present address"),
+    `${staffFile}: Aadhaar should sit beside Gender so the address textareas pair`
+  );
+  assert.ok(
+    staff.indexOf("Present address") < staff.indexOf("Permanent address"),
+    `${staffFile}: the two address textareas should share a row`
+  );
+  const lastStaffField = staff.slice(0, staff.indexOf("cta-row")).lastIndexOf("Emergency contact number");
+  assert.ok(lastStaffField > staff.indexOf("Permanent address"), `${staffFile}: Emergency contact should close the field rows`);
+  assert.match(staff, /<div className="cta-row">[\s\S]*?Add Staff[\s\S]*?Cancel/);
+
+  const { body: student, file: studentFile } = formBody("src/pages/admin/AdminStudents.jsx");
+  assert.match(student, /<div className="span-2">\s*<ImageUpload/, `${studentFile}: photo upload should span both columns`);
+  assert.match(student, /<div className="span-2">\s*<DocumentUpload/, `${studentFile}: document upload should span both columns`);
+  assert.match(
+    student,
+    /<div className="field span-2">\s*<label>Parent address<\/label>/,
+    `${studentFile}: the parent address textarea should span both columns`
+  );
+  assert.ok(
+    student.indexOf("Parent emergency number") < student.indexOf("Parent address"),
+    `${studentFile}: email/emergency should pair before the full-width address row`
+  );
+  assert.ok(
+    student.indexOf("Parent address") < student.indexOf("cta-row"),
+    `${studentFile}: the address row should close the field rows`
+  );
+  assert.match(student, /<div className="cta-row">[\s\S]*?Add Student[\s\S]*?Cancel/);
 });
 
 test("the profile page lays its cards out in a grid, not one tall stack", () => {

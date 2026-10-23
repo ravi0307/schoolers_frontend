@@ -175,80 +175,86 @@ export default function AdminStudents() {
 
       {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
-          <div className="field">
-            <label>Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
-          </div>
-          <div className="field">
-            <label>Class</label>
-            <Select value={classId} onChange={(e) => setClassId(e.target.value)} aria-label="Class">
-              <option value="">Select a class</option>
-              {(classes || []).map((c) => (
-                <option key={c.class_id} value={c.class_id}>{c.name}</option>
-              ))}
-            </Select>
-          </div>
-          <div className="field">
-            <label>Date of birth</label>
-            <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
-          </div>
-          <div className="field">
-            <label>Gender</label>
-            <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </Select>
-          </div>
-          <ImageUpload
-            label="Image (passport size)"
-            hint="Recent passport-size photo. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
-            value={photoUrl}
-            onChange={setPhotoUrl}
-            onError={toast}
-            schoolId={user?.schoolId}
-          />
-          <div className="field">
-            <label>Aadhaar card number</label>
-            <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} maxLength="20" placeholder="12-digit Aadhaar number" />
-          </div>
-          <div className="field">
-            <label>Birth certificate number</label>
-            <input value={birthCertificateNumber} onChange={(e) => setBirthCertificateNumber(e.target.value)} maxLength="40" placeholder="Birth certificate number" />
-          </div>
-          <DocumentUpload
-            label="Documents"
-            value={documents}
-            onChange={setDocuments}
-            onError={toast}
-            schoolId={user?.schoolId}
-          />
-          <div className="field">
-            <label>Parent name</label>
-            <input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="e.g. Anvi Swaminathan" />
-          </div>
-          <div className="field">
-            <label>Parent phone</label>
-            <input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
-          </div>
-          <div className="field">
-            <label>Parent email</label>
-            <input type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
-          </div>
-          <div className="field">
-            <label>Parent address</label>
-            <textarea rows={3} value={parentAddress} onChange={(e) => setParentAddress(e.target.value)} placeholder="Parent address" />
-          </div>
-          <div className="field">
-            <label>Parent emergency number</label>
-            <input value={parentEmergencyNumber} onChange={(e) => setParentEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" />
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? "Adding..." : "Add Student"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+          <div className="grid2 form-grid">
+            <div className="field">
+              <label>Full name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
+            </div>
+            <div className="field">
+              <label>Class</label>
+              <Select value={classId} onChange={(e) => setClassId(e.target.value)} aria-label="Class">
+                <option value="">Select a class</option>
+                {(classes || []).map((c) => (
+                  <option key={c.class_id} value={c.class_id}>{c.name}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="field">
+              <label>Date of birth</label>
+              <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
+            </div>
+            <div className="field">
+              <label>Gender</label>
+              <Select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </Select>
+            </div>
+            <div className="span-2">
+              <ImageUpload
+                label="Image (passport size)"
+                hint="Recent passport-size photo. JPEG, PNG, GIF, WebP, or SVG up to 5 MB."
+                value={photoUrl}
+                onChange={setPhotoUrl}
+                onError={toast}
+                schoolId={user?.schoolId}
+              />
+            </div>
+            <div className="field">
+              <label>Aadhaar card number</label>
+              <input value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} maxLength="20" placeholder="12-digit Aadhaar number" />
+            </div>
+            <div className="field">
+              <label>Birth certificate number</label>
+              <input value={birthCertificateNumber} onChange={(e) => setBirthCertificateNumber(e.target.value)} maxLength="40" placeholder="Birth certificate number" />
+            </div>
+            <div className="span-2">
+              <DocumentUpload
+                label="Documents"
+                value={documents}
+                onChange={setDocuments}
+                onError={toast}
+                schoolId={user?.schoolId}
+              />
+            </div>
+            <div className="field">
+              <label>Parent name</label>
+              <input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="e.g. Anvi Swaminathan" />
+            </div>
+            <div className="field">
+              <label>Parent phone</label>
+              <input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
+            </div>
+            <div className="field">
+              <label>Parent email</label>
+              <input type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
+            </div>
+            <div className="field">
+              <label>Parent emergency number</label>
+              <input value={parentEmergencyNumber} onChange={(e) => setParentEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" />
+            </div>
+            <div className="field span-2">
+              <label>Parent address</label>
+              <textarea rows={3} value={parentAddress} onChange={(e) => setParentAddress(e.target.value)} placeholder="Parent address" />
+            </div>
+            <div className="cta-row">
+              <button className="btn primary" type="submit" disabled={submitting}>
+                {submitting ? "Adding..." : "Add Student"}
+              </button>
+              <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+            </div>
           </div>
         </form>
       )}
