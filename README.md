@@ -94,7 +94,7 @@ src/
 │   └── useApi.js              # {data, loading, error, refetch} for any API call
 ├── components/
 │   ├── layout/                # MobileLayout, WebLayout, ProtectedRoute, per-role shells
-│   └── ui/                    # Spinner, ErrorBanner, Kpi, Pill, ListItem, ClassPicker
+│   └── ui/                    # Spinner, ErrorBanner, Kpi, Pill, ClassPicker
 ├── pages/
 │   ├── parent/ teacher/ admin/ pilot/ master/
 │   └── Login.jsx

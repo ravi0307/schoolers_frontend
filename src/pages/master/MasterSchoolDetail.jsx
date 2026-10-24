@@ -11,7 +11,6 @@ import ImageUpload from "../../components/ui/ImageUpload";
 import Select from "../../components/ui/Select";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import { FEATURES } from "../../features/registry";
-import { isValidPhone, isValidEmail } from "../../utils/validation";
 
 function schoolDetailsForm(school) {
   return {

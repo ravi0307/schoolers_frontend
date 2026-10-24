@@ -624,7 +624,6 @@ export default function AdminAccounts() {
                   onChange={setSalaryAnchor}
                   busy={busy}
                   label="salary period"
-                  months={SALARY_MONTHS}
                 />
                 }
                 nameHeader="Staff"
@@ -673,7 +672,6 @@ export default function AdminAccounts() {
                   onChange={setFeeAnchor}
                   busy={busy}
                   label="fee period"
-                  months={FEE_MONTHS}
                   // A deposit records the months after the one it starts in, so
                   // the fee grid holds figures beyond this month and has to be
                   // readable out there.

@@ -12,15 +12,11 @@
  * months, which of them are being replaced, and what the admin just did.
  */
 
-import { monthLabel } from "./staffReport.js";
+import { formatAmount, monthLabel } from "./staffReport.js";
 
-/** Group an amount the way a ledger does, keeping decimals. */
-export function formatAmount(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  const [whole, frac] = String(value).split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return frac ? `${grouped}.${frac}` : grouped;
-}
+// Keep the fee-dialog export stable while sharing the ledger formatter with
+// staff reports.
+export { formatAmount };
 
 /** The plan buttons, in the order they read best: shortest period first. */
 export function planChoices(plans) {

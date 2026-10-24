@@ -132,6 +132,10 @@ export default function AdminTimetable() {
     }))),
     [classes]
   );
+  const classTimetableById = useMemo(
+    () => new Map((classTimetables || []).map((record) => [String(record.classId), record])),
+    [classTimetables]
+  );
   const { data: subjects } = useApi(() => academicsApi.listSubjects(), []);
   const { data: periods, refetch: refetchPeriods } = useApi(() => academicsApi.listPeriods(), []);
   const { data: teachers } = useApi(() => peopleApi.listTeachers(), []);
@@ -522,9 +526,7 @@ export default function AdminTimetable() {
       ) : (
         <div className="timetable-class-grid">
           {(classes || []).map((item) => {
-            const timetable = (classTimetables || []).find(
-              (record) => String(record.classId) === String(item.class_id)
-            );
+            const timetable = classTimetableById.get(String(item.class_id));
             const timetableEntries = (timetable?.entries || []).filter(Boolean);
             // Build unique time slots from entries
             const timeSlots = [...new Set(

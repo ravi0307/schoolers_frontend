@@ -94,15 +94,6 @@ function expectText(want, ms = 8000) {
   );
 }
 
-async function has(want, ms = 3000) {
-  try {
-    await expectText(want, ms);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function toastWatcher(want, ms = 8000) {
   const match = (txt) => (want instanceof RegExp ? want.test(txt) : txt.includes(want));
   const deadline = Date.now() + ms;
@@ -538,7 +529,8 @@ async function main() {
   const byJourney = {};
   for (const r of results) {
     byJourney[r.journey] ??= { pass: 0, fail: 0 };
-    r.ok ? (byJourney[r.journey].pass += 1) : (byJourney[r.journey].fail += 1);
+    if (r.ok) byJourney[r.journey].pass += 1;
+    else byJourney[r.journey].fail += 1;
   }
   fs.writeFileSync(path.join(SHOTS, "..", "workflow-results.json"), JSON.stringify({ byJourney, results, pageErrors }, null, 2));
   console.log("\n===== WORKFLOW E2E SUMMARY =====");

@@ -1255,7 +1255,7 @@ export default function AdminWebsiteBuilder() {
                   </div>
                 ) : node.type === "banner" ? (
                   <div className={styles.bannerEditor}>
-                    <img src={node.slides?.[0]?.imageUrl} alt="Mock school banner preview" />
+                    <img src={node.slides?.[0]?.imageUrl || undefined} alt="Mock school banner preview" />
                     <div>
                       <strong>{node.slides?.[0]?.title}</strong>
                       <span>{node.slides?.length || 0} carousel images · Drop or add images to upload</span>
