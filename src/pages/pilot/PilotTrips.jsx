@@ -401,8 +401,3 @@ export default function PilotTrips() {
     </PilotShell>
   );
 }
-
-/** Helper used by the hook; kept for consistency with the codebase. */
-export function apiErrorMessage(err) {
-  return err?.response?.data?.detail || err?.message || "Something went wrong";
-}

@@ -12,7 +12,6 @@ export default function ImageUpload({
 }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
-  const [showUrl, setShowUrl] = useState(false);
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0];

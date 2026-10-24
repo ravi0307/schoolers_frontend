@@ -38,25 +38,6 @@ export function initials(name = "") {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 }
 
-export function ListItem({ onClick, avatarTone, avatarText, title, subtitle, right }) {
-  const Content = (
-    <>
-      <div className={`avatar ${avatarTone || ""}`}>{avatarText}</div>
-      <div className="meta">
-        <b>{title}</b>
-        <span>{subtitle}</span>
-      </div>
-      {right}
-    </>
-  );
-  if (onClick) {
-    return <button className="listitem listitem-interactive" type="button" onClick={onClick}>{Content}</button>;
-  }
-  return (
-    <div className="listitem">{Content}</div>
-  );
-}
-
 export function ConfirmDialog({ open, title, message, confirmLabel = "Remove", destructive = true, onConfirm, onCancel }) {
   if (!open) return null;
   return (

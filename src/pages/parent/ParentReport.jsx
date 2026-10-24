@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import Card from "../../components/ui/Card";
 import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
@@ -15,13 +16,15 @@ const amountFormat = new Intl.NumberFormat(undefined, {
   currency: "INR",
   maximumFractionDigits: 2,
 });
+const monthDateFormat = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric" });
+const dateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 function monthLabel(value) {
   if (!value) return "—";
   const date = new Date(`${value}-01T00:00:00`);
   return Number.isNaN(date.getTime())
     ? value
-    : new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric" }).format(date);
+    : monthDateFormat.format(date);
 }
 
 function dateLabel(value) {
@@ -29,7 +32,7 @@ function dateLabel(value) {
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
   return Number.isNaN(date.getTime())
     ? value
-    : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(date);
+    : dateFormat.format(date);
 }
 
 function ReportTable({ headers, children }) {
@@ -59,14 +62,23 @@ export default function ParentReport() {
     [studentId]
   );
 
-  const presentCount = (attendance.data || []).filter((day) =>
-    String(day.status || "").toLowerCase() === "present"
-  ).length;
+  const presentCount = useMemo(
+    () => (attendance.data || []).filter((day) => String(day.status || "").toLowerCase() === "present").length,
+    [attendance.data]
+  );
   const markedCount = attendance.data?.length || 0;
   const percentage = markedCount ? Math.round((presentCount / markedCount) * 100) : null;
-  const feeRows = [...(fees.data || [])].sort((a, b) => String(b.month).localeCompare(String(a.month)));
-  const markRows = [...(marks.data || [])].sort((a, b) =>
-    String(b.term || "").localeCompare(String(a.term || ""))
+  const attendanceRows = useMemo(
+    () => [...(attendance.data || [])].sort((a, b) => String(b.date).localeCompare(String(a.date))),
+    [attendance.data]
+  );
+  const feeRows = useMemo(
+    () => [...(fees.data || [])].sort((a, b) => String(b.month).localeCompare(String(a.month))),
+    [fees.data]
+  );
+  const markRows = useMemo(
+    () => [...(marks.data || [])].sort((a, b) => String(b.term || "").localeCompare(String(a.term || ""))),
+    [marks.data]
   );
   const totalFees = feeRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const errors = [attendance.error, marks.error, fees.error].filter(Boolean).join(" ");
@@ -93,7 +105,7 @@ export default function ParentReport() {
             </div>
             {!markedCount ? <EmptyState>No attendance records yet.</EmptyState> : (
               <ReportTable headers={["Date", "Status"]}>
-                {[...(attendance.data || [])].sort((a, b) => String(b.date).localeCompare(String(a.date))).map((day) => (
+                {attendanceRows.map((day) => (
                   <tr key={day.attendance_id || day.date}>
                     <td>{dateLabel(day.date)}</td>
                     <td><Pill tone={day.status === "Present" ? "ok" : "warn"}>{day.status}</Pill></td>

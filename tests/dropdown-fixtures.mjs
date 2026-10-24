@@ -198,6 +198,17 @@ function responseFor(pathname, request) {
     };
   }
 
+  if (/\/schools\/\d+\/features$/.test(pathname)) {
+    return {
+      route_enabled: true,
+      website_enabled: true,
+      library_enabled: true,
+      fees_enabled: true,
+      salary_enabled: true,
+      examinations_enabled: true,
+    };
+  }
+
   if (pathname.endsWith("/broadcasts")) return BROADCASTS;
   if (pathname.endsWith("/classes")) return CLASSES;
   if (pathname.endsWith("/teachers")) return TEACHERS;

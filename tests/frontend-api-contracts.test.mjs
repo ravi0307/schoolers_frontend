@@ -751,7 +751,7 @@ test("useIsWide consults matchMedia once and subscribes for change events", () =
   assertContains("src/hooks/useIsWide.js", [
     /breakpoint = 900/,
     /typeof window !== "undefined"/,
-    /window\.matchMedia\(\`\(min-width: \$\{breakpoint\}px\)\`\)\.matches/,
+    /window\.matchMedia\(`\(min-width: \$\{breakpoint\}px\)`\)\.matches/,
     /mq\.addEventListener\("change", handler\)/,
     /setIsWide\(event\.matches\)/,
     /mq\.removeEventListener\("change", handler\)/,
