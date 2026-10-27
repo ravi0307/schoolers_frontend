@@ -11,6 +11,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import Select from "../../components/ui/Select";
+import FormField from "../../components/ui/FormField";
 import { richTextToPlainText, sanitizeRichText } from "../../components/ui/richText";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
 import styles from "./AdminBroadcast.module.css";
@@ -272,12 +273,13 @@ export default function AdminBroadcast() {
         <div className={`card white ${styles.filterCard}`}>
           <div className="grid2">
             <div className="field">
-              <label>Search broadcasts</label>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search sender, message, or class"
-              />
+              <FormField label="Search broadcasts">
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search sender, message, or class"
+                />
+              </FormField>
             </div>
             <div className="field">
               <label>Filter by audience</label>

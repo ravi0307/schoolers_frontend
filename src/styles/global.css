@@ -410,8 +410,8 @@ select option:disabled,
   border-color: var(--chalk-green); box-shadow: var(--shadow-sm);
 }
 .timetable-class-card:hover { transform: translateY(-1px); }
-.timetable-class-card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.timetable-class-card-title { font-size: var(--font-size-card-title); font-weight: var(--font-weight-bold); color: var(--chalk-green-dark); overflow-wrap: anywhere; }
+.timetable-class-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.timetable-class-card-title { font-size: var(--font-size-card-title); font-weight: var(--font-weight-bold); color: var(--chalk-green-dark); min-width: 80px; overflow-wrap: anywhere; }
 .timetable-class-card-meta { font-size: var(--font-size-meta); color: var(--ink-soft); }
 .timetable-class-preview { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .timetable-weekly-summary-title {

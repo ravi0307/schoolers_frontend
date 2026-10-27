@@ -9,6 +9,7 @@ import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primi
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
+import FormField from "../../components/ui/FormField";
 import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail, isValidAadhaar } from "../../utils/validation";
@@ -414,12 +415,13 @@ export default function AdminStaff() {
         <>
           <div className={`card ${styles.searchCard}`}>
             <div className={`field ${styles.searchField}`}>
-              <label>Search staff</label>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or role"
-              />
+              <FormField label="Search staff">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or role"
+                />
+              </FormField>
             </div>
           </div>
 

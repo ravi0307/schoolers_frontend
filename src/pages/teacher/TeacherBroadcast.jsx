@@ -11,6 +11,7 @@ import Pagination, { usePagination } from "../../components/ui/Pagination";
 import PageHeader from "../../components/ui/PageHeader";
 import { apiErrorMessage } from "../../api/client";
 import Select from "../../components/ui/Select";
+import FormField from "../../components/ui/FormField";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
 import styles from "./TeacherBroadcast.module.css";
 
@@ -467,12 +468,13 @@ export default function AdminBroadcast() {
         <div className="card white" style={{ marginTop: 14 }}>
           <div className="grid2">
             <div className="field">
-              <label>Search broadcasts</label>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search sender, message, or class"
-              />
+              <FormField label="Search broadcasts">
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search sender, message, or class"
+                />
+              </FormField>
             </div>
             <div className="field">
               <label>Filter by audience</label>

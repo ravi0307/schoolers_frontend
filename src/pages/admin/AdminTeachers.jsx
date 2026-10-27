@@ -7,6 +7,7 @@ import { Spinner, ErrorBanner, Empty, initials } from "../../components/ui/Primi
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
+import FormField from "../../components/ui/FormField";
 import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage } from "../../api/client";
 import { isValidPhone, isValidEmail } from "../../utils/validation";
@@ -223,12 +224,13 @@ export default function AdminTeachers() {
         <>
           <div className={`card ${styles.searchCard}`}>
             <div className={`field ${styles.searchField}`}>
-              <label>Search teacher</label>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or role"
-              />
+              <FormField label="Search teacher">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or role"
+                />
+              </FormField>
             </div>
           </div>
 
