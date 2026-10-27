@@ -8,6 +8,7 @@ import * as peopleApi from "../../api/people";
 import { listClasses } from "../../api/academics";
 import { classNameFor, filterStudents } from "../../utils/studentReport";
 import { filterStaff } from "../../utils/staffReport";
+import FormField from "../../components/ui/FormField";
 import styles from "./AdminReports.module.css";
 
 const EMPTY_LIST = [];
@@ -107,14 +108,16 @@ export default function AdminReports() {
               no letter grade is invented.
             </p>
           </div>
-          <input
-            className="field sr-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search students by name, admission no or class"
-            aria-label="Search students"
-          />
+          <FormField label="Search students">
+            <input
+              className="sr-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search students by name, admission no or class"
+              aria-label="Search students"
+            />
+          </FormField>
         </div>
 
         {students.loading && <Spinner label="Loading students..." />}
@@ -170,14 +173,16 @@ export default function AdminReports() {
               amount with the date it was actually paid.
             </p>
           </div>
-          <input
-            className="field sr-search"
-            type="search"
-            value={staffQuery}
-            onChange={(e) => setStaffQuery(e.target.value)}
-            placeholder="Search staff by name, role or phone"
-            aria-label="Search staff"
-          />
+          <FormField label="Search staff">
+            <input
+              className="sr-search"
+              type="search"
+              value={staffQuery}
+              onChange={(e) => setStaffQuery(e.target.value)}
+              placeholder="Search staff by name, role or phone"
+              aria-label="Search staff"
+            />
+          </FormField>
         </div>
 
         {staff.loading && <Spinner label="Loading staff..." />}
