@@ -9,8 +9,10 @@ const ROLE_HOME = {
   parent: "/parent/home",
   teacher: "/teacher/dashboard",
   admin: "/admin/dashboard",
+  subadmin: "/admin/dashboard",
   pilot: "/pilot/pickdrop",
   master: "/master/schools",
+  submaster: "/master/schools",
   staff: "/staff/broadcast",
 };
 

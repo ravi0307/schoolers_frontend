@@ -15,7 +15,7 @@ import { apiErrorMessage, friendlyApiMessage } from "../../api/client";
 const SESSION_STATUSES = ["present", "absent", "missing", "exempt"];
 
 export default function TeacherMarks() {
-  const { classIds, selectedClassId, setSelectedClassId, subjectsForSelectedClass, loading: loadLoading } =
+  const { load, classIds, selectedClassId, setSelectedClassId, subjectsForSelectedClass, loading: loadLoading } =
     useTeacherContext();
   const toast = useToast();
   const [editing, setEditing] = useState(null); // {studentId, subjectId}
@@ -89,9 +89,16 @@ export default function TeacherMarks() {
       : Promise.resolve([])),
     [mode, examId]
   );
+  const taughtPairs = useMemo(
+    () => new Set(load.map((l) => `${l.class_id}:${l.subject_id}`)),
+    [load]
+  );
+  // Only sessions the teacher grades (class AND subject) — mirrors the
+  // backend grader check so a wrong-subject session never appears and 403s.
   const mySessions = useMemo(
-    () => (examSessions.data || []).filter((s) => classIds.includes(s.class_id)),
-    [examSessions.data, classIds]
+    () => (examSessions.data || [])
+      .filter((s) => taughtPairs.has(`${s.class_id}:${s.subject_id}`)),
+    [examSessions.data, taughtPairs]
   );
   const activeSession = mySessions.find((s) => s.session_id === Number(sessionId));
   const activeExam = (exams.data || []).find((e) => e.exam_id === Number(examId));
@@ -99,10 +106,12 @@ export default function TeacherMarks() {
     // view=entry: the teacher must see their own drafts (and submitted
     // rows) — a published-only view hides work in progress and makes
     // re-editing look like "no entry yet".
-    () => (mode === "session" && examId
+    // Gate on the chosen session: fetching at exam selection 403s for exams
+    // this teacher isn't in and shows a raw error instead of the empty state.
+    () => (mode === "session" && activeSession
       ? marksApi.examinationResults(examId, "entry")
       : Promise.resolve(null)),
-    [mode, examId, sessionId]
+    [mode, activeSession?.session_id]
   );
   const sessionMarksByStudent = useMemo(() => {
     const map = {};
@@ -193,10 +202,10 @@ export default function TeacherMarks() {
       {!loadLoading && <ClassPicker classIds={classIds} selectedClassId={selectedClassId} onSelect={changeClass} />}
 
       <div className="meta" style={{ margin: "8px 0" }}>
-        <button className={mode === "term" ? "btn primary sm" : "btn sm"} onClick={() => setMode("term")}>
+        <button type="button" className={mode === "term" ? "btn primary sm" : "btn ghost sm"} onClick={() => setMode("term")}>
           Term marks
         </button>
-        <button className={mode === "session" ? "btn primary sm" : "btn sm"} onClick={() => setMode("session")}>
+        <button type="button" className={mode === "session" ? "btn primary sm" : "btn ghost sm"} onClick={() => setMode("session")}>
           Examination sessions
         </button>
       </div>

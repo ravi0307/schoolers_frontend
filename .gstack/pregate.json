@@ -1,0 +1,21 @@
+{
+  "$schema": "https://github.com/garrytan/gstack/docs/pregate.md#pregate-v1",
+  "runner": "node --test $(printf '%s\\n' {files} | grep -vE '(-browser\\.spec\\.mjs|e2e-examinations.*\\.mjs)$')",
+  "dependencies": {
+    "src/components/ui/ImageUpload.jsx": [
+      "tests/frontend-api-contracts.test.mjs"
+    ],
+    "tests/*-browser.spec.mjs": [],
+    "tests/dropdown-fixtures.mjs": [],
+    "tests/e2e-examinations-workflow.mjs": [],
+    "tests/e2e-examinations.mjs": []
+  },
+  "empty_lanes": [],
+  "selection": {},
+  "warn": [],
+  "strays": {
+    "allow": [
+      ".gstack/"
+    ]
+  }
+}

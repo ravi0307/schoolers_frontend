@@ -37,12 +37,6 @@ export default function AdminExaminations() {
   const types = useApi(() => academicsApi.listExaminationTypes(), []);
   const classes = useApi(() => academicsApi.listClasses(), []);
   const subjects = useApi(() => academicsApi.listSubjects(), []);
-  const periods = useApi(
-    () => (examDraft.year_id
-      ? academicsApi.listAcademicPeriods(Number(examDraft.year_id))
-      : Promise.resolve([])),
-    [examDraft.year_id]
-  );
   const [yearFilter, setYearFilter] = useState("");
   const exams = useApi(
     () => academicsApi.listExaminations(yearFilter || undefined),
@@ -72,6 +66,12 @@ export default function AdminExaminations() {
   const versions = useApi(
     () => (showVersions ? academicsApi.listSessionVersions(showVersions) : Promise.resolve([])),
     [showVersions]
+  );
+  const periods = useApi(
+    () => (examDraft.year_id
+      ? academicsApi.listAcademicPeriods(Number(examDraft.year_id))
+      : Promise.resolve([])),
+    [examDraft.year_id]
   );
 
   async function run(action, message) {
@@ -134,6 +134,10 @@ export default function AdminExaminations() {
     }
     if (editDraft.end_time <= editDraft.start_time) {
       toast("End time must be after start time");
+      return;
+    }
+    if (!(Number(editDraft.max_marks) > 0)) {
+      toast("Max marks must be a positive number");
       return;
     }
     const payload = changedSessionFields(original, editDraft);
@@ -357,7 +361,8 @@ export default function AdminExaminations() {
                 <div className="card">
                   <div className="section-label">Amendment history</div>
                   {versions.loading && <Spinner />}
-                  {!(versions.data || []).length && !versions.loading && <Empty>No amendments recorded.</Empty>}
+                  {versions.error && <ErrorBanner message={apiErrorMessage(versions.error)} />}
+                  {!versions.error && !(versions.data || []).length && !versions.loading && <Empty>No amendments recorded.</Empty>}
                   {(versions.data || []).map((v) => (
                     <div key={v.version_id} className="meta">
                       <span>{v.changed_at || ""} · {v.old_row ? "edited" : "added"} · {v.reason || "no reason recorded"}</span>

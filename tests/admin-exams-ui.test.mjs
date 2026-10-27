@@ -14,7 +14,14 @@ test("admin exam pages are routed, navigated, and share page conventions", () =>
     ["promotion", "AdminPromotion"],
     ["exam-results", "AdminExamResults"],
   ]) {
-    assert.match(app, new RegExp(`path="${path}" element=\\{<${page} \\/>\\}`));
+    // Exam pages route through the examinations feature gate: direct
+    // navigation is blocked unless the flag is on for the school.
+    assert.match(
+      app,
+      new RegExp(
+        `path="${path}" element=\\{<FeatureRoute feature="examinations_enabled"><${page} \\/><\\/FeatureRoute>\\}`
+      )
+    );
   }
   const shell = read("src/components/layout/AdminShell.jsx");
   for (const label of ["Academic Calendar", "Exam Settings", "Examinations", "Marks Entry", "Exam Results", "Promotion"]) {

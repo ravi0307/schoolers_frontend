@@ -10,15 +10,7 @@ import Pagination, { usePagination } from "../../components/ui/Pagination";
 import ImageUpload from "../../components/ui/ImageUpload";
 import Select from "../../components/ui/Select";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
-import { isValidPhone, isValidEmail } from "../../utils/validation";
-
-const FEATURES = [
-  { key: "route_enabled", label: "Route" },
-  { key: "website_enabled", label: "School Website" },
-  { key: "library_enabled", label: "Library Management" },
-  { key: "fees_enabled", label: "Fee Management" },
-  { key: "salary_enabled", label: "Salary Management" },
-];
+import { FEATURES } from "../../features/registry";
 
 function schoolDetailsForm(school) {
   return {
@@ -86,18 +78,25 @@ export default function MasterSchoolDetail() {
   const [notifMessage, setNotifMessage] = useState("");
   const [detailsEditing, setDetailsEditing] = useState(false);
   const [detailsForm, setDetailsForm] = useState(null);
+  const [savingFeature, setSavingFeature] = useState(null);
 
   useEffect(() => {
     if (school && !detailsEditing) setDetailsForm(schoolDetailsForm(school));
   }, [school, detailsEditing]);
 
   async function toggleFeature(key, current) {
+    if (savingFeature) return; // ignore repeat clicks while a PATCH is in flight
+    setSavingFeature(key);
     try {
       await schoolsApi.updateFeatures(schoolId, { [key]: !current });
       toast("Feature updated");
-      refetch();
+      await refetch(); // display the persisted state, not the optimistic one
     } catch (err) {
+      // Never claim success when persistence failed; state stays on server truth.
       toast(apiErrorMessage(err));
+      refetch();
+    } finally {
+      setSavingFeature(null);
     }
   }
 
@@ -331,8 +330,9 @@ export default function MasterSchoolDetail() {
             <button
               className={`btn sm ${school[f.key] ? "toggle-on" : "toggle-off"}`}
               onClick={() => toggleFeature(f.key, school[f.key])}
+              disabled={savingFeature !== null}
             >
-              {school[f.key] ? "Enabled" : "Disabled"}
+              {savingFeature === f.key ? "Saving…" : school[f.key] ? "Enabled" : "Disabled"}
             </button>
           </div>
         ))}

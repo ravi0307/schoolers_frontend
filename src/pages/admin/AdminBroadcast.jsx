@@ -94,7 +94,7 @@ export default function AdminBroadcast() {
   const receivedPager = usePagination(receivedBroadcasts);
 
   function renderBroadcastRow(item, editable) {
-    const canManage = user?.role === "admin" || editable;
+    const canManage = ["admin", "subadmin"].includes(user?.role) || editable;
     const className = classNames.get(String(item.class_id));
     const createdAt = createdAtOf(item);
     const audience =

@@ -9,8 +9,10 @@ const PROFILE_PATH = {
   parent: "/parent/profile",
   teacher: "/teacher/profile",
   admin: "/admin/profile",
+  subadmin: "/admin/profile",
   pilot: "/pilot/profile",
   master: "/master/profile",
+  submaster: "/master/profile",
 };
 
 export default function MobileLayout({ tabs, children }) {

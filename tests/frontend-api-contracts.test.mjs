@@ -128,7 +128,7 @@ test("trip history API paths are relative to the versioned API base URL", () => 
 test("admin and parent trip history are registered in portal navigation and routes", () => {
   assert.match(source("src/components/layout/AdminShell.jsx"), /to: "\/admin\/trips", icon: History, label: "Trip History"/);
   assert.match(source("src/components/layout/ParentShell.jsx"), /to: "\/parent\/trips", icon: History, label: "Trip History"/);
-  assert.match(source("src/App.jsx"), /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(source("src/App.jsx"), /path="trips" element=\{\s*<FeatureRoute feature="route_enabled">\s*<AdminTripHistory \/>\s*<\/FeatureRoute>\s*\}/);
   assert.match(source("src/App.jsx"), /path="trips" element=\{<ParentTripHistory \/>\}/);
   assert.match(source("src/api/trips.js"), /getChildTripHistory = \(studentId, params\)/);
 });
@@ -180,7 +180,7 @@ test("key frontend workflows remain represented by application routes", () => {
     staff: ["broadcast", "gallery", "report"],
     admin: ["dashboard", "classes", "timetable", "gallery", "broadcast", "students", "staff", "routes", "leave", "website", "build-your-site", "my_website2", "notifications", "support"],
     pilot: ["pickdrop", "broadcast", "leave", "report"],
-    master: ["schools", "schools/:schoolId", "system-health", "support"],
+    master: ["schools", "schools/:schoolId", "system-health", "support", "accounts"],
   };
   for (const [role, routes] of Object.entries(routeGroups)) {
     const portalRoute = ["teacher", "admin", "staff", "parent"].includes(role)
@@ -404,8 +404,9 @@ test("broadcast history is split vertically 50-50 into Posted and Received colum
     /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
     /@media \(max-width: 48rem\)/,
   ]);
-  assertContains("src/pages/teacher/TeacherBroadcast.jsx", [
-    /minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+  assertContains("src/pages/teacher/TeacherBroadcast.module.css", [
+    /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\)/,
+    /@media \(max-width: 48rem\)/,
   ]);
 });
 
@@ -750,7 +751,7 @@ test("useIsWide consults matchMedia once and subscribes for change events", () =
   assertContains("src/hooks/useIsWide.js", [
     /breakpoint = 900/,
     /typeof window !== "undefined"/,
-    /window\.matchMedia\(\`\(min-width: \$\{breakpoint\}px\)\`\)\.matches/,
+    /window\.matchMedia\(`\(min-width: \$\{breakpoint\}px\)`\)\.matches/,
     /mq\.addEventListener\("change", handler\)/,
     /setIsWide\(event\.matches\)/,
     /mq\.removeEventListener\("change", handler\)/,
@@ -915,14 +916,14 @@ test("route driver select is fed by the pilot endpoint and keyed on pilot_id", (
     /id: pilot\.pilot_id/,
     /pilot\.is_active !== false/,
     /pilot\.full_name \|\| pilot\.username/,
-    /<select value=\{driver\} onChange=\{\(e\) => setDriver\(e\.target\.value\)\} disabled=\{!pilots\}/,
+    /<Select value=\{driver\} onChange=\{\(e\) => setDriver\(e\.target\.value\)\} disabled=\{!pilots\}/,
   ]);
 });
 
 test("admin route display uses the server-derived driver_name", () => {
   assertContains("src/pages/admin/AdminRoutes.jsx", [
     /Driver: \{routeSummary\.driver_name \|\| "Not assigned"\}/,
-    /\{r\.driver_name\}/,
+    /\{r\.driver_name \|\| "Not assigned"\}/,
   ]);
   // The edit form reverse-maps the derived name back to an id; that fallback
   // must stay in place or opening the editor would silently drop the driver.
@@ -1045,7 +1046,11 @@ test("admin sidebar keeps its dependency order without non-clickable group headi
   const layout = source("src/components/layout/WebLayout.jsx");
   assert.deepEqual(navOrder(ADMIN_SHELL), ADMIN_NAV);
   assert.doesNotMatch(shell, /group:\s*"/);
-  assert.match(layout, /navItems\.filter\(\(item\) => item\.to\)\.map/);
+  // Nav entries render through the shared shell; groups are collapsible
+  // <button> toggles (never plain non-clickable headings).
+  assert.match(layout, /navItems\.map\(\(item\) =>/);
+  assert.match(layout, /item\.items/);
+  assert.match(layout, /aria-expanded=\{expanded\}/);
   assert.doesNotMatch(layout, /sidebar-group|item\.group/);
   assert.doesNotMatch(source("src/styles/layout.css"), /sidebar-group/);
 });
@@ -1262,7 +1267,7 @@ test("both new admin pages are routed and reachable", () => {
   assertContains("src/App.jsx", [
     /import AdminAccounts from "\.\/pages\/admin\/AdminAccounts"/,
     /import AdminReports from "\.\/pages\/admin\/AdminReports"/,
-    /<Route path="accounts" element=\{<AdminAccounts \/>\}/,
+    /<Route path="accounts" element=\{\s*<FeatureRoute feature=\{\["fees_enabled", "salary_enabled"\]\}>\s*<AdminAccounts \/>\s*<\/FeatureRoute>\s*\}/,
     /<Route path="reports" element=\{<AdminReports \/>\}/,
   ]);
   // Both are admin-only pages; they must render through AdminShell so they
@@ -2007,6 +2012,7 @@ test("every role has a profile route under its own portal", () => {
     ["admin", "admin"],
     ["pilot", "pilot"],
     ["master", "master"],
+    ["submaster", "master"],
   ]) {
     assert.match(app, new RegExp(`path="profile" element=\\{<UserProfile />\\}`), `${role} is missing a profile route`);
     const portalRoute = ["teacher", "admin", "parent"].includes(role)
@@ -2054,8 +2060,10 @@ test("the profile link is derived from the session role, not hardcoded", () => {
       /parent: "\/parent\/profile"/,
       /teacher: "\/teacher\/profile"/,
       /admin: "\/admin\/profile"/,
+      /subadmin: "\/admin\/profile"/,
       /pilot: "\/pilot\/profile"/,
       /master: "\/master\/profile"/,
+      /submaster: "\/master\/profile"/,
     ]);
   }
 });
@@ -2068,8 +2076,10 @@ test("the profile page renders inside the signed-in role's own shell", () => {
     /parent: ParentContent/,
     /teacher: TeacherShell/,
     /admin: AdminShell/,
+    /subadmin: AdminShell/,
     /pilot: PilotShell/,
     /master: MasterShell/,
+    /submaster: MasterShell/,
     /<Shell>/,
   ]);
 });
@@ -2087,8 +2097,73 @@ test("shared form grids and table scroll hosts shrink safely on narrow viewports
   assert.match(css, /\.table-scroll \{[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.data-table \{[^}]*min-width:\s*var\(--table-min-width\)/s);
   assert.match(css, /\.cta-row \{[^}]*flex-wrap:\s*wrap/s);
+  // Two-column create forms (Add Staff / Add Student) ride the same grid2
+  // stack: short controls pair up, wide/conditional controls span, and the
+  // flow margin is dropped so the grid gap alone spaces the rows.
+  assert.match(css, /\.form-grid \{ gap: 12px 16px; \}/);
+  assert.match(css, /\.form-grid \.field \{ margin-bottom: 0; \}/);
+  assert.match(css, /\.form-grid > \.span-2, \.form-grid > \.cta-row \{ grid-column: 1 \/ -1; \}/);
+  for (const file of [
+    "src/pages/admin/AdminStaff.jsx",
+    "src/pages/admin/AdminStudents.jsx",
+  ]) {
+    assert.match(
+      source(file),
+      /className="grid2 form-grid"/,
+      `${file} should lay its create form out in two columns`
+    );
+  }
   const layout = source("src/components/layout/WebLayout.module.css");
   assert.match(layout, /@media \(max-width: 1023px\)[\s\S]*?\.content\s*\{[^}]*overflow-x:\s*clip/s);
+});
+
+test("Add Staff and Add Student pair fields into two-column rows without holes", () => {
+  // A lone control in the left cell leaves a visual hole beside it, so the
+  // short controls must pair like with like and only genuinely wide controls
+  // (conditional fields, uploads, textareas) may span both columns.
+  const formBody = (file) => {
+    const match = source(file).match(/<div className="grid2 form-grid">([\s\S]*?)<\/div>\s*<\/form>/);
+    assert.ok(match, `${file} should wrap its create form in the two-column grid`);
+    return { body: match[1], file };
+  };
+
+  const { body: staff, file: staffFile } = formBody("src/pages/admin/AdminStaff.jsx");
+  for (const conditional of ["Other staff", "Pilot"]) {
+    assert.match(
+      staff,
+      new RegExp(`${conditional}" \\? \\(\\s*<div className="field span-2">`),
+      `${staffFile}: the ${conditional} field should span both columns when shown`
+    );
+  }
+  assert.ok(
+    staff.indexOf("Aadhaar card number") < staff.indexOf("Present address"),
+    `${staffFile}: Aadhaar should sit beside Gender so the address textareas pair`
+  );
+  assert.ok(
+    staff.indexOf("Present address") < staff.indexOf("Permanent address"),
+    `${staffFile}: the two address textareas should share a row`
+  );
+  const lastStaffField = staff.slice(0, staff.indexOf("cta-row")).lastIndexOf("Emergency contact number");
+  assert.ok(lastStaffField > staff.indexOf("Permanent address"), `${staffFile}: Emergency contact should close the field rows`);
+  assert.match(staff, /<div className="cta-row">[\s\S]*?Add Staff[\s\S]*?Cancel/);
+
+  const { body: student, file: studentFile } = formBody("src/pages/admin/AdminStudents.jsx");
+  assert.match(student, /<div className="span-2">\s*<ImageUpload/, `${studentFile}: photo upload should span both columns`);
+  assert.match(student, /<div className="span-2">\s*<DocumentUpload/, `${studentFile}: document upload should span both columns`);
+  assert.match(
+    student,
+    /<div className="field span-2">\s*<label>Parent address<\/label>/,
+    `${studentFile}: the parent address textarea should span both columns`
+  );
+  assert.ok(
+    student.indexOf("Parent emergency number") < student.indexOf("Parent address"),
+    `${studentFile}: email/emergency should pair before the full-width address row`
+  );
+  assert.ok(
+    student.indexOf("Parent address") < student.indexOf("cta-row"),
+    `${studentFile}: the address row should close the field rows`
+  );
+  assert.match(student, /<div className="cta-row">[\s\S]*?Add Student[\s\S]*?Cancel/);
 });
 
 test("the profile page lays its cards out in a grid, not one tall stack", () => {

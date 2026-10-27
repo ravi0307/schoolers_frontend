@@ -70,6 +70,7 @@ function makeId() {
 }
 
 function backgroundColorInputValue(value) {
+  if (typeof value !== "string" || !value) return "#ffffff";
   const match = value.match(/^#([0-9a-f]{6})$/i);
   if (match) return value;
   const rgb = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
@@ -79,6 +80,7 @@ function backgroundColorInputValue(value) {
 }
 
 function backgroundOpacity(value) {
+  if (typeof value !== "string" || !value) return 1;
   return Number(value.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*(0|1|0?\.\d+)\)$/i)?.[1] ?? 1);
 }
 
@@ -94,6 +96,7 @@ function isRichColor(value) {
 }
 
 function richColorPickerValue(value) {
+  if (typeof value !== "string" || !value) return "#1e293b";
   const match = value.match(/^#([0-9a-f]{6})$/i);
   if (match) return value;
   const rgb = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
@@ -633,13 +636,13 @@ export default function AdminWebsiteBuilder() {
     const x = Math.max(0, Math.min(82, (menu.x / bounds.width) * 100));
     const y = Math.max(0, Math.min(82, (menu.y / bounds.height) * 100));
     if (type === "school-identity") {
-      const identityNode = createSchoolIdentityNode({
+      const identityNode = normalizeWebsiteBuilderNodes([createSchoolIdentityNode({
         id: `school-profile-${makeId()}`,
         x,
         y,
         schoolName: user?.schoolName || "Blue Horizon Academy",
         canvasSize,
-      });
+      })])[0];
       setNodes((current) => [...current, identityNode]);
       setSelectedNodeId(identityNode.id);
       setDirty(true);
@@ -647,7 +650,7 @@ export default function AdminWebsiteBuilder() {
       return;
     }
     const title = type === "center" ? "New content block" : type === "school-profile" ? "School profile" : "Families say it best";
-    const node = {
+    const node = normalizeWebsiteBuilderNodes([{
       id: makeId(),
       anchorId: `section-${makeId().slice(0, 8)}`,
       type,
@@ -661,7 +664,7 @@ export default function AdminWebsiteBuilder() {
       profileName: type === "school-profile" ? user?.schoolName || "" : "",
       profileMotto: "",
       profileLogo: "",
-    };
+    }])[0];
     setNodes((current) => [...current, node]);
     if (type === "testimonials") {
       setTestimonials((current) => current.length ? current : MOCK_ACTIVE_TESTIMONIALS.map((item) => ({ ...item })));
@@ -1135,7 +1138,7 @@ export default function AdminWebsiteBuilder() {
                 <label>Background color
                   <span className={styles.divColorControl}>
                     <input type="color" aria-label="Div block background color picker" value={backgroundColorInputValue(selectedNode.backgroundColor)} onChange={(event) => updateNode(selectedNode.id, { backgroundColor: event.target.value })} />
-                    <input aria-label="Div block background hex or RGBA" value={selectedNode.backgroundColor} onChange={(event) => updateNode(selectedNode.id, { backgroundColor: event.target.value })} onBlur={() => updateNode(selectedNode.id, (node) => ({ backgroundColor: normalizeWebsiteBackground(node.backgroundColor) }))} />
+                    <input aria-label="Div block background hex or RGBA" value={selectedNode.backgroundColor ?? ""} onChange={(event) => updateNode(selectedNode.id, { backgroundColor: event.target.value })} onBlur={() => updateNode(selectedNode.id, (node) => ({ backgroundColor: normalizeWebsiteBackground(node.backgroundColor) }))} />
                   </span>
                 </label>
                 <div className={styles.backgroundSwatches} role="group" aria-label="Div block color presets">
@@ -1252,7 +1255,7 @@ export default function AdminWebsiteBuilder() {
                   </div>
                 ) : node.type === "banner" ? (
                   <div className={styles.bannerEditor}>
-                    <img src={node.slides?.[0]?.imageUrl} alt="Mock school banner preview" />
+                    <img src={node.slides?.[0]?.imageUrl || undefined} alt="Mock school banner preview" />
                     <div>
                       <strong>{node.slides?.[0]?.title}</strong>
                       <span>{node.slides?.length || 0} carousel images · Drop or add images to upload</span>

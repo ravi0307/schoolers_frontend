@@ -60,7 +60,15 @@ client.interceptors.response.use(
 
 /** Extracts a readable message from an API error for display. */
 export function apiErrorMessage(err) {
-  return err?.response?.data?.detail || err?.message || "Something went wrong";
+  const detail = err?.response?.data?.detail;
+  // FastAPI 422 returns detail as an array of {loc,msg,type} objects; rendering
+  // that array as a React child throws and unmounts the tree. Flatten it.
+  if (Array.isArray(detail)) {
+    const parts = detail.map((d) =>
+      (d && typeof d === "object" ? d.msg || JSON.stringify(d) : String(d)));
+    return parts.join("; ") || "Something went wrong";
+  }
+  return detail || err?.message || "Something went wrong";
 }
 
 /**

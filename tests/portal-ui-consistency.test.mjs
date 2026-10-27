@@ -54,8 +54,49 @@ test("admin and parent trip history sidebar entries open registered pages", () =
 
   assert.match(admin, /to: "\/admin\/trips", icon: History, label: "Trip History"/);
   assert.match(parent, /to: "\/parent\/trips", icon: History, label: "Trip History"/);
-  assert.match(app, /path="trips" element=\{<AdminTripHistory \/>\}/);
+  assert.match(app, /path="trips" element=\{\s*<FeatureRoute feature="route_enabled">\s*<AdminTripHistory \/>\s*<\/FeatureRoute>\s*\}/);
   assert.match(app, /path="trips" element=\{<ParentTripHistory \/>\}/);
+});
+
+test("admin academics sidebar group is ordered, collapsible, and collapsed by default", () => {
+  const shell = read("src/components/layout/AdminShell.jsx");
+  const layout = read("src/components/layout/WebLayout.jsx");
+  const css = read("src/components/layout/WebLayout.module.css");
+
+  // One Academics group holds the six exam-area entries in reference order.
+  assert.match(shell, /label: "Academics"/);
+  const itemsBlock = shell.match(/items:\s*\[(.*?)\s*\],\s*\},/s)?.[1] ?? "";
+  assert.ok(itemsBlock, "Academics items block missing");
+  const tos = [...itemsBlock.matchAll(/to: "([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(tos, [
+    "/admin/academic-calendar",
+    "/admin/exam-settings",
+    "/admin/examinations",
+    "/admin/marks-entry",
+    "/admin/exam-results",
+    "/admin/promotion",
+  ]);
+  // The six exist exactly once each — grouped, not duplicated as flat entries.
+  for (const to of tos) {
+    const count = shell.split(`to: "${to}"`).length - 1;
+    assert.equal(count, 1, `${to} should appear exactly once`);
+  }
+
+  // Collapsed by default: open state starts empty and gates child rendering.
+  assert.match(layout, /const \[openGroups, setOpenGroups\] = useState\(\{\}\)/);
+  assert.match(layout, /const expanded = !!openGroups\[item\.label\]/);
+  assert.match(layout, /\{expanded && \(/);
+  // Toggle semantics: aria wiring and chevron; children never auto-expand
+  // from the active route (default-collapsed must survive navigation).
+  assert.match(layout, /aria-expanded=\{expanded\}/);
+  assert.match(layout, /aria-controls=\{groupId\}/);
+  assert.match(layout, /ChevronDown/);
+  assert.doesNotMatch(layout, /childActive/);
+
+  // Group header + child styles reuse the sidebar token set.
+  for (const cls of ["navGroup", "navGroupToggle", "navGroupItems", "navChevron"]) {
+    assert.ok(css.includes(`.${cls}`), `missing .${cls} style`);
+  }
 });
 
 test("staff navigation and profile/sign-out use the shared shell configuration", () => {

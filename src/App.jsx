@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { FeatureProvider } from "./context/FeatureContext";
 import { ParentProvider } from "./context/ParentContext";
 import { TeacherProvider } from "./context/TeacherContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import FeatureRoute from "./components/layout/FeatureRoute";
 import AdminShell from "./components/layout/AdminShell";
 import ParentShell from "./components/layout/ParentShell";
 import TeacherShell from "./components/layout/TeacherShell";
@@ -70,6 +72,7 @@ import MasterSchools from "./pages/master/MasterSchools";
 import MasterSchoolDetail from "./pages/master/MasterSchoolDetail";
 import MasterSystemHealth from "./pages/master/MasterSystemHealth";
 import MasterSupport from "./pages/master/MasterSupport";
+import MasterAccounts from "./pages/master/MasterAccounts";
 
 function RootRedirect() {
   const { user } = useAuth();
@@ -78,8 +81,10 @@ function RootRedirect() {
     parent: "/parent/home",
     teacher: "/teacher/dashboard",
     admin: "/admin/dashboard",
+    subadmin: "/admin/dashboard",
     pilot: "/pilot/pickdrop",
     master: "/master/schools",
+    submaster: "/master/schools",
     staff: "/staff/broadcast",
   }[user.role];
   return <Navigate to={home || "/login"} replace />;
@@ -89,7 +94,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ToastProvider>
+        <FeatureProvider>
+          <ToastProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/site/:schoolId" element={<PublicWebsite />} />
@@ -166,7 +172,7 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute roles={["admin"]}>
+                <ProtectedRoute roles={["admin", "subadmin"]}>
                   <AdminShell />
                 </ProtectedRoute>
               }
@@ -181,22 +187,22 @@ export default function App() {
               <Route path="broadcast" element={<AdminBroadcast />} />
               <Route path="students" element={<AdminStudents />} />
               <Route path="staff" element={<AdminStaff />} />
-              <Route path="routes" element={<AdminRoutes />} />
-              <Route path="trips" element={<AdminTripHistory />} />
+              <Route path="routes" element={<FeatureRoute feature="route_enabled"><AdminRoutes /></FeatureRoute>} />
+              <Route path="trips" element={<FeatureRoute feature="route_enabled"><AdminTripHistory /></FeatureRoute>} />
               <Route path="leave" element={<AdminLeave />} />
               <Route path="website" element={<Navigate to="/admin/build-your-site" replace />} />
-              <Route path="build-your-site" element={<AdminWebsiteBuilder />} />
+              <Route path="build-your-site" element={<FeatureRoute feature="website_enabled"><AdminWebsiteBuilder /></FeatureRoute>} />
               <Route path="my_website2" element={<Navigate to="/admin/build-your-site" replace />} />
               <Route path="notifications" element={<AdminNotifications />} />
-              <Route path="accounts" element={<AdminAccounts />} />
+              <Route path="accounts" element={<FeatureRoute feature={["fees_enabled", "salary_enabled"]}><AdminAccounts /></FeatureRoute>} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="support" element={<AdminSupport />} />
-              <Route path="academic-calendar" element={<AdminAcademicCalendar />} />
-              <Route path="exam-settings" element={<AdminExamSettings />} />
-              <Route path="examinations" element={<AdminExaminations />} />
-              <Route path="marks-entry" element={<AdminMarksEntry />} />
-              <Route path="promotion" element={<AdminPromotion />} />
-              <Route path="exam-results" element={<AdminExamResults />} />
+              <Route path="academic-calendar" element={<FeatureRoute feature="examinations_enabled"><AdminAcademicCalendar /></FeatureRoute>} />
+              <Route path="exam-settings" element={<FeatureRoute feature="examinations_enabled"><AdminExamSettings /></FeatureRoute>} />
+              <Route path="examinations" element={<FeatureRoute feature="examinations_enabled"><AdminExaminations /></FeatureRoute>} />
+              <Route path="marks-entry" element={<FeatureRoute feature="examinations_enabled"><AdminMarksEntry /></FeatureRoute>} />
+              <Route path="promotion" element={<FeatureRoute feature="examinations_enabled"><AdminPromotion /></FeatureRoute>} />
+              <Route path="exam-results" element={<FeatureRoute feature="examinations_enabled"><AdminExamResults /></FeatureRoute>} />
               <Route path="profile" element={<UserProfile />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Route>
@@ -219,16 +225,19 @@ export default function App() {
               }
             />
 
-            {/* Master Admin */}
+            {/* Master Admin & Sub-Master: one shared portal — a Sub-Master
+                holds Master's whole operational surface, minus the
+                Master-only Accounts screen (guarded inside the page). */}
             <Route
               path="/master/*"
               element={
-                <ProtectedRoute roles={["master"]}>
+                <ProtectedRoute roles={["master", "submaster"]}>
                   <Routes>
                     <Route path="schools" element={<MasterSchools />} />
                     <Route path="schools/:schoolId" element={<MasterSchoolDetail />} />
                     <Route path="system-health" element={<MasterSystemHealth />} />
                     <Route path="support" element={<MasterSupport />} />
+                    <Route path="accounts" element={<MasterAccounts />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="*" element={<Navigate to="/master/schools" replace />} />
                   </Routes>
@@ -238,7 +247,8 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </ToastProvider>
+          </ToastProvider>
+        </FeatureProvider>
       </AuthProvider>
     </BrowserRouter>
   );

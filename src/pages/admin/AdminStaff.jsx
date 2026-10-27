@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import AdminShell from "../../components/layout/AdminShell";
+import { useAuth } from "../../context/AuthContext";
 import { useApi } from "../../hooks/useApi";
 import * as peopleApi from "../../api/people";
 import * as attendanceApi from "../../api/attendance";
@@ -26,11 +27,17 @@ function getStaffValue(person, keys) {
 
 function normalizeStaffPerson(person) {
   const storedRole = getStaffValue(person, ["role_title", "role"]);
-  const roleCategory = storedRole === "Teacher" || storedRole.toLowerCase().includes("teacher")
-    ? "Teacher"
-    : storedRole === "Pilot" || storedRole.toLowerCase().includes("pilot")
-      ? "Pilot"
-      : "Other staff";
+  // "Sub-Admin" is a role assignment, not a free-text title: recognize it as
+  // its own category so the edit form can round-trip it and row actions can
+  // be gated for non-Admin sessions.
+  const roleCategory =
+    storedRole.replace(/[^a-z]/gi, "").toLowerCase() === "subadmin"
+      ? "Sub-Admin"
+      : storedRole === "Teacher" || storedRole.toLowerCase().includes("teacher")
+        ? "Teacher"
+        : storedRole === "Pilot" || storedRole.toLowerCase().includes("pilot")
+          ? "Pilot"
+          : "Other staff";
 
   return {
     ...person,
@@ -50,6 +57,11 @@ function normalizeStaffPerson(person) {
 export default function AdminStaff() {
   const { data, loading, error, refetch } = useApi(() => peopleApi.listStaff(), []);
   const toast = useToast();
+  const { user } = useAuth();
+  // Only a school Admin may assign the Sub-Admin role through this form; a
+  // Sub-Admin session never sees the option (and the backend refuses the
+  // label regardless of what the client sends).
+  const canAssignSubAdmin = user?.role === "admin";
 
   // Staff attendance for today. Two separate maps on purpose:
   //   statuses = what the toggle shows (defaults to Present, unsaved)
@@ -298,95 +310,100 @@ export default function AdminStaff() {
 
       {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
-          <div className="field">
-            <label>Full name <span className="required-mark">*</span></label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Nair" />
-          </div>
-          <div className="field">
-            <label>Role / Title <span className="required-mark">*</span></label>
-            <Select required value={roleCategory} onChange={(e) => {
-              setRoleCategory(e.target.value);
-              if (e.target.value !== "Other staff") setCustomRoleTitle("");
-            }} aria-label="Role / Title">
-              <option value="">Select role</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Pilot">Pilot</option>
-              <option value="Other staff">Other staff</option>
-            </Select>
-          </div>
-          {roleCategory === "Other staff" ? (
+          <div className="grid2 form-grid">
             <div className="field">
-              <label>Staff title <span className="required-mark">*</span></label>
-              <input required
-                value={customRoleTitle}
-                onChange={(e) => setCustomRoleTitle(e.target.value)}
-                placeholder="e.g. Admin Assistant"
-              />
+              <label>Full name <span className="required-mark">*</span></label>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Nair" />
             </div>
-          ) : null}
-          {roleCategory === "Pilot" ? (
             <div className="field">
-              <label>Driving License <span className="required-mark">*</span></label>
-              <input
-                required
-                value={drivingLicense}
-                onChange={(e) => setDrivingLicense(e.target.value)}
-                placeholder="Enter driving license number"
-              />
+              <label>Role / Title <span className="required-mark">*</span></label>
+              <Select required value={roleCategory} onChange={(e) => {
+                setRoleCategory(e.target.value);
+                if (e.target.value !== "Other staff") setCustomRoleTitle("");
+              }} aria-label="Role / Title">
+                <option value="">Select role</option>
+                <option value="Teacher">Teacher</option>
+                <option value="Pilot">Pilot</option>
+                <option value="Other staff">Other staff</option>
+                {canAssignSubAdmin || roleCategory === "Sub-Admin" ? (
+                  <option value="Sub-Admin">Sub-Admin</option>
+                ) : null}
+              </Select>
             </div>
-          ) : null}
-          <div className="field">
-            <label>Phone <span className="required-mark">*</span></label>
-            <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="field">
-            <label>Email ID <span className="required-mark">*</span></label>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
-          </div>
-          <div className="field">
-            <label>Date of birth <span className="required-mark">*</span></label>
-            <DatePicker required type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
-          </div>
-          <div className="field">
-            <label>Marital status <span className="required-mark">*</span></label>
-            <Select required value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} aria-label="Marital status">
-              <option value="">Select marital status</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Divorced">Divorced</option>
-              <option value="Widowed">Widowed</option>
-            </Select>
-          </div>
-          <div className="field">
-            <label>Gender <span className="required-mark">*</span></label>
-            <Select required value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </Select>
-          </div>
-          <div className="field">
-            <label>Present address <span className="required-mark">*</span></label>
-            <textarea required value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current residential address" />
-          </div>
-          <div className="field">
-            <label>Permanent address <span className="required-mark">*</span></label>
-            <textarea required value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
-          </div>
-          <div className="field">
-            <label>Aadhaar card number <span className="required-mark">*</span></label>
-            <input required value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} placeholder="XXXX XXXX XXXX" inputMode="numeric" maxLength={14} />
-          </div>
-          <div className="field">
-            <label>Emergency contact number <span className="required-mark">*</span></label>
-            <input required value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
-          </div>
-          <div className="cta-row">
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Staff"}
-            </button>
-            <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+            {roleCategory === "Other staff" ? (
+              <div className="field span-2">
+                <label>Staff title <span className="required-mark">*</span></label>
+                <input required
+                  value={customRoleTitle}
+                  onChange={(e) => setCustomRoleTitle(e.target.value)}
+                  placeholder="e.g. Admin Assistant"
+                />
+              </div>
+            ) : null}
+            {roleCategory === "Pilot" ? (
+              <div className="field span-2">
+                <label>Driving License <span className="required-mark">*</span></label>
+                <input
+                  required
+                  value={drivingLicense}
+                  onChange={(e) => setDrivingLicense(e.target.value)}
+                  placeholder="Enter driving license number"
+                />
+              </div>
+            ) : null}
+            <div className="field">
+              <label>Phone <span className="required-mark">*</span></label>
+              <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            </div>
+            <div className="field">
+              <label>Email ID <span className="required-mark">*</span></label>
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+            </div>
+            <div className="field">
+              <label>Date of birth <span className="required-mark">*</span></label>
+              <DatePicker required type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
+            </div>
+            <div className="field">
+              <label>Marital status <span className="required-mark">*</span></label>
+              <Select required value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} aria-label="Marital status">
+                <option value="">Select marital status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </Select>
+            </div>
+            <div className="field">
+              <label>Gender <span className="required-mark">*</span></label>
+              <Select required value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender">
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </Select>
+            </div>
+            <div className="field">
+              <label>Aadhaar card number <span className="required-mark">*</span></label>
+              <input required value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value)} placeholder="XXXX XXXX XXXX" inputMode="numeric" maxLength={14} />
+            </div>
+            <div className="field">
+              <label>Present address <span className="required-mark">*</span></label>
+              <textarea required value={presentAddress} onChange={(e) => setPresentAddress(e.target.value)} rows={3} placeholder="Current residential address" />
+            </div>
+            <div className="field">
+              <label>Permanent address <span className="required-mark">*</span></label>
+              <textarea required value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} placeholder="Permanent address" />
+            </div>
+            <div className="field">
+              <label>Emergency contact number <span className="required-mark">*</span></label>
+              <input required value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} placeholder="e.g. 98xxxx0000" inputMode="numeric" maxLength={15} />
+            </div>
+            <div className="cta-row">
+              <button className="btn primary" type="submit" disabled={submitting}>
+                {submitting ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save Changes" : "Add Staff"}
+              </button>
+              <button className="btn ghost" type="button" onClick={resetForm}>Cancel</button>
+            </div>
           </div>
         </form>
       )}
@@ -438,6 +455,12 @@ export default function AdminStaff() {
               pager.pageItems.map((person) => {
                 const staffId = person.staff_id || person.id;
                 const isExpanded = expandedId === staffId;
+                // Sub-Admin rows are privileged: only a school Admin session
+                // gets edit/remove (the backend refuses Sub-Admin actors on
+                // any privileged target anyway, including admin-linked rows
+                // this list cannot identify — that 403 surfaces as a toast).
+                const canManageRow =
+                  canAssignSubAdmin || person.role_category !== "Sub-Admin";
                 const emailValue = person.email || "";
                 const emergencyValue = person.emergency_contact || "";
                 const presentAddressValue = getStaffValue(person, ["present_address", "current_address"]) || "";
@@ -480,8 +503,12 @@ export default function AdminStaff() {
                               ? `● Present`
                               : `○ Absent`}
                         </button>
-                        <button className="btn ghost sm" onClick={() => startEdit(person)}>Edit</button>
-                        <button className="btn ghost sm" onClick={() => remove(staffId)}>Remove</button>
+                        {canManageRow ? (
+                          <>
+                            <button className="btn ghost sm" onClick={() => startEdit(person)}>Edit</button>
+                            <button className="btn ghost sm" onClick={() => remove(staffId)}>Remove</button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 

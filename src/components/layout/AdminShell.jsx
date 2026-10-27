@@ -1,4 +1,6 @@
 import WebLayout from "../layout/WebLayout";
+import { useFeatures } from "../../context/FeatureContext";
+import { filterNavByFeatures } from "../../features/registry";
 import {
   BarChart3,
   Bell,
@@ -12,6 +14,7 @@ import {
   House,
   Image,
   LifeBuoy,
+  LibraryBig,
   Megaphone,
   PartyPopper,
   Users,
@@ -34,20 +37,30 @@ const NAV = [
   { to: "/admin/students", icon: GraduationCap, label: "Students" },
   { to: "/admin/timetable", icon: CalendarClock, label: "Manage Timetable" },
   { to: "/admin/holidays", icon: PartyPopper, label: "Holidays" },
-  { to: "/admin/academic-calendar", icon: CalendarDays, label: "Academic Calendar" },
-  { to: "/admin/exam-settings", icon: BookOpen, label: "Exam Settings" },
-  { to: "/admin/examinations", icon: ClipboardList, label: "Examinations" },
-  { to: "/admin/marks-entry", icon: GraduationCap, label: "Marks Entry" },
-  { to: "/admin/exam-results", icon: BarChart3, label: "Exam Results" },
-  { to: "/admin/promotion", icon: Users, label: "Promotion" },
+  {
+    label: "Academics",
+    icon: LibraryBig,
+    items: [
+      { to: "/admin/academic-calendar", icon: CalendarDays, label: "Academic Calendar" },
+      { to: "/admin/exam-settings", icon: BookOpen, label: "Exam Settings" },
+      { to: "/admin/examinations", icon: ClipboardList, label: "Examinations" },
+      { to: "/admin/marks-entry", icon: GraduationCap, label: "Marks Entry" },
+      { to: "/admin/exam-results", icon: BarChart3, label: "Exam Results" },
+      { to: "/admin/promotion", icon: Users, label: "Promotion" },
+    ],
+  },
   { to: "/admin/accounts", icon: Wallet, label: "Accounts" },
   { to: "/admin/reports", icon: BarChart3, label: "Reporting" },
   { to: "/admin/build-your-site", icon: PanelsTopLeft, label: "Build Your Site" },
 ];
 
 export default function AdminShell({ children }) {
+  const { features } = useFeatures();
+  // Only the features enabled for this admin's school appear in the nav;
+  // groups that end up empty are dropped entirely.
+  const navItems = filterNavByFeatures(NAV, features);
   return (
-    <WebLayout navItems={NAV} portalLabel="ADMIN PORTAL">
+    <WebLayout navItems={navItems} portalLabel="ADMIN PORTAL">
       {children}
     </WebLayout>
   );

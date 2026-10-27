@@ -51,7 +51,7 @@
   color: var(--color-text-muted-on-dark);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
 }
 
 .sidebar-welcome {
@@ -193,6 +193,18 @@
 .web-content .gallery-tile :focus-visible,
 .web-content .gallery-album-head:focus-visible,
 .web-content .album-dialog :focus-visible { outline-color: var(--color-focus); }
+
+.web-content .scr-title {
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.015em;
+  line-height: var(--line-height-tight);
+}
+
+.web-content .scr-sub {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-normal);
+}
 
 .mobile-frame {
   display: flex;

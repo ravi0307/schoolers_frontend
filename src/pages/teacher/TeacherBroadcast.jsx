@@ -13,6 +13,7 @@ import { apiErrorMessage } from "../../api/client";
 import Select from "../../components/ui/Select";
 import FormField from "../../components/ui/FormField";
 import { splitBroadcastsByAuthor } from "../../utils/broadcastAuthor";
+import styles from "./TeacherBroadcast.module.css";
 
 function formatDate(value) {
   if (!value) return "";
@@ -184,20 +185,20 @@ function RichTextEditor({ value, onChange }) {
       background: active ? "var(--chalk-green)" : "transparent",
       color: active ? "var(--paper-light)" : "var(--ink)",
       borderColor: active ? "var(--chalk-green)" : "var(--line)",
-      boxShadow: active ? "0 0 0 2px rgba(2, 56, 89, .16)" : "none",
+      boxShadow: active ? "0 0 0 2px var(--color-row-hover)" : "none",
     };
   }
 
   return (
-    <div style={{ border: "1.5px solid var(--line)", borderRadius: 9, overflow: "hidden", background: "var(--paper-light)" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8, borderBottom: "1px solid var(--line)", background: "var(--paper)" }}>
-        <button className="btn ghost sm" style={toolbarButtonStyle("bold")} aria-pressed={!!activeFormats.bold} title="Bold" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("bold")}><b>B</b></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("italic")} aria-pressed={!!activeFormats.italic} title="Italic" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("italic")}><i>I</i></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("underline")} aria-pressed={!!activeFormats.underline} title="Underline" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("underline")}><u>U</u></button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("unorderedList")} aria-pressed={!!activeFormats.unorderedList} title="Bulleted list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertUnorderedList")}>• List</button>
-        <button className="btn ghost sm" style={toolbarButtonStyle("orderedList")} aria-pressed={!!activeFormats.orderedList} title="Numbered list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertOrderedList")}>1. List</button>
+    <div className={styles.editor}>
+      <div className={styles.editorToolbar}>
+        <button className={styles.editorTool} style={toolbarButtonStyle("bold")} aria-pressed={!!activeFormats.bold} title="Bold" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("bold")}><b>B</b></button>
+        <button className={styles.editorTool} style={toolbarButtonStyle("italic")} aria-pressed={!!activeFormats.italic} title="Italic" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("italic")}><i>I</i></button>
+        <button className={styles.editorTool} style={toolbarButtonStyle("underline")} aria-pressed={!!activeFormats.underline} title="Underline" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("underline")}><u>U</u></button>
+        <button className={styles.editorTool} style={toolbarButtonStyle("unorderedList")} aria-pressed={!!activeFormats.unorderedList} title="Bulleted list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertUnorderedList")}>• List</button>
+        <button className={styles.editorTool} style={toolbarButtonStyle("orderedList")} aria-pressed={!!activeFormats.orderedList} title="Numbered list" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("insertOrderedList")}>1. List</button>
         <label
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "0 7px", border: "1.5px solid var(--line)", borderRadius: 9, color: "var(--ink)", fontSize: 11.5 }}
+          className={styles.editorColor}
           onMouseDown={(event) => event.preventDefault()}
         >
           Color
@@ -207,7 +208,6 @@ function RichTextEditor({ value, onChange }) {
             title="Text color"
             aria-label="Text color"
             onChange={(event) => format("foreColor", event.target.value)}
-            style={{ width: 24, height: 24, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
           />
         </label>
         <Select
@@ -215,14 +215,14 @@ function RichTextEditor({ value, onChange }) {
           defaultValue="3"
           onMouseDown={(event) => event.stopPropagation()}
           onChange={(event) => format("fontSize", event.target.value)}
-          style={{ width: 110, padding: "6px 8px", border: "1.5px solid var(--line)", borderRadius: 9, background: "var(--paper-light)", color: "var(--ink)", fontSize: 11.5 }}
+          className={styles.editorFontSize}
         >
           {FONT_SIZE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </Select>
-        <button className="btn ghost sm" title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}>🖼️ Image</button>
-        <button className="btn ghost sm" title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
+        <button className={styles.editorTool} title="Insert image" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openImagePicker}>Image</button>
+        <button className={styles.editorTool} title="Clear formatting" type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => format("removeFormat")}>Clear</button>
         <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={insertImage} hidden />
       </div>
       <div
@@ -235,7 +235,7 @@ function RichTextEditor({ value, onChange }) {
         onPaste={handlePaste}
         onKeyUp={saveSelection}
         onMouseUp={saveSelection}
-        style={{ minHeight: 150, padding: "10px 12px", outline: "none", fontSize: 13.5, lineHeight: 1.5, overflowWrap: "anywhere" }}
+        className={styles.editorContent}
       >
         {null}
       </div>
@@ -320,24 +320,18 @@ export default function AdminBroadcast() {
     return (
       <div
         key={item.broadcast_id}
-        className="listitem"
+        className={`listitem ${styles.broadcastRow}`}
         onClick={() => setExpandedBroadcastId(isExpanded ? null : item.broadcast_id)}
-        style={{
-          cursor: "pointer",
-          flexWrap: "wrap",
-          alignItems: "flex-start",
-          overflow: "hidden",
-        }}
       >
         <div className="avatar y">📣</div>
-        <div className="meta" style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
-          <b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className={`meta ${styles.broadcastMeta}`}>
+          <b className={styles.broadcastSender}>
             {senderNameOf(item)}
           </b>
-          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.broadcastSummary}>
             {richTextToPlainText(item.message)}
           </span>
-          <span style={{ display: "block", marginTop: 4, color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className={styles.broadcastMetaLine}>
             {roleNameOf(item)} · {audience} · {createdAt ? formatDate(createdAt) : "Date unavailable"}
           </span>
         </div>
@@ -355,17 +349,7 @@ export default function AdminBroadcast() {
         )}
         {isExpanded && (
           <div
-            style={{
-              flexBasis: "100%",
-              marginTop: 10,
-              padding: "10px 12px",
-              borderRadius: 8,
-              background: "#eef7fa",
-              color: "#0f172a",
-              whiteSpace: "pre-wrap",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
+            className={styles.broadcastExpanded}
             onClick={(event) => event.stopPropagation()}
             dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.message) }}
           />
@@ -512,22 +496,19 @@ export default function AdminBroadcast() {
             </Select>
           </div>
         </div>
-        <div
-          className="grid2"
-          style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, alignItems: "start", marginTop: 18 }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div className="section-label" style={{ marginTop: 0 }}>Posted (Outgoing)</div>
-            <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+        <div className={styles.broadcastColumns}>
+          <div className={styles.broadcastPane}>
+            <div className={`section-label ${styles.broadcastPaneTitle}`}>Posted (Outgoing)</div>
+            <div className={`card ${styles.broadcastCard}`}>
               {postedBroadcasts.length
                 ? postedPager.pageItems.map((item) => renderBroadcastRow(item, true))
                 : <Empty>{data?.length ? "Nothing posted matches your search or filter." : "Nothing posted yet."}</Empty>}
               <Pagination {...postedPager} />
             </div>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div className="section-label" style={{ marginTop: 0 }}>Received (Incoming)</div>
-            <div className="card" style={{ padding: "8px 16px", maxHeight: 520, overflowY: "auto" }}>
+          <div className={styles.broadcastPane}>
+            <div className={`section-label ${styles.broadcastPaneTitle}`}>Received (Incoming)</div>
+            <div className={`card ${styles.broadcastCard}`}>
               {receivedBroadcasts.length
                 ? receivedPager.pageItems.map((item) => renderBroadcastRow(item, false))
                 : <Empty>{data?.length ? "Nothing received matches your search or filter." : "No broadcasts received yet."}</Empty>}
