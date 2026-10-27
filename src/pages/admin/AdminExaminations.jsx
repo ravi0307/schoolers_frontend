@@ -451,7 +451,7 @@ export default function AdminExaminations() {
               <div key={row.session_id} className="listitem">
                 <div className="meta">
                   <b>{row.date} {row.start_time}–{row.end_time} · {row.class_name}</b>
-                  <span>{row.exam_name} · {row.subject_name} · {row.venue || "no venue"} · {row.status}</span>
+                  <span>{row.exam_name} · {row.subject_name || "NA"} · {row.venue || "no venue"} · {row.status}</span>
                 </div>
               </div>
             ))}

@@ -5,7 +5,6 @@ import PageHeader from "../../components/ui/PageHeader";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
 import Modal from "../../components/ui/Modal";
 import Select from "../../components/ui/Select";
-import DatePicker from "../../components/ui/DatePicker";
 import { Spinner, ErrorBanner, Empty } from "../../components/ui/Primitives";
 import * as peopleApi from "../../api/people";
 import * as academicsApi from "../../api/academics";
@@ -312,8 +311,6 @@ export default function AdminTripHistory() {
   const [filterRoute, setFilterRoute] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDirection, setFilterDirection] = useState("");
-  const [filterFrom, setFilterFrom] = useState("");
-  const [filterTo, setFilterTo] = useState("");
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [reopenTrip, setReopenTrip] = useState(null);
   const [reopenReason, setReopenReason] = useState("");
@@ -328,11 +325,9 @@ export default function AdminTripHistory() {
     () => trips.filter((trip) =>
       (!filterRoute || trip.route_name === filterRoute) &&
       (!filterStatus || trip.status === filterStatus) &&
-      (!filterDirection || trip.direction === filterDirection) &&
-      (!filterFrom || trip.trip_date >= filterFrom) &&
-      (!filterTo || trip.trip_date <= filterTo)
+      (!filterDirection || trip.direction === filterDirection)
     ),
-    [trips, filterRoute, filterStatus, filterDirection, filterFrom, filterTo]
+    [trips, filterRoute, filterStatus, filterDirection]
   );
   const pager = usePagination(filteredTrips, 20);
 
@@ -393,14 +388,6 @@ export default function AdminTripHistory() {
             <option value="pickup">Pickup</option>
             <option value="drop">Drop</option>
           </Select>
-        </label>
-        <label>
-          From
-          <DatePicker className={styles.filterInput} type="date" value={filterFrom} onChange={(event) => setFilterFrom(event.target.value)} aria-label="From" />
-        </label>
-        <label>
-          To
-          <DatePicker className={styles.filterInput} type="date" value={filterTo} onChange={(event) => setFilterTo(event.target.value)} aria-label="To" />
         </label>
       </section>
 

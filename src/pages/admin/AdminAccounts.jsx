@@ -584,17 +584,6 @@ export default function AdminAccounts() {
         subtitle="Record staff salaries and student fees. Click an empty cell to add a payment, use the pencil to correct one, or use Deposit for a whole term."
         className={styles.pageHeader}
       />
-      <details className={styles.help}>
-        <summary>How this works</summary>
-        <p>
-          Each table has its own period selector, so you can compare different
-          months side by side. Salary and fee tables show two months at a time.
-          Add or correct a remark beside a payment. A fee deposit records one
-          amount across a selected term; the preview lists the months it will
-          affect and flags any existing entries before you confirm.
-        </p>
-      </details>
-
       {salaries.error && <ErrorBanner message={salaries.error} />}
 
       {salaries.loading && !salarySheet && <Skeleton lines={4} label="Loading salaries" />}
@@ -607,9 +596,6 @@ export default function AdminAccounts() {
                 title="Staff salaries"
                 summary={
                   <>
-                    <span className={styles.statChip}>
-                      <span>Staff</span><strong>{numberFormatter.format(salarySheet?.rows?.length || 0)}</strong>
-                    </span>
                     <span className={`${styles.statChip} ${styles.statSuccess}`}>
                       <span>Paid</span><strong>{money(salarySheet?.total_paid) || "0"}</strong>
                     </span>
@@ -656,9 +642,6 @@ export default function AdminAccounts() {
                 title="Student fees"
                 summary={
                   <>
-                    <span className={styles.statChip}>
-                      <span>Students</span><strong>{numberFormatter.format(feeSheet?.rows?.length || 0)}</strong>
-                    </span>
                     <span className={`${styles.statChip} ${styles.statSuccess}`}>
                       <span>Collected</span><strong>{money(feeSheet?.total_collected) || "0"}</strong>
                     </span>

@@ -11,6 +11,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import ImageUpload from "../../components/ui/ImageUpload";
 import DocumentUpload from "../../components/ui/DocumentUpload";
 import Select from "../../components/ui/Select";
+import FormField from "../../components/ui/FormField";
 import DatePicker from "../../components/ui/DatePicker";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import styles from "./AdminStudents.module.css";
@@ -254,11 +255,13 @@ export default function AdminStudents() {
       )}
 
       <div className="field">
-        <input
-          placeholder="Search by name or admission no."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <FormField label="Search by name or admission no.">
+          <input
+            placeholder="Search by name or admission no."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </FormField>
       </div>
 
       {loading && <Spinner />}
