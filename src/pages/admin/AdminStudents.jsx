@@ -46,6 +46,9 @@ export default function AdminStudents() {
   const [parentEmail, setParentEmail] = useState("");
   const [parentAddress, setParentAddress] = useState("");
   const [parentEmergencyNumber, setParentEmergencyNumber] = useState("");
+  const [formErrors, setFormErrors] = useState({});
+  const [rollNumber, setRollNumber] = useState(null);
+  const [showRollNotice, setShowRollNotice] = useState(false);
 
   const [expandedStudentId, setExpandedStudentId] = useState(null);
   const [editingStudentId, setEditingStudentId] = useState(null);
@@ -79,20 +82,58 @@ export default function AdminStudents() {
     setParentEmail("");
     setParentAddress("");
     setParentEmergencyNumber("");
+    setFormErrors({});
+    setRollNumber(null);
+    setShowRollNotice(false);
     setFormOpen(false);
     setEditingStudentId(null);
   }
 
   async function submit(e) {
     e.preventDefault();
-    if (!name.trim() || !classId) {
-      toast("Enter a name and pick a class");
+    const errors = {};
+    const nameTrimmed = name.trim();
+    if (!nameTrimmed) {
+      errors.name = "Full name is required";
+    } else if (nameTrimmed.length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    }
+    if (!classId) {
+      errors.classId = "Please select a class";
+    }
+    if (dateOfBirth) {
+      const dob = new Date(dateOfBirth);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dob > today) {
+        errors.dateOfBirth = "Date of birth cannot be in the future";
+      }
+    }
+    if (parentEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parentEmail.trim())) {
+      errors.parentEmail = "Invalid email address";
+    }
+    if (parentPhone) {
+      const digits = parentPhone.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) {
+        errors.parentPhone = "Phone must have 10 to 15 digits";
+      }
+    }
+    if (parentEmergencyNumber) {
+      const digits = parentEmergencyNumber.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) {
+        errors.parentEmergencyNumber = "Emergency number must have 10 to 15 digits";
+      }
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
+    setShowRollNotice(true);
     setSubmitting(true);
     try {
-      await peopleApi.createStudent({
-        name,
+      const result = await peopleApi.createStudent({
+        name: nameTrimmed,
         class_id: Number(classId),
         date_of_birth: dateOfBirth || null,
         gender: gender || null,
@@ -106,10 +147,12 @@ export default function AdminStudents() {
         parent_address: parentAddress || null,
         parent_emergency_number: parentEmergencyNumber || null,
       });
-      toast(name + " added");
+      setRollNumber(result.roll_number || null);
+      toast(nameTrimmed + " added — Roll No: " + (result.roll_number || "generated"));
       resetForm();
       refetch();
     } catch (err) {
+      setShowRollNotice(false);
       toast(apiErrorMessage(err));
     } finally {
       setSubmitting(false);
@@ -117,8 +160,40 @@ export default function AdminStudents() {
   }
 
   async function updateStudent(id) {
+    const errors = {};
+    const editNameTrimmed = editName.trim();
+    if (!editNameTrimmed) {
+      errors.name = "Student name is required";
+    } else if (editNameTrimmed.length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    }
+    if (!editClassId) {
+      errors.classId = "Please select a class";
+    }
+    if (editDateOfBirth) {
+      const dob = new Date(editDateOfBirth);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dob > today) {
+        errors.dateOfBirth = "Date of birth cannot be in the future";
+      }
+    }
+    if (editParentEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editParentEmail.trim())) {
+      errors.parentEmail = "Invalid email address";
+    }
+    if (editParentPhone) {
+      const digits = editParentPhone.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) {
+        errors.parentPhone = "Phone must have 10 to 15 digits";
+      }
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     const payload = {
-      name: editName.trim(),
+      name: editNameTrimmed,
       admission_no: editAdmissionNo.trim(),
       class_id: Number(editClassId),
       date_of_birth: editDateOfBirth || null,
@@ -133,15 +208,9 @@ export default function AdminStudents() {
       parent_address: editParentAddress || null,
       parent_emergency_number: editParentEmergencyNumber || null,
     };
-
-    if (!payload.name || !payload.class_id) {
-      toast("Enter a name and pick a class");
-      return;
-    }
-
     try {
       await peopleApi.updateStudent(id, payload);
-      toast("Student updated");
+      toast("Student updated — Roll number unchanged");
       setEditingStudentId(null);
       refetch();
     } catch (err) {
@@ -176,10 +245,29 @@ export default function AdminStudents() {
 
       {formOpen && (
         <form className={`card white ${styles.formCard}`} onSubmit={submit}>
+          {rollNumber && (
+            <div className="field span-2">
+              <span className={styles.rollNumberBadge}>
+                Roll No: {rollNumber}
+              </span>
+            </div>
+          )}
+          {showRollNotice && !rollNumber && (
+            <div className="field span-2">
+              <span className={styles.rollNotice}>
+                Roll number will be generated automatically after enrollment.
+              </span>
+            </div>
+          )}
           <div className="grid2 form-grid">
             <div className="field">
               <label>Full name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Verma" />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Aisha Verma"
+              />
+              {formErrors.name && <span className={styles.errorText}>{formErrors.name}</span>}
             </div>
             <div className="field">
               <label>Class</label>
@@ -189,10 +277,12 @@ export default function AdminStudents() {
                   <option key={c.class_id} value={c.class_id}>{c.name}</option>
                 ))}
               </Select>
+              {formErrors.classId && <span className={styles.errorText}>{formErrors.classId}</span>}
             </div>
             <div className="field">
               <label>Date of birth</label>
               <DatePicker type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} aria-label="Date of birth" />
+              {formErrors.dateOfBirth && <span className={styles.errorText}>{formErrors.dateOfBirth}</span>}
             </div>
             <div className="field">
               <label>Gender</label>
@@ -237,14 +327,17 @@ export default function AdminStudents() {
             <div className="field">
               <label>Parent phone</label>
               <input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="e.g. 98xxxx0000" />
+              {formErrors.parentPhone && <span className={styles.errorText}>{formErrors.parentPhone}</span>}
             </div>
             <div className="field">
               <label>Parent email</label>
               <input type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="parent@example.com" />
+              {formErrors.parentEmail && <span className={styles.errorText}>{formErrors.parentEmail}</span>}
             </div>
             <div className="field">
               <label>Parent emergency number</label>
               <input value={parentEmergencyNumber} onChange={(e) => setParentEmergencyNumber(e.target.value)} placeholder="e.g. 98xxxx0000" />
+              {formErrors.parentEmergencyNumber && <span className={styles.errorText}>{formErrors.parentEmergencyNumber}</span>}
             </div>
             <div className="field span-2">
               <label>Parent address</label>
@@ -303,6 +396,10 @@ export default function AdminStudents() {
                       {s.admission_no}
                     </div>
 
+                    <div className={styles.studentAdmission}>
+                      {s.roll_number ? <span>Roll: {s.roll_number}</span> : <span>Roll: —</span>}
+                    </div>
+
                     <div className={`cta-row ${styles.studentActions}`} onClick={(e) => e.stopPropagation()}>
                       <Pill tone={s.present_today ? "ok" : "warn"}>{s.present_today ? "Present" : "Absent"}</Pill>
                       <button
@@ -333,9 +430,20 @@ export default function AdminStudents() {
 
                   {editingStudentId === s.student_id && (
                     <div className={`card white ${styles.editCard}`}>
+                      {s.roll_number && (
+                        <div className="field span-2">
+                          <label>Roll number (auto-generated, cannot be changed)</label>
+                          <input
+                            value={s.roll_number}
+                            readOnly
+                            className={styles.readonlyField}
+                          />
+                        </div>
+                      )}
                       <div className="field">
                         <label>Student name</label>
                         <input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                        {formErrors.name && <span className={styles.errorText}>{formErrors.name}</span>}
                       </div>
                       <div className="field">
                         <label>Admission no.</label>
@@ -349,10 +457,12 @@ export default function AdminStudents() {
                             <option key={c.class_id} value={c.class_id}>{c.name}</option>
                           ))}
                         </Select>
+                        {formErrors.classId && <span className={styles.errorText}>{formErrors.classId}</span>}
                       </div>
                       <div className="field">
                         <label>Date of birth</label>
                         <DatePicker type="date" value={editDateOfBirth} onChange={(e) => setEditDateOfBirth(e.target.value)} aria-label="Date of birth" />
+                        {formErrors.dateOfBirth && <span className={styles.errorText}>{formErrors.dateOfBirth}</span>}
                       </div>
                       <div className="field">
                         <label>Gender</label>
@@ -392,10 +502,12 @@ export default function AdminStudents() {
                       <div className="field">
                         <label>Parent phone</label>
                         <input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} />
+                        {formErrors.parentPhone && <span className={styles.errorText}>{formErrors.parentPhone}</span>}
                       </div>
                       <div className="field">
                         <label>Parent email</label>
                         <input type="email" value={editParentEmail} onChange={(e) => setEditParentEmail(e.target.value)} />
+                        {formErrors.parentEmail && <span className={styles.errorText}>{formErrors.parentEmail}</span>}
                       </div>
                       <div className="field">
                         <label>Parent address</label>
@@ -404,6 +516,7 @@ export default function AdminStudents() {
                       <div className="field">
                         <label>Parent emergency number</label>
                         <input value={editParentEmergencyNumber} onChange={(e) => setEditParentEmergencyNumber(e.target.value)} />
+                        {formErrors.parentEmergencyNumber && <span className={styles.errorText}>{formErrors.parentEmergencyNumber}</span>}
                       </div>
                       <div className="cta-row">
                         <button className="btn primary sm" onClick={() => updateStudent(s.student_id)}>Save</button>
@@ -429,6 +542,7 @@ export default function AdminStudents() {
                         {[
                           ["Name", s.name],
                           ["Admission No", s.admission_no || "Not provided"],
+                          ["Roll Number", s.roll_number || "Not provided"],
                           ["Class", className],
                           ["Status", s.present_today ? "Present" : "Absent"],
                           ["Date of Birth", studentDOB],
