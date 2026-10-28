@@ -131,3 +131,37 @@
     flex-wrap: wrap;
   }
 }
+
+.rollNumberBadge {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--ok-green-light);
+  color: var(--ok-green);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.rollNotice {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--ruled-blue-light);
+  color: var(--ruled-blue);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+}
+
+.errorText {
+  color: var(--red-pen);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-1);
+  display: block;
+}
+
+.readonlyField {
+  background: var(--color-neutral-100);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
